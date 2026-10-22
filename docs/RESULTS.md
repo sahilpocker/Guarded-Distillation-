@@ -152,12 +152,79 @@ mixed):
    say how much comes from the embedding student versus the embedding map, because `--map sbert`
    changed both; `--student tfidf --map sbert` and the reverse would separate them (not run).
 4. **Cost of running it.** Encoding the 12,000 stream texts took about 45 s with three replays
-   running at once on a laptop CPU (an upper bound of roughly 4 ms per text; not an isolated
-   measurement). With the encodings cached, a method's replay took 2-24 s against 5-66 s for
+   running at once; encoding the whole 14,272-text pool alone takes 14 s (about 1 ms per text,
+   batched, on this laptop CPU). With the encodings cached, a method's replay took 2-24 s against 5-66 s for
    TF-IDF, since the dense logistic regression refits faster than the sparse n-gram SVM. In
    production the encoder would run on every query, including escalated ones.
 5. No local-field advantage here either: field vs global is 63% vs 60% calls with 37.5 vs 38.7
    errors.
+
+## Operating points: choosing the default (Haiku)
+
+Grid on seeds 0-2: method {static + retraining, global cortisol + retraining, cortisol field} ×
+`alpha_intent` {0.03, 0.05, 0.08} × student {TF-IDF, MiniLM}, TF-IDF map throughout so only the
+student changes. All Haiku labels are cached, so every cell is free. "Δ" is accuracy vs LLM only
+in points; ranges are the lowest and highest of the three seeds.
+
+![LLM calls against accuracy vs LLM only, one point per setting](operating-points.svg)
+
+| Method | Student | α | LLM calls, mean [range] | Δ vs LLM only, pts, mean [range] | Cheap-path errors / 1k, mean [range] | Δ ≥ −0.3 on every seed | On curve |
+|---|---|---|---|---|---|---|---|
+| Static gate + retraining | MiniLM | 0.08 | 40% [31–53] | 0.62 [0.49–0.74] | 90.3 [82.9–104.0] | yes | yes |
+| Static gate + retraining | MiniLM | 0.05 | 48% [41–60] | 0.57 [0.25–0.89] | 58.4 [52.1–66.5] | yes | no |
+| Static gate + retraining | MiniLM | 0.03 | 54% [47–64] | 0.57 [0.46–0.68] | 38.7 [34.4–43.9] | yes | no |
+| Global cortisol + retraining | MiniLM | 0.08 | 58% [55–60] | 0.37 [0.20–0.45] | 58.7 [56.4–62.8] | yes | no **← default** |
+| Cortisol field | MiniLM | 0.08 | 58% [55–62] | 0.44 [0.26–0.58] | 56.0 [54.0–57.8] | yes | no |
+| Static gate + retraining | TF-IDF | 0.08 | 60% [53–65] | 0.52 [0.40–0.71] | 46.7 [43.8–49.9] | yes | no |
+| Cortisol field | MiniLM | 0.05 | 60% [57–63] | 0.52 [0.26–0.76] | 42.8 [41.6–43.8] | yes | no |
+| Global cortisol + retraining | TF-IDF | 0.08 | 61% [61–62] | 0.47 [0.30–0.61] | 47.9 [43.2–52.6] | yes | no |
+| Global cortisol + retraining | MiniLM | 0.05 | 62% [56–68] | 0.38 [0.16–0.54] | 39.2 [33.2–45.5] | yes | no |
+| Cortisol field | TF-IDF | 0.05 | 63% [63–64] | 0.51 [0.42–0.59] | 36.2 [34.2–39.6] | yes | no |
+| Cortisol field | TF-IDF | 0.08 | 65% [61–73] | 0.43 [0.27–0.51] | 44.3 [33.9–51.8] | yes | no |
+| Global cortisol + retraining | MiniLM | 0.03 | 65% [65–66] | 0.30 [0.30–0.30] | 24.8 [22.1–27.6] | yes | no |
+| Static gate + retraining | TF-IDF | 0.05 | 66% [61–71] | 0.57 [0.46–0.65] | 30.9 [29.6–33.0] | yes | no |
+| Cortisol field | MiniLM | 0.03 | 66% [66–67] | 0.36 [0.27–0.42] | 25.2 [23.1–27.0] | yes | no |
+| Static gate + retraining | TF-IDF | 0.03 | 69% [62–73] | 0.55 [0.45–0.69] | 23.9 [22.6–24.8] | yes | no |
+| Cortisol field | TF-IDF | 0.03 | 69% [65–74] | 0.47 [0.30–0.57] | 23.8 [18.1–27.6] | yes | no |
+| Global cortisol + retraining | TF-IDF | 0.05 | 72% [69–76] | 0.40 [0.36–0.46] | 26.6 [21.0–34.9] | yes | no |
+| Global cortisol + retraining | TF-IDF | 0.03 | 73% [70–78] | 0.36 [0.22–0.46] | 18.1 [14.5–21.2] | yes | no |
+
+Rules (fixed before running): the default is the setting with the fewest LLM calls whose accuracy
+is within −0.3 pts of LLM only on every one of seeds 0-2; "on curve" means no other setting has
+both fewer calls and higher accuracy; if the cortisol field is not on the curve, global cortisol +
+retraining becomes the default and the field is labelled experimental.
+
+- **The curve has one point:** static gate + retraining with MiniLM at α 0.08 (40% calls, +0.62
+  pts) beats every other setting on both axes. The cortisol field is not on the curve, so **the
+  default is global cortisol + retraining, MiniLM student, α 0.08 (58% calls, +0.37 pts)**, the
+  fewest-calls setting of that method. The field is experimental.
+- **The accuracy axis hides what the cortisol methods are for.** The one point on the curve lets
+  90 cheap-path errors per 1,000 queries through; the default lets 59 through, for 18 more points
+  of LLM calls. If cheap-path errors were an axis, the picture would differ. They are in the table.
+- **The bar did not constrain anything:** every setting is above −0.3 pts on every seed (all are
+  above 0). The rule reduces to "fewest calls", which favours the highest α.
+- **The best settings sit on the edge of the grid (α 0.08).** The optimum may lie beyond it; not
+  explored.
+
+Held-out check: the default on seeds 3-5, which were not used for any choice.
+
+| Seed | Haiku accuracy | Default accuracy | Δ vs LLM only | LLM calls | Cheap-path errors / 1k |
+|---|---|---|---|---|---|
+| 3 | 81.3% | 81.7% | +0.36 pts | 64.0% | 48.9 |
+| 4 | 80.7% | 81.0% | +0.39 pts | 56.8% | 64.0 |
+| 5 | 80.5% | 80.8% | +0.28 pts | 59.1% | 52.0 |
+| mean [range] | 80.8% | 81.2% | +0.34 [0.28–0.39] | 60.0% [56.8–64.0] | 55.0 [48.9–64.0] |
+
+That matches the selection seeds (58% calls, +0.37 pts, 59 errors per 1,000), so there is no sign
+the pick overfit. Cost per 1,000 queries: $0.024 against $0.041 for LLM only. Launch-question
+accuracy is 82.6% against 84.8% for LLM only on these seeds (−2.2 pts), so the saving is not free
+on the new product's questions; off-topic accuracy is 98.2% vs 98.3%.
+
+Caveats: one real LLM, one prompt, one domain; seeds share most of the pool and are not
+independent; the default needs the `[sbert]` extra (torch and a 90 MB encoder), so it is applied
+with `cortisol replay --preset recommended` and `EngineConfig`'s own defaults stay light.
+Reproduce: `python scripts/grid.py`, `python scripts/operating_points.py`, then
+`python scripts/grid.py --seeds 3 4 5 --students minilm --alphas 0.08 --methods llm_only,global`.
 
 ## Seed 0 by phase, simulated teacher (accuracy / LLM calls)
 

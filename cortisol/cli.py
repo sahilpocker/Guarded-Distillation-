@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from . import data as D
-from .engine import METHODS, EngineConfig, config_dict, run_method
+from .engine import METHODS, RECOMMENDED, EngineConfig, config_dict, run_method
 from .report import write_all
 from .teacher import (PRICES, CallCost, CapExceeded, Ledger, LLMTeacher, SimulatedTeacher, approx_prompt_tokens,
                       build_system_prompt, precompute)
@@ -163,6 +163,9 @@ def cmd_replay(args) -> None:
     cost = np.array([CallCost(int(r.input_tokens), int(r.output_tokens), int(r.cache_read_tokens),
                               int(r.cache_write_tokens)).usd(price) for r in tdf.itertuples()])
     overrides = json.loads(args.config) if args.config else {}
+    if args.preset == "recommended":      # student and alpha_intent of the chosen operating point; the map stays TF-IDF
+        overrides = {"alpha_intent": RECOMMENDED["alpha_intent"], **overrides}
+        args.student = args.student or RECOMMENDED["student_backend"]
     student = args.student or args.map     # --map sbert also gives the sbert student, unless --student says otherwise
     cfg = EngineConfig(seed=meta["seed"], map_backend=args.map, student_backend=student, **overrides)
     if "sbert" in (args.map, student):
@@ -195,9 +198,26 @@ def cmd_report(args) -> None:
         if p.exists():
             with open(p, "rb") as f:
                 results[name] = pickle.load(f)
-    if "cortisol" not in results:
-        sys.exit("run `cortisol replay` first (the report needs at least the cortisol method)")
-    write_all(results, meta, run)
+    if not any(m in results for m in ("static", "retrain", "global", "cortisol")):
+        sys.exit("run `cortisol replay` first (the report needs at least one gated method)")
+    op = ""
+    if getattr(args, "operating_points", None):
+        from .report import operating_points_section
+        g = json.loads(Path(getattr(args, "grid", "docs/grid.json")).read_text())
+        d = g["default"]
+        names = {"retrain": "static gate + retraining", "global": "global cortisol + retraining", "cortisol": "the cortisol field"}
+        student = "MiniLM" if d["student"] == "minilm" else "TF-IDF"
+        cap = (f"Default (ringed): <b>{names[d['method']]}</b>, {student} student, alpha_intent {d['alpha']:g}. It is the setting of "
+               f"that method with the fewest LLM calls whose accuracy stays within 0.3 points of LLM-only on every one of seeds "
+               f"{', '.join(map(str, g['seeds']))}. ")
+        b = g.get("best_overall")
+        if b and (b["method"], b["student"], b["alpha"]) != (d["method"], d["student"], d["alpha"]):
+            cap += (f"{names[b['method']].capitalize()} with the same student and alpha_intent uses fewer calls ({b['calls']:.0f}%) but lets "
+                    f"{b['errors']:.0f} cheap-path errors per 1,000 queries through; the accuracy axis does not show that. ")
+        if not g["field_on_curve"]:
+            cap += "The cortisol field is not on the trade-off curve, so it is experimental."
+        op = operating_points_section(Path(args.operating_points).read_text(), cap)
+    write_all(results, meta, run, focus=getattr(args, "focus", "cortisol"), operating_points=op)
     print((run / "REPORT.md").read_text())
     print(f"dashboard: {run / 'replay.html'}")
 
@@ -253,6 +273,8 @@ def main(argv=None) -> None:
     def replay_args(q):
         q.add_argument("--methods", default="llm_only,static,retrain,global,cortisol")
         q.add_argument("--map", default="tfidf", choices=["tfidf", "sbert"], help="map space backend")
+        q.add_argument("--preset", default=None, choices=["recommended"],
+                       help="apply the recommended operating point (MiniLM student, alpha_intent 0.08); report it with --focus global")
         q.add_argument("--student", default=None, choices=["tfidf", "sbert"],
                        help="student backend (default: same as --map; sbert = frozen MiniLM + logistic regression)")
         q.add_argument("--config", default=None, help='JSON overrides for EngineConfig, e.g. \'{"alpha_intent":0.02}\'')
@@ -264,6 +286,10 @@ def main(argv=None) -> None:
 
     q = sub.add_parser("report", help="REPORT.md, results.json and replay.html for a run")
     q.add_argument("--run", default="runs/simulated-s0")
+    q.add_argument("--focus", default="cortisol", choices=["static", "retrain", "global", "cortisol"],
+                   help="method the dashboard headline describes")
+    q.add_argument("--operating-points", default=None, help="SVG from scripts/operating_points.py to add to the page")
+    q.add_argument("--grid", default="docs/grid.json", help="grid summary used for the operating-point caption")
 
     q = sub.add_parser("demo", help="data + simulated labels + replay + report")
     stream_args(q)

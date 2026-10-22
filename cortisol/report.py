@@ -128,7 +128,7 @@ def dashboard_data(results: dict[str, RunResult], summary: dict, meta: dict, foc
                          "events": [e for e in r.events if e["kind"] != "shadow_rejected"]}
     data = {"meta": meta, "summary": summary, "bin": BIN, "methods": methods, "focus": focus}
 
-    fr = results.get(focus)
+    fr = results.get("cortisol", results.get(focus))     # the heat map is local cortisol: field run only
     if fr is not None and fr.cells:
         c_all = fr.calls.reset_index(drop=True)
         cell = np.asarray(fr.cells["cell"])
@@ -167,13 +167,28 @@ def dashboard_data(results: dict[str, RunResult], summary: dict, meta: dict, foc
     return data
 
 
-def write_all(results: dict[str, RunResult], meta: dict, out_dir: Path) -> dict:
+def operating_points_section(svg: str, caption: str) -> str:
+    return (
+        '<section class="panel" aria-labelledby="h-op">\n'
+        '    <h2 id="h-op">Pick your operating point</h2>\n'
+        '    <p class="sub">Every point is one setting of the system, run on the same live stream. Further left means fewer '
+        'LLM calls; higher means more accurate than LLM-only. Bars show the lowest and highest result over seeds. '
+        'Hover a point for its numbers.</p>\n'
+        f'    <div class="chart" style="overflow-x:auto">{svg}</div>\n'
+        f'    <p class="sub">{caption}</p>\n'
+        "  </section>"
+    )
+
+
+def write_all(results: dict[str, RunResult], meta: dict, out_dir: Path, focus: str = "cortisol",
+              operating_points: str = "") -> dict:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     summary = summarise(results)
     (out_dir / "REPORT.md").write_text(report_md(summary, meta))
-    data = dashboard_data(results, summary, meta)
+    data = dashboard_data(results, summary, meta, focus=focus if focus in results else "cortisol")
     (out_dir / "results.json").write_text(json.dumps({"meta": meta, "summary": summary}, indent=2))
     html = TEMPLATE.read_text().replace("/*__DATA__*/null", json.dumps(data, separators=(",", ":")))
+    html = html.replace("<!--__OPERATING_POINTS__-->", operating_points)
     (out_dir / "replay.html").write_text(html)
     return summary

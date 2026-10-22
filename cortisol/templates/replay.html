@@ -253,6 +253,8 @@ footer { color: var(--ink-3); font-size: 12px; padding-block: 0 40px; }
     <div class="scroll-x"><table class="res" id="res"></table></div>
   </section>
 
+  <!--__OPERATING_POINTS__-->
+
   <section class="panel" aria-labelledby="h-how">
     <h2 id="h-how" style="margin-bottom:12px">How a query moves</h2>
     <div class="flow">
@@ -639,7 +641,7 @@ const DATA = /*__DATA__*/null;
     const th = document.createElement("thead"); th.append(hr); t.append(th);
     const tbd = document.createElement("tbody");
     ORDER.forEach((m) => {
-      const tr = document.createElement("tr"); if (m === "cortisol") tr.className = "focus";
+      const tr = document.createElement("tr"); if (m === DATA.focus) tr.className = "focus";
       cols.forEach(([, f], i) => {
         const td = document.createElement("td");
         if (i === 0) { const k = document.createElement("i"); k.className = "key"; k.style.borderColor = css(COLOR[m]); k.style.marginRight = "8px"; td.append(k); }

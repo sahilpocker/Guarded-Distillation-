@@ -62,6 +62,13 @@ METHODS: dict[str, Method] = {m.name: m for m in [
 ]}
 
 
+# The recommended operating point, chosen on seeds 0-2 and reported on seeds 3-5 (docs/RESULTS.md):
+# global cortisol + retraining, MiniLM student, alpha_intent 0.08, TF-IDF map. It needs the [sbert]
+# extra, so EngineConfig's own defaults stay light (TF-IDF, 0.03) for tests and the free demo;
+# `cortisol replay --preset recommended` applies it.
+RECOMMENDED = {"method": "global", "student_backend": "sbert", "alpha_intent": 0.08, "map_backend": "tfidf"}
+
+
 @dataclass(frozen=True)
 class EngineConfig:
     warmup: int = 800             # used only when the stream has no history rows

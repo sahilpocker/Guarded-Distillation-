@@ -35,6 +35,29 @@ About half the LLM calls at a third of a point of accuracy, with no human step t
 and a surge. Retraining does most of the work; the local field has not yet shown an advantage on
 this stream. See docs/RESULTS.md, and docs/ROADMAP.md for the experiments that test it.
 
+## Recommended setting (Claude Haiku 5.5 as the teacher)
+
+Chosen on seeds 0-2 from an 18-setting grid and checked on seeds 3-5 (docs/RESULTS.md):
+**global cortisol + retraining, MiniLM student, `alpha_intent` 0.08**.
+
+| | Accuracy | LLM calls | Cost / 1,000 queries | Cheap-path errors / 1k |
+|---|---|---|---|---|
+| LLM only (Haiku) | 80.8% | 100% | $0.041 | 0 |
+| Recommended, seeds 3-5 | 81.2% (+0.34 pts) | 60% (57-64) | $0.024 | 55 |
+
+![Operating points](docs/operating-points.svg)
+
+```bash
+pip install -e ".[llm,sbert]"
+cortisol replay --run runs/<run> --preset recommended
+cortisol report --run runs/<run> --focus global
+```
+
+**The cortisol field (the local, per-region part) is experimental.** It was not on the
+trade-off curve, and no experiment has yet shown it beating global cortisol (E3, E4 in
+docs/ROADMAP.md test where it should). Launch-question accuracy is about 2 points below LLM only
+under this setting.
+
 ## Real teachers
 
 ```bash
@@ -45,8 +68,9 @@ cortisol replay --run runs/local-s0
 cortisol report --run runs/local-s0
 ```
 
-Claude works too (`--teacher anthropic --model claude-haiku-5-5`, needs ANTHROPIC_API_KEY); without
-`--yes` it only prints the cost estimate.
+Claude works too (`--teacher anthropic --model claude-haiku-5-5`, key in `.env`); without `--yes` it
+only prints the cost estimate. To label a whole dataset once with a spend cap, then replay any seed
+for free: `cortisol label-pool ... --cap-usd 5 --yes`, then `cortisol label --labels labels/<model>.jsonl`.
 
 Teacher labels do not depend on the method, so each stream is labelled once and every method
 replays from the cache. Each method is charged only for the calls it makes.
@@ -57,13 +81,14 @@ replays from the cache. Each method is charged only for the calls it makes.
 |---|---|
 | `cortisol/engine.py` | the replay loop: gates, escalation, audits, cortisol, retraining |
 | `cortisol/gate.py` | doubt, leak bound, the cortisol field, `aci_update` |
-| `cortisol/student.py`, `space.py` | compiled models; the map space and its cells |
+| `cortisol/student.py`, `space.py`, `embed.py` | compiled models (TF-IDF or MiniLM); the map space and its cells |
 | `cortisol/teacher.py` | simulated, Anthropic and OpenAI-compatible teachers |
 | `cortisol/data.py`, `taxonomy.py` | datasets, the drift stream, routing tables |
 | `cortisol/report.py`, `templates/replay.html` | REPORT.md, results.json, the replay dashboard |
 | `docs/THEORY.md` | lessons, the leak guarantee and its proof sketch, the research question |
 | `docs/DESIGN.md` | why each piece is built the way it is |
 | `docs/RESULTS.md`, `docs/ROADMAP.md` | numbers so far; what to run next |
+| `scripts/` | `grid.py` (run the operating-point grid), `operating_points.py` (select, plot), `seed_table.py` |
 
 ## Data
 
