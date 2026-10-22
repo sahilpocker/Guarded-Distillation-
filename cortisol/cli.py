@@ -163,7 +163,13 @@ def cmd_replay(args) -> None:
     cost = np.array([CallCost(int(r.input_tokens), int(r.output_tokens), int(r.cache_read_tokens),
                               int(r.cache_write_tokens)).usd(price) for r in tdf.itertuples()])
     overrides = json.loads(args.config) if args.config else {}
-    cfg = EngineConfig(seed=meta["seed"], map_backend=args.map, **overrides)
+    student = args.student or args.map     # --map sbert also gives the sbert student, unless --student says otherwise
+    cfg = EngineConfig(seed=meta["seed"], map_backend=args.map, student_backend=student, **overrides)
+    if "sbert" in (args.map, student):
+        from . import embed
+        t0 = time.time()
+        embed.encode(stream.text.tolist())
+        print(f"encoded {stream.text.nunique():,} texts with {embed.MODEL} in {time.time() - t0:.0f}s")
     out = run / "results"
     out.mkdir(exist_ok=True)
     for name in args.methods.split(","):
@@ -247,6 +253,8 @@ def main(argv=None) -> None:
     def replay_args(q):
         q.add_argument("--methods", default="llm_only,static,retrain,global,cortisol")
         q.add_argument("--map", default="tfidf", choices=["tfidf", "sbert"], help="map space backend")
+        q.add_argument("--student", default=None, choices=["tfidf", "sbert"],
+                       help="student backend (default: same as --map; sbert = frozen MiniLM + logistic regression)")
         q.add_argument("--config", default=None, help='JSON overrides for EngineConfig, e.g. \'{"alpha_intent":0.02}\'')
 
     q = sub.add_parser("replay", help="replay the stream for each method")

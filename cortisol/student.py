@@ -1,6 +1,7 @@
 """Students: the cheap compiled models that answer when the gate accepts.
 
-A student is TF-IDF (word 1-2 grams + character 3-5 grams) and a linear SVM. Its scores become
+A student is TF-IDF (word 1-2 grams + character 3-5 grams) and a linear SVM, or (backend "sbert",
+experiment E2) frozen MiniLM sentence embeddings and logistic regression. Its scores become
 probabilities through a softmax whose temperature is fitted on held-out teacher labels. The gate
 does not need calibrated probabilities (conformal methods work with any score), but a fitted
 temperature keeps the scale comparable from one retrain to the next.
@@ -14,14 +15,21 @@ from __future__ import annotations
 import numpy as np
 from scipy.special import softmax
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_union
 from sklearn.svm import LinearSVC
+
+from . import embed
 
 TEMPS = np.array([1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20], dtype=float)
 
 
 class Student:
-    def __init__(self, universe: list[str], C: float = 0.5, seed: int = 0):
+    def __init__(self, universe: list[str], C: float = 0.5, seed: int = 0, backend: str = "tfidf",
+                 lr_C: float = 10.0):
+        if backend not in ("tfidf", "sbert"):
+            raise ValueError(f"unknown student backend {backend}")
+        self.backend, self.lr_C = backend, lr_C
         self.universe = list(universe)
         self.index = {lab: i for i, lab in enumerate(self.universe)}
         self.C, self.seed = C, seed
@@ -39,22 +47,30 @@ class Student:
     def fit(self, texts: list[str], labels: list[str], holdout: tuple[list[str], list[str]] | None = None) -> "Student":
         labels = [lab for lab in labels]
         self.known = set(labels)
-        self.vec = self._features().fit(texts)
-        X = self.vec.transform(texts)
+        if self.backend == "tfidf":
+            self.vec = self._features().fit(texts)
+        else:   # the encoder is frozen; this vocabulary only feeds the label-free novelty signal
+            self.oov_vec = TfidfVectorizer(ngram_range=(1, 2), sublinear_tf=True, min_df=1).fit(texts)
+        X = self._X(texts)
         if len(self.known) == 1:
             self.const = next(iter(self.known))
             self.clf = None
-        else:
+        elif self.backend == "tfidf":
             self.const = None
             self.clf = LinearSVC(C=self.C, random_state=self.seed).fit(X, labels)
+        else:
+            self.const = None
+            self.clf = LogisticRegression(C=self.lr_C, max_iter=300, random_state=self.seed).fit(X, labels)
         if holdout is not None and len(holdout[0]) >= 20:
             self._fit_temperature(*holdout)
             self.holdout_acc = self.accuracy(*holdout)
         return self
 
+    def _X(self, texts: list[str]):
+        return self.vec.transform(texts) if self.backend == "tfidf" else embed.encode(texts)
+
     def _scores(self, texts: list[str]) -> np.ndarray:
-        X = self.vec.transform(texts)
-        s = self.clf.decision_function(X)
+        s = self.clf.decision_function(self._X(texts))
         if s.ndim == 1:  # binary: decision_function gives the margin for classes_[1]
             s = np.column_stack([-s / 2, s / 2])
         return s
@@ -84,7 +100,7 @@ class Student:
 
     def oov_fraction(self, texts: list[str]) -> np.ndarray:
         """Label-free novelty: share of each text's words the student never saw in training."""
-        word_vec = self.vec.transformer_list[0][1]
+        word_vec = self.vec.transformer_list[0][1] if self.backend == "tfidf" else self.oov_vec
         analyze, vocab = word_vec.build_analyzer(), word_vec.vocabulary_
         out = np.zeros(len(texts))
         for k, t in enumerate(texts):

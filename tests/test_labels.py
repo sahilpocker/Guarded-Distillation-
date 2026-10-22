@@ -40,3 +40,32 @@ def test_cap_stops_calls_and_failures_are_not_cached(tmp_path):
     with pytest.raises(CapExceeded):
         t.label_all(["x", "y"], progress=False)
     assert not cache.exists() or cache.read_text() == ""
+
+
+def test_sbert_student_runs_without_downloading_the_encoder(monkeypatch):
+    """The sbert backend (frozen embeddings + logistic regression) fits, gives full-universe
+    probabilities and a novelty signal; the encoder is replaced by a deterministic fake."""
+    import hashlib
+
+    import numpy as np
+
+    from cortisol import embed
+    from cortisol.student import Student
+
+    def fake_encode(texts, model=embed.MODEL):
+        out = []
+        for t in texts:
+            v = np.zeros(32)
+            for w in t.split():
+                v[int(hashlib.md5(w.encode()).hexdigest(), 16) % 32] += 1.0
+            out.append(v / (np.linalg.norm(v) or 1.0))
+        return np.array(out)
+
+    monkeypatch.setattr(embed, "encode", fake_encode)
+    texts = ["card arrive late", "card not here", "exchange rate euro", "euro dollar rate"] * 10
+    labels = ["card", "card", "fx", "fx"] * 10
+    st = Student(["card", "fx", "never_seen"], backend="sbert").fit(texts, labels)
+    P = st.proba(["my card arrive", "rate of euro"])
+    assert P.shape == (2, 3) and P[:, 2].sum() == 0
+    assert st.predict(["my card arrive", "rate of euro"]) == ["card", "fx"]
+    assert st.oov_fraction(["zzz qqq"])[0] == 1.0

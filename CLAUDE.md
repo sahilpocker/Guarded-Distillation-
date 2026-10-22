@@ -16,7 +16,9 @@ Sister project: `../vaers` (same idea on VAERS pharmacovigilance; its week-1 les
 - E1 done with Claude Haiku 5.5 (22 Oct 2026, $0.58 total, cap $5): the whole pool is labelled in
   `labels/claude-haiku-5-5.jsonl`; seeds 0-2 read it for free (`cortisol label --labels ...`).
   Haiku is only ~80.5% accurate vs human labels on this task; compiled methods match it and cut
-  LLM calls ~27-31%. Results: docs/RESULTS.md. Next: E3/E4 in docs/ROADMAP.md, Llama via OpenRouter.
+  LLM calls ~27-31%. alpha_intent 0.05 chosen on seed 0 (field: 63% calls). E2 (MiniLM student) is done and
+  mixed: more answered but more leaks; the field shows no advantage. Results: docs/RESULTS.md.
+  Next: E3/E4 in docs/ROADMAP.md, Llama via OpenRouter.
 - **No Claude API calls without Sahil's explicit go-ahead for that specific run.** His key lives in
   `.env` (gitignored, loaded by the CLI); do not read it, print it, or touch `../vaers/.env`.
   Paid calls need `--cap-usd`; spend is in `labels/spend.json`.

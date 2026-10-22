@@ -17,6 +17,8 @@ About 12,000 calls, free.
 `pip install -e ".[sbert]"`, `--map sbert`, and a student on frozen sentence embeddings + logistic
 regression (add as `Student` backend). Expect a larger accepted share at the same leak budget.
 Result: LLM calls at equal accuracy, versus TF-IDF.
+**Done (22 Oct 2026, Haiku labels, alpha_intent 0.05): mixed, see docs/RESULTS.md. `--map sbert` sets both
+the map and the student; `--student tfidf|sbert` overrides the student alone.**
 
 ## E3. Concept drift without a new label (where local should matter)
 

@@ -84,6 +84,7 @@ class EngineConfig:
     pool_cap: int = 12000
     n_cells: int = 40
     map_backend: str = "tfidf"
+    student_backend: str = "tfidf"   # "sbert": frozen MiniLM embeddings + logistic regression (E2)
     snapshot_every: int = 50
     seed: int = 0
 
@@ -182,9 +183,9 @@ class Replay:
             scope_h = (hx, hys)
             hk = [k for k, v in enumerate(hy) if v in self.intents]
             intent_h = ([hx[k] for k in hk], [hy[k] for k in hk])
-        sc = Student(SCOPE_UNIVERSE, seed=self.cfg.seed).fit(x, ys, holdout=scope_h)
+        sc = Student(SCOPE_UNIVERSE, seed=self.cfg.seed, backend=self.cfg.student_backend).fit(x, ys, holdout=scope_h)
         keep = [k for k, v in enumerate(y) if v in self.intents]
-        it = Student(self.intents, seed=self.cfg.seed).fit([x[k] for k in keep], [y[k] for k in keep], holdout=intent_h)
+        it = Student(self.intents, seed=self.cfg.seed, backend=self.cfg.student_backend).fit([x[k] for k in keep], [y[k] for k in keep], holdout=intent_h)
         sc.version = it.version = version
         return sc, it
 

@@ -19,6 +19,8 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import normalize
 
+from . import embed
+
 
 class MapSpace:
     def __init__(self, n_cells: int = 40, backend: str = "tfidf", dim: int = 128,
@@ -34,8 +36,7 @@ class MapSpace:
             X = self.vec.fit_transform(texts)
             self.svd = TruncatedSVD(n_components=min(self.dim, X.shape[1] - 1), random_state=self.seed).fit(X)
         elif self.backend == "sbert":
-            from sentence_transformers import SentenceTransformer
-            self.enc = SentenceTransformer(self.sbert_model)
+            pass   # the shared frozen encoder (cortisol.embed) is loaded on first use
         else:
             raise ValueError(f"unknown map backend {self.backend}")
 
@@ -43,7 +44,7 @@ class MapSpace:
         if self.backend == "tfidf":
             Z = self.svd.transform(self.vec.transform(texts))
         else:
-            Z = self.enc.encode(list(texts), batch_size=128, show_progress_bar=False)
+            Z = embed.encode(list(texts), self.sbert_model)
         return normalize(np.asarray(Z, dtype=np.float64))
 
     # -- cells and kernel

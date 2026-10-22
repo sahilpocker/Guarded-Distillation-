@@ -73,6 +73,92 @@ Seed 0 by phase (accuracy / LLM calls):
    calls, but 23.8 vs 18.1 cheap-path errors per 1,000; accuracy within noise. Mixed, so no
    claim. E3 and E4 are still the way to find out.
 
+## Tuning `alpha_intent` on Haiku (seed 0, then seeds 1-2)
+
+`alpha_intent` is the leak budget for in-scope answers (default 0.03). Swept over 0.03, 0.05 and
+0.08 on seed 0 with the Haiku labels, all five methods each time. Cells are LLM calls / accuracy
+vs LLM only:
+
+| Method | 0.03 (default) | 0.05 | 0.08 |
+|---|---|---|---|
+| Static gate | 74% / +0.3 | 68% / +0.2 | 62% / −0.2 |
+| Static gate + retraining | 71% / +0.4 | 67% / +0.5 | 60% / +0.4 |
+| Global cortisol | 70% / +0.4 | 76% / +0.4 | 61% / +0.6 |
+| Cortisol field | 65% / +0.6 | **63% / +0.6** | 73% / +0.3 |
+
+Rule: the highest-savings value with accuracy ≥ −0.3 pts vs LLM only, applied to the Cortisol field
+(the full method). All three values pass the accuracy bar, so the pick is **0.05** (fewest calls).
+Seeds 1-2 at 0.05, next to the default:
+
+| Method | LLM calls, 0.03 → 0.05 | Cheap-path errors / 1k, 0.03 → 0.05 | Δ vs LLM only, 0.05 |
+|---|---|---|---|
+| Static gate | 71% → 65% | 28.3 → 44.8 | −0.03 pts |
+| Static gate + retraining | 69% → 66% | 23.9 → 30.9 | +0.57 pts |
+| Global cortisol | 73% → 72% | 18.1 → 26.6 | +0.40 pts |
+| Cortisol field | 69% → **63%** | 23.8 → 36.2 | +0.50 pts |
+
+(Full 3-seed table at 0.05 is in the E2 section, as the TF-IDF reference.) The field saves 6 more
+points of LLM calls at the same accuracy, and the extra savings are paid for in cheap-path errors
+(a looser leak budget lets more disagreements through), so this is a trade, not a free gain.
+
+Caveats on the tuning:
+- The curves are not monotone (the field uses more calls at 0.08 than at 0.03; global uses more at
+  0.05 than at 0.03). With one seed and three values I read that as noise in when retrains and
+  audits fall, not a trend; I did not test it.
+- The pick is for the field only. At each method's own best seed-0 value, the field (63%) saves
+  **no more** than static + retraining (60% at 0.08) or global (61% at 0.08). So this does not
+  show an advantage for the local field. Seed 0 only; the baselines were not rerun at 0.08 on
+  seeds 1-2.
+
+## E2: frozen MiniLM embeddings + logistic regression (Haiku, `alpha_intent` 0.05, 3 seeds)
+
+`cortisol replay --map sbert` runs both the map space and the students on `all-MiniLM-L6-v2`
+embeddings (frozen), with a logistic-regression head instead of TF-IDF + linear SVM. Same labels,
+streams and settings as the TF-IDF table, so the two are directly comparable.
+
+TF-IDF student (reference, α = 0.05):
+
+| Method | Accuracy (s0 / s1 / s2) | Δ vs LLM only, mean | LLM calls, mean | Launch questions, mean | Off-topic questions, mean | Cost per 1,000 queries, mean | Cheap-path errors / 1k, mean |
+|---|---|---|---|---|---|---|---|
+| LLM only | 80.7 / 79.9 / 80.8 | baseline | 100% | 84.6% | 98.6% | $0.0410 | 0.0 |
+| Static gate | 80.9 / 79.8 / 80.6 | −0.03 pts | 65% | 78.6% | 98.2% | $0.0267 | 44.8 |
+| Static gate + retraining | 81.2 / 80.5 / 81.4 | +0.57 pts | 66% | 85.2% | 98.5% | $0.0271 | 30.9 |
+| Global cortisol | 81.1 / 80.3 / 81.2 | +0.40 pts | 72% | 84.9% | 98.6% | $0.0296 | 26.6 |
+| Cortisol field | 81.3 / 80.3 / 81.3 | +0.50 pts | 63% | 85.0% | 98.6% | $0.0260 | 36.2 |
+
+MiniLM student (E2, α = 0.05):
+
+| Method | Accuracy (s0 / s1 / s2) | Δ vs LLM only, mean | LLM calls, mean | Launch questions, mean | Off-topic questions, mean | Cost per 1,000 queries, mean | Cheap-path errors / 1k, mean |
+|---|---|---|---|---|---|---|---|
+| LLM only | 80.7 / 79.9 / 80.8 | baseline | 100% | 84.6% | 98.6% | $0.0410 | 0.0 |
+| Static gate | 80.5 / 80.3 / 80.1 | −0.17 pts | 51% | 72.0% | 97.5% | $0.0210 | 63.5 |
+| Static gate + retraining | 81.3 / 80.7 / 81.6 | +0.73 pts | 48% | 82.9% | 97.6% | $0.0196 | 56.8 |
+| Global cortisol | 81.0 / 80.4 / 81.2 | +0.40 pts | 60% | 83.1% | 98.0% | $0.0247 | 38.7 |
+| Cortisol field | 80.9 / 80.4 / 81.4 | +0.43 pts | 63% | 83.6% | 98.5% | $0.0256 | 37.5 |
+
+Reading (the roadmap expected "a larger accepted share at the same leak budget"; the result is
+mixed):
+
+1. **The embedding student answers more, but leaks more.** The ungoverned gates drop from 65-66% to
+   48-51% LLM calls, and their cheap-path errors rise from 31-45 to 57-64 per 1,000. Accuracy
+   against the human labels holds for retraining (+0.73 pts) and is slightly lower for the static
+   gate (−0.17 pts), with a weaker launch result (72.0% vs 78.6%).
+2. **The cortisol methods give the savings back for safety.** Global cortisol goes from 72% to 60%
+   LLM calls, at 38.7 errors per 1,000 (up from 26.6). The field is unchanged at 63% calls and 37.5
+   errors (36.2 before). Neither uses fewer calls than static + retraining (48%) in this setup, but
+   both hold errors well below it (37-39 vs 57).
+3. **So the clean E2 claim ("same leak budget, more answered") is only partly supported:** it holds
+   for global cortisol (12 fewer points of calls, at more errors) and not for the field. I cannot
+   say how much comes from the embedding student versus the embedding map, because `--map sbert`
+   changed both; `--student tfidf --map sbert` and the reverse would separate them (not run).
+4. **Cost of running it.** Encoding the 12,000 stream texts took about 45 s with three replays
+   running at once on a laptop CPU (an upper bound of roughly 4 ms per text; not an isolated
+   measurement). With the encodings cached, a method's replay took 2-24 s against 5-66 s for
+   TF-IDF, since the dense logistic regression refits faster than the sparse n-gram SVM. In
+   production the encoder would run on every query, including escalated ones.
+5. No local-field advantage here either: field vs global is 63% vs 60% calls with 37.5 vs 38.7
+   errors.
+
 ## Seed 0 by phase, simulated teacher (accuracy / LLM calls)
 
 | Method | steady | launch | off-topic surge | settle |
