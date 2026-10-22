@@ -98,7 +98,12 @@ def cmd_replay(args) -> None:
     out.mkdir(exist_ok=True)
     for name in args.methods.split(","):
         t0 = time.time()
-        res = run_method(stream, tdf, pools.intents, METHODS[name], cfg, cost)
+        try:
+            res = run_method(stream, tdf, pools.intents, METHODS[name], cfg, cost)
+        except NotImplementedError:
+            sys.exit(f"\n{name}: cortisol.gate.aci_update is not written yet. It is yours (one line):\n"
+                     "  read its docstring in cortisol/gate.py and docs/THEORY.md lesson 2, then\n"
+                     "  python -m pytest -q tests/test_aci_spec.py   until it passes.")
         with open(out / f"{name}.pkl", "wb") as f:
             pickle.dump(res, f)
         c = res.calls[res.calls.phase != "history"]
