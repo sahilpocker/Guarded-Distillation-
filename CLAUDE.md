@@ -15,7 +15,9 @@ Sister project: `../vaers` (same idea on VAERS pharmacovigilance; its week-1 les
   docs/THEORY.md, spec in tests/test_aci_spec.py). Until then the gated methods raise
   NotImplementedError and their tests skip. **Do not implement it, paste it, or hint the formula
   in code.** If he asks for help, give hints and point at the spec, one step at a time.
-- No real-LLM run yet. Next step is E1 in docs/ROADMAP.md.
+- No real-LLM run yet. Next step is E1 in docs/ROADMAP.md, with a **local** teacher on the A5000.
+- **The Claude API is off the table for now.** Do not make Anthropic calls, and do not touch the key in
+  `../vaers/.env`, unless Sahil gives an explicit go-ahead for that specific run.
 
 ### Results so far (simulated teacher, 3 seeds, 8,000 live queries each)
 
@@ -59,14 +61,12 @@ python -m pytest -q                # 7 spec tests fail until aci_update exists; 
 cortisol demo                      # data + simulated labels + all methods + report (~3 min, free)
 open runs/simulated-s0/replay.html
 
-# real teacher (Claude Haiku 5.5), ~12,000 calls, roughly $0.3-3 depending on prompt caching
-source ../vaers/.env               # sets ANTHROPIC_API_KEY; never print or commit it
-cortisol label --teacher anthropic --model claude-haiku-5-5 --run runs/haiku-s0        # prints cost, stops
-cortisol label --teacher anthropic --model claude-haiku-5-5 --run runs/haiku-s0 --yes  # makes the calls
-cortisol replay --run runs/haiku-s0 && cortisol report --run runs/haiku-s0
-
-# local teacher on the A5000 (vLLM or Ollama, OpenAI-compatible), free
+# real teacher, local on the A5000 (vLLM or Ollama, OpenAI-compatible), free
 cortisol label --teacher openai --model qwen2.5-7b-instruct --base-url http://<a5000>:8000/v1 --price free --run runs/qwen7b-s0 --yes
+cortisol replay --run runs/qwen7b-s0 && cortisol report --run runs/qwen7b-s0
+
+# Claude teacher: ONLY with Sahil's explicit go-ahead for that run (see Status)
+# cortisol label --teacher anthropic --model claude-haiku-5-5 --run runs/haiku-s0   # prints cost, stops without --yes
 ```
 
 Engine settings override with `--config '{"alpha_intent":0.02}'` (see `EngineConfig`).
@@ -77,6 +77,7 @@ Engine settings override with `--config '{"alpha_intent":0.02}'` (see `EngineCon
   labels. Keep that separation in any new metric.
 - Never present simulated-teacher numbers as LLM results. The dashboard and REPORT.md label them;
   keep it that way.
+- No Claude API calls without Sahil's explicit go-ahead for that specific run.
 - Teacher calls cost money. `cortisol label` refuses without `--yes`. Never delete a run's
   `teacher_cache.jsonl`; reruns read from it for free.
 - Guarantee invariants (docs/THEORY.md, claim G): the guard is only ever clipped from below (floor

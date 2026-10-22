@@ -42,15 +42,14 @@ this stream. See docs/RESULTS.md, and docs/ROADMAP.md for the experiments that t
 
 ```bash
 pip install -e ".[llm]"
-export ANTHROPIC_API_KEY=...
-cortisol label --teacher anthropic --model claude-haiku-5-5 --run runs/haiku-s0         # prints the cost estimate
-cortisol label --teacher anthropic --model claude-haiku-5-5 --run runs/haiku-s0 --yes   # labels 12,000 queries, cached
-cortisol replay --run runs/haiku-s0
-cortisol report --run runs/haiku-s0
+# local model behind any OpenAI-compatible server (vLLM, Ollama), free
+cortisol label --teacher openai --model <name> --base-url http://host:8000/v1 --price free --run runs/local-s0 --yes
+cortisol replay --run runs/local-s0
+cortisol report --run runs/local-s0
 ```
 
-Any OpenAI-compatible server works too (vLLM, Ollama, OpenRouter):
-`--teacher openai --model <name> --base-url http://host:8000/v1 --price free`.
+Claude works too (`--teacher anthropic --model claude-haiku-5-5`, needs ANTHROPIC_API_KEY); without
+`--yes` it only prints the cost estimate.
 
 Teacher labels do not depend on the method, so each stream is labelled once and every method
 replays from the cache. Each method is charged only for the calls it makes.

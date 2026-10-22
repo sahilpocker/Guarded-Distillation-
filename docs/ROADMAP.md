@@ -4,12 +4,13 @@ In order. Each experiment states what would count as a result before running it.
 
 ## E1. Real teacher (do first)
 
-Label seed 0 with Claude Haiku 5.5 (`cortisol label --teacher anthropic --model claude-haiku-5-5`),
-then replay all methods. About 12,000 calls; under $3 at list prices, much less with prompt caching.
+Label seed 0 with a local instruct model on the A5000 via vLLM or Ollama
+(`--teacher openai --base-url http://<a5000>:8000/v1 --price free`), then replay all methods.
+About 12,000 calls, free.
 - Report the teacher's own accuracy against human labels, overall and on the launch intents.
 - Same table as RESULTS.md. Then seeds 1 and 2 (stream and labels change per seed).
-- Optional: a local teacher on the A5000 via vLLM/Ollama (`--teacher openai --price free`) to see
-  how a weaker teacher changes the structure (feeds E6).
+- A Claude teacher (Haiku 5.5) is supported but off the table for now: only with Sahil's explicit
+  go-ahead for that run. Estimated under $3 for 12,000 calls at list prices.
 
 ## E2. Better student and map
 

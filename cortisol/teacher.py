@@ -78,10 +78,11 @@ class Price:
     cache_write: float
 
 
-# Claude Haiku 5.5 list prices for prompts under 100K tokens, as published at launch
-# (Oct 2026). Check the Claude Console before quoting them to anyone.
+# $/1M tokens. Same figures as ../vaers/scripts/run_coding.py, which took them from Anthropic's
+# pricing page (cache write 1.25x input, cache read 0.1x input). Re-check before quoting them.
 PRICES = {
     "haiku-5.5": Price("claude-haiku-5-5", 0.10, 0.50, 0.01, 0.125),
+    "opus-5.5": Price("claude-opus-5-5", 4.00, 20.00, 0.40, 5.00),
     "free": Price("local model", 0.0, 0.0, 0.0, 0.0),
 }
 
