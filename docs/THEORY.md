@@ -44,8 +44,7 @@ Summing the updates: q_end − q_start = step × Σ(miss − α), so the average
 The price: it is a long-run average. A bad month can hide inside a good year. The step size
 trades reaction speed against jitter.
 
-`cortisol.gate.aci_update` is this rule, in one line. It is yours to write; the spec is
-tests/test_aci_spec.py.
+`cortisol.gate.aci_update` is this rule, in one line; the spec is tests/test_aci.py.
 
 ## 3. What the gate controls here: leaks
 
@@ -117,12 +116,3 @@ The NeurIPS-shaped question: **a localized guarantee when the controller chooses
   bandit or semi-bandit feedback (e.g. ICLR 2026, arXiv 2604.17984), online selective conformal
   inference (Humbert et al., arXiv 2508.10336), CAP for online selective prediction (Bao et al.,
   JMLR 2025), prediction-powered inference, and active learning for risk estimation.
-
-## Exercises
-
-1. Write `aci_update` and make tests/test_aci_spec.py pass.
-2. In tests/test_guarantee.py, lower p from 0.2 to 0.05. The test still passes but the realised
-   leak rate wanders more. Where does 1/p enter the proof?
-3. Show step 2 of the proof: why can clipping from below never break the bound?
-4. Why can the tonic be any bounded heuristic without losing Claim G? What would break if the
-   tonic could exceed 1 by an unbounded amount?

@@ -1,6 +1,6 @@
-"""Spec for cortisol.gate.aci_update (lesson 2). These fail until you write it.
+"""Spec for cortisol.gate.aci_update.
 
-Run:  python -m pytest -q tests/test_aci_spec.py
+Run:  python -m pytest -q tests/test_aci.py
 """
 import numpy as np
 import pytest

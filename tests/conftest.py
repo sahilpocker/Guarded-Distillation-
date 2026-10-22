@@ -13,7 +13,7 @@ def aci_ready() -> bool:
         return False
 
 
-needs_aci = pytest.mark.skipif(not aci_ready(), reason="write cortisol.gate.aci_update first (tests/test_aci_spec.py)")
+needs_aci = pytest.mark.skipif(not aci_ready(), reason="cortisol.gate.aci_update not implemented")
 
 
 @pytest.fixture

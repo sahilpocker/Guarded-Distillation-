@@ -7,3 +7,4 @@ runs/*/
 !runs/README.md
 .env
 .DS_Store
+*.egg-info/

@@ -11,10 +11,8 @@ Sister project: `../vaers` (same idea on VAERS pharmacovigilance; its week-1 les
 ## Status (22 Oct 2026)
 
 - Engine, CLI, tests and the replay dashboard work end to end with a **simulated** teacher.
-- `cortisol.gate.aci_update` is a **deliberate stub**: Sahil writes it by hand (lesson 2 in
-  docs/THEORY.md, spec in tests/test_aci_spec.py). Until then the gated methods raise
-  NotImplementedError and their tests skip. **Do not implement it, paste it, or hint the formula
-  in code.** If he asks for help, give hints and point at the spec, one step at a time.
+- `cortisol.gate.aci_update` is implemented (one line, spec in tests/test_aci.py, lesson 2 in
+  docs/THEORY.md). All methods run.
 - No real-LLM run yet. Next step is E1 in docs/ROADMAP.md, with a **local** teacher on the A5000.
 - **The Claude API is off the table for now.** Do not make Anthropic calls, and do not touch the key in
   `../vaers/.env`, unless Sahil gives an explicit go-ahead for that specific run.
@@ -57,7 +55,7 @@ docs/RESULTS.md.
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate   # Homebrew Python 3.11, same as ../vaers
 pip install -e ".[dev]"            # add ,llm for real teachers; ,sbert for --map sbert
-python -m pytest -q                # 7 spec tests fail until aci_update exists; the rest pass or skip
+python -m pytest -q
 cortisol demo                      # data + simulated labels + all methods + report (~3 min, free)
 open runs/simulated-s0/replay.html
 
@@ -88,10 +86,8 @@ Engine settings override with `--config '{"alpha_intent":0.02}'` (see `EngineCon
 - `data/raw/` and `runs/*/` are gitignored. Results that matter go into docs/RESULTS.md.
 - Each method's replay takes ~40 s on a laptop CPU; a full 5-method run ~3 min.
 
-## Teaching
+## Focus
 
-Sahil is learning conformal prediction from scratch (lessons 1–2 done in chat; recap in
-docs/THEORY.md). When he asks, teach from zero with this repo's examples (the banking queries, the
-launch), one idea per step, and check understanding with one question. Do not skip steps or lean
-on jargon; earlier, a jump straight to Azuma's inequality lost him. The research thread (a
-localized risk-control guarantee when the controller chooses its own audits) is in THEORY.md §5.
+Goal now is to finish the project: working pipeline, real-teacher run (E1), results in
+docs/RESULTS.md. No teaching mode, no exercises, no step-by-step hints; just do the work. The
+research thread (localized risk-control guarantee) is in THEORY.md §5 if needed.

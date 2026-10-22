@@ -16,13 +16,10 @@ customer queries from Banking77 and CLINC150, through a product launch and an of
 ```bash
 python3.11 -m venv .venv && source .venv/bin/activate   # Homebrew Python 3.11, same as ../vaers
 pip install -e ".[dev]"
-python -m pytest -q          # 7 tests in test_aci_spec.py fail until you write aci_update
+python -m pytest -q
 cortisol demo                # downloads data, simulated teacher, 5 methods, report (~3 min, free)
 open runs/simulated-s0/replay.html
 ```
-
-`cortisol.gate.aci_update` is intentionally left for you to write (one line; docs/THEORY.md
-lesson 2). Every gated method depends on it.
 
 ## Results (simulated teacher, 3 seeds)
 

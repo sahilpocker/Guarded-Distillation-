@@ -57,14 +57,9 @@ def aci_update(q, err, alpha, gamma):
            gamma_local * W[cell], so each cell moves by its kernel weight)
 
     Returns the new q. A miss (err=1) raises q by gamma*(1-alpha); a hit (err=0) lowers it by
-    gamma*alpha. Must work elementwise when q, alpha and gamma are numpy arrays.
-
-    Sahil writes this one by hand (lesson 2). Spec: tests/test_aci_spec.py
+    gamma*alpha. Works elementwise when q, alpha and gamma are numpy arrays; inputs are not modified.
     """
-    raise NotImplementedError(
-        "aci_update is yours to write: see the docstring, docs/THEORY.md lesson 2, "
-        "and tests/test_aci_spec.py"
-    )
+    return q + gamma * (err - alpha)
 
 
 def runner_up(P: np.ndarray) -> np.ndarray:
