@@ -1,0 +1,457 @@
+"""The replay engine: one pass over the stream for one method.
+
+Per query:
+  1. History (shadow mode before go-live, rows with phase "history"): everything goes to the
+     teacher and its labels seed the pool. At go-live the map space is fitted, students v1 are
+     trained, and each skill's starting cortisol comes from conformal risk control on held-out
+     history labels.
+  2. Scope gate (in scope vs out of scope). If it accepts "out of scope", done.
+  3. Intent gate (77 intents). If it accepts, the student's intent is the answer.
+  4. Any gate that does not accept escalates: one teacher call returns the label for both skills.
+  5. Accepted answers are audited with probability p (uniform, or directed by cortisol).
+  6. Cortisol updates (gate.py): guard every query, local on every teacher label, tonic every
+     `refresh` queries from the recent window.
+  7. Retraining is triggered by evidence (labels collected), not by time:
+       - every `retrain_every` new teacher labels
+       - once the teacher has used an intent the student does not know `novel_min` times
+       - (full system) when a cell's cortisol is high and some fresh labels have arrived
+     A retrained student is a shadow first; it is promoted only if it does at least as well as
+     the current one on recent held-out labels (or if it knows intents the current one lacks).
+
+Routing team and urgency are T0 skills (lookup from the intent) and need no gate.
+"""
+from __future__ import annotations
+
+from collections import Counter
+from dataclasses import asdict, dataclass, field
+
+import numpy as np
+import pandas as pd
+
+from .gate import (CortisolField, DoubtScale, FieldConfig, accepts, choose_level, expected_wrong,
+                   runner_up)
+from .space import MapSpace
+from .student import Student
+from .taxonomy import OOS
+
+IN = "in_scope"
+SCOPE_UNIVERSE = [IN, OOS]
+
+
+@dataclass(frozen=True)
+class Method:
+    name: str
+    title: str
+    llm_only: bool = False
+    tonic: bool = True
+    guard: bool = True
+    local: bool = False
+    novelty: bool = False
+    directed_audits: bool = False
+    retrain: bool = True
+    hot_cell_retrain: bool = False
+
+
+METHODS: dict[str, Method] = {m.name: m for m in [
+    Method("llm_only", "LLM only", llm_only=True),
+    Method("static", "Static gate", tonic=False, guard=False, retrain=False),
+    Method("retrain", "Static gate + retraining", tonic=False, guard=False),
+    Method("global", "Global cortisol"),
+    Method("cortisol", "Cortisol field", local=True, novelty=True, directed_audits=True,
+           hot_cell_retrain=True),
+]}
+
+
+@dataclass(frozen=True)
+class EngineConfig:
+    warmup: int = 800             # used only when the stream has no history rows
+    alpha_scope: float = 0.01     # leak budget per query
+    alpha_intent: float = 0.03    # leak budget per in-scope query
+    gamma_guard: float = 0.002
+    gamma_local: float = 0.03
+    decay: float = 0.002
+    novelty_gain: float = 0.5
+    refresh: int = 25             # tonic re-estimated every this many queries
+    window: int = 3000            # queries the tonic looks back over
+    audit_base: float = 0.08
+    audit_max: float = 0.5
+    audit_gain: float = 0.5
+    retrain_every: int = 400
+    novel_min: int = 8
+    hot_threshold: float = 0.25
+    hot_min_labels: int = 60
+    holdout_frac: float = 0.15
+    pool_cap: int = 12000
+    n_cells: int = 40
+    map_backend: str = "tfidf"
+    snapshot_every: int = 50
+    seed: int = 0
+
+
+@dataclass
+class RunResult:
+    method: Method
+    calls: pd.DataFrame
+    snapshots: list[dict]
+    events: list[dict]
+    cells: dict = field(default_factory=dict)
+
+
+class SkillGate:
+    """One gated skill: its student, doubt scale, cortisol field and evidence log."""
+
+    def __init__(self, name: str, universe: list[str], alpha: float, n: int):
+        self.name, self.universe, self.alpha, self.n = name, universe, alpha, n
+        self.index = {lab: i for i, lab in enumerate(universe)}
+        self.P = np.zeros((n, len(universe)))
+        self.u = np.zeros(n)
+        # evidence log for the tonic and the calibration curve (one entry per active query)
+        self.log_t: list[int] = []
+        self.log_u: list[float] = []
+        self.log_wrong: list[float] = []
+        self.log_w: list[float] = []
+        self.expected = lambda x: np.full(np.shape(x), 0.1)
+
+    def refresh_predictions(self, texts: list[str], t0: int) -> None:
+        """Probabilities and doubt percentiles from t0 on, under the current student.
+
+        The doubt scale is fitted on the student's doubts over the 2,000 queries before t0
+        (labels are not used)."""
+        a = max(0, t0 - 2000)
+        P = self.student.proba(texts[a:])
+        self.P[a:] = P
+        ref = runner_up(P[: t0 - a]) if t0 - a >= 200 else runner_up(P)
+        self.scale = DoubtScale(ref)
+        self.u[t0:] = self.scale(runner_up(self.P[t0:]))
+
+    def top(self, i: int) -> str:
+        return self.universe[int(np.argmax(self.P[i]))]
+
+    def log(self, t: int, u: float, wrong: float, w: float) -> None:
+        self.log_t.append(t)
+        self.log_u.append(u)
+        self.log_wrong.append(wrong)
+        self.log_w.append(w)
+
+    def window(self, t: int, size: int):
+        k = np.searchsorted(np.asarray(self.log_t), t - size, side="left") if self.log_t else 0
+        u = np.asarray(self.log_u[k:])
+        wr = np.asarray(self.log_wrong[k:])
+        w = np.asarray(self.log_w[k:])
+        seen = w > 0
+        return u[seen], np.nan_to_num(wr[seen]), w[seen], len(u)
+
+
+class Replay:
+    def __init__(self, stream: pd.DataFrame, teacher: pd.DataFrame, intents: tuple[str, ...],
+                 method: Method, cfg: EngineConfig, call_cost_usd: np.ndarray):
+        self.s, self.m, self.cfg = stream.reset_index(drop=True), method, cfg
+        self.texts = self.s.text.tolist()
+        self.n = len(self.s)
+        self.y_teacher = teacher.teacher.to_numpy()
+        self.cost = np.asarray(call_cost_usd, dtype=float)
+        self.intents = list(intents)
+        self.rng = np.random.default_rng(cfg.seed + 7)
+        n_hist = int((self.s.phase == "history").sum())
+        self.warm = n_hist if n_hist else cfg.warmup
+        self.t_of = self.s.t.to_numpy()
+        self.events: list[dict] = []
+        self.snapshots: list[dict] = []
+        self.pool: list[int] = []
+        self.labels_since = 0
+        self.teacher_seen: Counter = Counter()
+        self.hot_cells: set[int] = set()
+        self.alarm = {"scope": False, "intent": False}
+        self.S = SkillGate("scope", SCOPE_UNIVERSE, cfg.alpha_scope, self.n)
+        self.I = SkillGate("intent", self.intents, cfg.alpha_intent, self.n)
+
+    # ------------------------------------------------------------------ helpers
+    def _event(self, i: int, kind: str, text: str, **kw) -> None:
+        self.events.append({"t": int(self.t_of[i]), "kind": kind, "text": text, **kw})
+
+    def _xy(self, idx: list[int]):
+        x = [self.texts[i] for i in idx]
+        y = [self.y_teacher[i] for i in idx]
+        return x, y, [OOS if v == OOS else IN for v in y]
+
+    def _fit_pair(self, idx: list[int], hold: list[int] | None, version: int):
+        x, y, ys = self._xy(idx)
+        scope_h = intent_h = None
+        if hold is not None:
+            hx, hy, hys = self._xy(hold)
+            scope_h = (hx, hys)
+            hk = [k for k, v in enumerate(hy) if v in self.intents]
+            intent_h = ([hx[k] for k in hk], [hy[k] for k in hk])
+        sc = Student(SCOPE_UNIVERSE, seed=self.cfg.seed).fit(x, ys, holdout=scope_h)
+        keep = [k for k, v in enumerate(y) if v in self.intents]
+        it = Student(self.intents, seed=self.cfg.seed).fit([x[k] for k in keep], [y[k] for k in keep], holdout=intent_h)
+        sc.version = it.version = version
+        return sc, it
+
+    def _refresh(self, i0: int) -> None:
+        self.S.refresh_predictions(self.texts, i0)
+        self.I.refresh_predictions(self.texts, i0)
+        rest = self.texts[i0:]
+        if not rest:
+            return
+        # Label-free novelty in [0, 1], the larger of:
+        #  (a) unseen words: share of the query's words the intent student never trained on
+        #      (0 below 10% unseen, 1 at 50% or more)
+        #  (b) distance in map space to the nearest recent training query, rescaled against the
+        #      95th percentile of the same distance among training queries themselves
+        oov = np.clip((self.I.student.oov_fraction(rest) - 0.10) / 0.40, 0.0, 1.0)
+        tr = self.pool[-3000:]
+        Zt = self.Z[tr]
+        hold = tr[-max(50, len(tr) // 7):]
+        d_hold = 1.0 - np.sort(self.Z[hold] @ Zt.T, axis=1)[:, -2]
+        ref = float(np.quantile(d_hold, 0.95))
+        for a in range(i0, self.n, 2000):
+            b = min(a + 2000, self.n)
+            d = 1.0 - (self.Z[a:b] @ Zt.T).max(1)
+            knn = np.clip((d - ref) / max(1.0 - ref, 1e-6), 0.0, 1.0)
+            self.nov[a:b] = np.maximum(knn, oov[a - i0:b - i0])
+
+    def _update_tonic(self, i: int, force: bool = False) -> None:
+        for G, F in ((self.S, self.Fs), (self.I, self.Fi)):
+            u, wr, w, n_active = G.window(i, self.cfg.window)
+            if len(u) >= 50:
+                G.expected = expected_wrong(u, wr, w)
+            if F.cfg.tonic and (force or n_active >= 200):
+                F.tonic = choose_level(u, wr, w, G.alpha)
+
+    # ------------------------------------------------------------------ lifecycle
+    def _bootstrap(self, i: int) -> None:
+        cfg, m = self.cfg, self.m
+        warm = list(range(self.warm))
+        self.map = MapSpace(n_cells=cfg.n_cells, backend=cfg.map_backend, seed=cfg.seed).fit(
+            [self.texts[k] for k in warm])
+        self.Z = self.map.embed(self.texts)
+        self.cell = self.map.cell(self.Z)
+        self.nov = np.zeros(self.n)
+
+        perm = np.random.default_rng(cfg.seed).permutation(warm)
+        n_cal = len(perm) // 4
+        cal, tr = sorted(perm[:n_cal].tolist()), sorted(perm[n_cal:].tolist())
+        self.S.student, self.I.student = self._fit_pair(tr, cal, version=1)
+        self._refresh(i + 1)
+
+        # starting level: conformal risk control on the held-out history labels
+        q0 = {}
+        for G in (self.S, self.I):
+            idx = [k for k in cal if (G is self.S) or self.y_teacher[k] in self.intents]
+            P = G.student.proba([self.texts[k] for k in idx])
+            u = G.scale(runner_up(P))
+            truth = [(OOS if self.y_teacher[k] == OOS else IN) if G is self.S else self.y_teacher[k] for k in idx]
+            wrong = (np.array(G.universe)[P.argmax(1)] != np.array(truth)).astype(float)
+            q0[G.name] = choose_level(u, wrong, np.ones(len(idx)), G.alpha)
+            for k, uu, ww in zip(idx, u, wrong):  # calibration labels seed the evidence window
+                G.log(k, float(uu), float(ww), 1.0)
+            G.expected = expected_wrong(u, wrong, np.ones(len(idx)))
+
+        def fc(alpha):
+            return FieldConfig(alpha=alpha, tonic=m.tonic, guard=m.guard, local=m.local,
+                               gamma_guard=cfg.gamma_guard, gamma_local=cfg.gamma_local, decay=cfg.decay,
+                               novelty_gain=cfg.novelty_gain if m.novelty else 0.0)
+        self.Fs = CortisolField(fc(cfg.alpha_scope), self.map.W, q0["scope"])
+        self.Fi = CortisolField(fc(cfg.alpha_intent), self.map.W, q0["intent"])
+        self._event(i, "golive",
+                    f"Go-live: students v1 trained on {len(tr)} labels from shadow mode "
+                    f"(intent accuracy {self.I.student.holdout_acc:.0%} on held-out); starting cortisol "
+                    f"scope {q0['scope']:.2f}, intent {q0['intent']:.2f}",
+                    q0_scope=q0["scope"], q0_intent=q0["intent"])
+
+    def _retrain(self, i: int, reason: str) -> None:
+        cfg = self.cfg
+        pool = self.pool[-cfg.pool_cap:]
+        recent = pool[-1500:]
+        rng = np.random.default_rng(cfg.seed + len(pool))
+        n_hold = min(max(30, int(len(recent) * cfg.holdout_frac)), len(recent) // 2)
+        hold = sorted(rng.choice(recent, size=n_hold, replace=False).tolist())
+        hs = set(hold)
+        tr = [k for k in pool if k not in hs]
+        version = self.I.student.version + 1
+        new_s, new_i = self._fit_pair(tr, hold, version)
+        hx, hy, hys = self._xy(hold)
+        hk = [k for k, v in enumerate(hy) if v in self.intents]
+        hix, hiy = [hx[k] for k in hk], [hy[k] for k in hk]
+        cur_i, cur_s = self.I.student.accuracy(hix, hiy), self.S.student.accuracy(hx, hys)
+        new_ia, new_sa = new_i.accuracy(hix, hiy), new_s.accuracy(hx, hys)
+        learns = sorted(new_i.known - self.I.student.known)
+        self.labels_since = 0
+        if not ((new_ia >= cur_i - 0.01 and new_sa >= cur_s - 0.01) or learns):
+            self._event(i, "shadow_rejected",
+                        f"Shadow v{version} rejected ({reason}): intent {new_ia:.0%} vs current {cur_i:.0%}")
+            return
+        # promote; refit on the whole pool (keeps the newest labels) with the shadow's temperature
+        fs, fi = self._fit_pair(pool, None, version)
+        fs.T, fi.T = new_s.T, new_i.T
+        fs.holdout_acc, fi.holdout_acc = new_sa, new_ia
+        self.S.student, self.I.student = fs, fi
+        self._refresh(i + 1)
+        msg = f"Student v{version} promoted ({reason}); intent accuracy on recent labels {cur_i:.0%} -> {new_ia:.0%}"
+        if learns:
+            msg += f"; now knows {', '.join(learns)}"
+        self._event(i, "promoted", msg, version=version, reason=reason, learned=learns,
+                    intent_acc_before=cur_i, intent_acc_after=new_ia)
+
+    def _maybe_retrain(self, i: int) -> None:
+        cfg, m = self.cfg, self.m
+        if not m.retrain or i + 1 >= self.n:
+            return
+        known = self.I.student.known
+        novel = [lab for lab, c in self.teacher_seen.items()
+                 if lab in self.intents and lab not in known and c >= cfg.novel_min]
+        fresh = self.labels_since >= cfg.hot_min_labels
+        if novel and fresh:
+            self._retrain(i, f"new intent seen {cfg.novel_min}+ times: {', '.join(sorted(novel))}")
+        elif self.labels_since >= cfg.retrain_every:
+            self._retrain(i, f"{cfg.retrain_every} new labels")
+        elif m.hot_cell_retrain and fresh:
+            hot = np.flatnonzero(np.maximum(self.Fi.local, self.Fs.local) >= cfg.hot_threshold)
+            if len(hot):
+                self._retrain(i, f"cortisol high in {len(hot)} cell(s)")
+
+    def _audit_p(self, c: int, nov: float) -> float:
+        cfg = self.cfg
+        if not self.m.directed_audits:
+            return cfg.audit_base
+        stress = max(0.0, self.Fi.local[c]) + max(0.0, self.Fs.local[c]) + nov
+        return float(np.clip(cfg.audit_base + cfg.audit_gain * stress, cfg.audit_base, cfg.audit_max))
+
+    def _watch(self, i: int) -> None:
+        if self.m.local:
+            d = np.maximum(self.Fi.local, self.Fs.local)
+            hot = set(np.flatnonzero(d >= self.cfg.hot_threshold).tolist())
+            new = hot - self.hot_cells
+            if new:
+                self._event(i, "spike", f"Cortisol spike in {len(new)} cell(s)", cells=sorted(new))
+            if self.hot_cells and not hot:
+                self._event(i, "calm", "All cells back below the alarm level")
+            self.hot_cells = hot
+        for name, F in (("scope", self.Fs), ("intent", self.Fi)):
+            g = F.global_level
+            if g >= 0.9 and not self.alarm[name]:
+                self._event(i, "global_alarm", f"Global {name} cortisol at {g:.2f}: nearly everything escalates")
+                self.alarm[name] = True
+            elif g < 0.75 and self.alarm[name]:
+                self._event(i, "global_calm", f"Global {name} cortisol back to {g:.2f}")
+                self.alarm[name] = False
+
+    def _observe(self, i: int) -> None:
+        self.pool.append(i)
+        self.labels_since += 1
+        lab = self.y_teacher[i]
+        st = getattr(self.I, "student", None)
+        if i >= self.warm and lab in self.intents and lab not in self.teacher_seen \
+                and st is not None and lab not in st.known:
+            self._event(i, "novel_label", f"Teacher used an intent the student has never seen: {lab}", label=lab)
+        self.teacher_seen[lab] += 1
+
+    # ------------------------------------------------------------------ main loop
+    def run(self) -> RunResult:
+        cfg, m = self.cfg, self.m
+        cols = ("decision", "audited", "llm_call", "final", "cost_usd", "level_scope", "level_intent",
+                "glevel_scope", "glevel_intent", "u_scope", "u_intent", "cell", "version", "novelty",
+                "audit_p", "leak_teacher")
+        rec = {k: [] for k in cols}
+        for i in range(self.n):
+            y = self.y_teacher[i]
+            valid = y == OOS or y in self.intents
+            if m.llm_only or i < self.warm:
+                if valid:
+                    self._observe(i)
+                row = dict(decision="history" if i < self.warm else "llm", audited=False, llm_call=True,
+                           final=y, cost_usd=self.cost[i], level_scope=np.nan, level_intent=np.nan,
+                           glevel_scope=np.nan, glevel_intent=np.nan, u_scope=np.nan, u_intent=np.nan,
+                           cell=-1, version=0, novelty=0.0, audit_p=0.0, leak_teacher=False)
+                for k in cols:
+                    rec[k].append(row[k])
+                if not m.llm_only and i == self.warm - 1:
+                    self._bootstrap(i)
+                continue
+
+            c = int(self.cell[i])
+            nov = float(self.nov[i]) if m.novelty else 0.0
+            ls, li = self.Fs.level(c, nov), self.Fi.level(c, nov)
+            us, ui = float(self.S.u[i]), float(self.I.u[i])
+            scope_top, intent_top = self.S.top(i), self.I.top(i)
+            scope_ok = bool(accepts(us, ls))
+            intent_ran = scope_ok and scope_top == IN
+            intent_ok = intent_ran and bool(accepts(ui, li))
+
+            if scope_ok and scope_top == OOS:
+                escalate, final = False, OOS
+            elif intent_ok:
+                escalate, final = False, intent_top
+            else:
+                escalate, final = True, y
+
+            if escalate:
+                observed, p_obs, audited, p_a = True, 1.0, False, 0.0
+            else:
+                p_a = self._audit_p(c, nov)
+                audited = bool(self.rng.random() < p_a)
+                observed, p_obs = audited, p_a
+            w = (1.0 / p_obs) if (observed and valid) else 0.0
+
+            # --- scope gate evidence (every query is in its population)
+            truth_s = (OOS if y == OOS else IN) if (observed and valid) else None
+            wrong_s = float(scope_top != truth_s) if truth_s is not None else np.nan
+            scope_used = not escalate                       # the answer relied on the scope gate
+            self.Fs.update_guard((wrong_s if scope_used and truth_s is not None else 0.0) * w)
+            if truth_s is not None:
+                self.Fs.update_local(c, wrong_s, float(self.S.expected(us)))
+            self.S.log(i, us, wrong_s, w)
+
+            # --- intent gate evidence (population: in-scope queries)
+            truth_i = y if (observed and y in self.intents) else None
+            wrong_i = float(intent_top != truth_i) if truth_i is not None else np.nan
+            if intent_ran:
+                self.Fi.update_guard((wrong_i if intent_ok and truth_i is not None else 0.0) * w)
+            if truth_i is not None:
+                self.Fi.update_local(c, wrong_i, float(self.I.expected(ui)))
+            if intent_ran or truth_i is not None:
+                self.I.log(i, ui, wrong_i, w if truth_i is not None else 0.0)
+
+            self.Fs.tick()
+            self.Fi.tick()
+            if observed and valid:
+                self._observe(i)
+            leak_t = (not escalate) and observed and valid and final != y
+            row = dict(decision="escalate" if escalate else "accept", audited=audited, llm_call=observed,
+                       final=final, cost_usd=self.cost[i] if observed else 0.0, level_scope=ls, level_intent=li,
+                       glevel_scope=self.Fs.global_level, glevel_intent=self.Fi.global_level, u_scope=us,
+                       u_intent=ui, cell=c, version=self.I.student.version, novelty=float(self.nov[i]),
+                       audit_p=p_a, leak_teacher=leak_t)
+            for k in cols:
+                rec[k].append(row[k])
+
+            self._watch(i)
+            if (i - self.warm) % cfg.refresh == 0:
+                self._update_tonic(i)
+            if (i - self.warm) % cfg.snapshot_every == 0:
+                self.snapshots.append({"t": int(self.t_of[i]),
+                                       "local_intent": self.Fi.local.round(4).tolist(),
+                                       "local_scope": self.Fs.local.round(4).tolist(),
+                                       "tonic_intent": self.Fi.tonic, "guard_intent": self.Fi.guard,
+                                       "tonic_scope": self.Fs.tonic, "guard_scope": self.Fs.guard})
+            self._maybe_retrain(i)
+
+        calls = self.s[["t", "text", "gold", "phase", "is_launch"]].copy()
+        calls["teacher"] = self.y_teacher
+        for k in cols:
+            calls[k] = rec[k]
+        calls["correct"] = calls.final == calls.gold
+        calls["leak"] = (calls.decision == "accept") & ~calls.correct
+        cells = {}
+        if hasattr(self, "map"):
+            cells = {"order": self.map.order.tolist(), "n": int(self.map.n_cells), "cell": self.cell.tolist()}
+        return RunResult(method=m, calls=calls, snapshots=self.snapshots, events=self.events, cells=cells)
+
+
+def run_method(stream, teacher_df, intents, method: Method, cfg: EngineConfig, call_cost_usd) -> RunResult:
+    return Replay(stream, teacher_df, intents, method, cfg, call_cost_usd).run()
+
+
+def config_dict(cfg: EngineConfig) -> dict:
+    return asdict(cfg)

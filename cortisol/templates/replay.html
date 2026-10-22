@@ -1,0 +1,669 @@
+<title>Cortisol Replay</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: control-room strip. A sticky replay bar drives every panel below it; summary tiles
+   first, then the two time-series charts, the cortisol map, then the event log and live feed. */
+:root {
+  --bg: #f3f5f3;
+  --surface: #fcfdfc;
+  --ink: #14191b;
+  --ink-2: #4d575c;
+  --ink-3: #6f797e;
+  --line: #dde3df;
+  --line-2: #c9d1cc;
+  --accent: #b9481c;            /* cortisol: text-safe step of the orange series */
+  --s-cortisol: #eb6834;        /* categorical slot 2 */
+  --s-global: #2a78d6;          /* slot 1 */
+  --s-static: #1baf7a;          /* slot 3 */
+  --s-retrain: #eda100;         /* slot 4 */
+  --s-llm: #8a9399;             /* reference line, neutral */
+  --band: rgba(20, 25, 27, 0.035);
+  --good: #0ca30c; --good-ink: #0a6e0a;
+  --bad: #d03b3b; --bad-ink: #a82a2a;
+  --warn: #fab219;
+  --heat-0: #fcfdfc; --heat-1: #eb6834;
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111516; --surface: #181d1f; --ink: #edf1ef; --ink-2: #b4bdb9; --ink-3: #8d9793;
+    --line: #2a3133; --line-2: #3a4245; --accent: #f08a5d;
+    --s-cortisol: #d95926; --s-global: #3987e5; --s-static: #199e70; --s-retrain: #c98500; --s-llm: #7d878c;
+    --band: rgba(237, 241, 239, 0.045); --good-ink: #4ccb4c; --bad-ink: #ef7d7d;
+    --heat-0: #181d1f; --heat-1: #e8743f; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111516; --surface: #181d1f; --ink: #edf1ef; --ink-2: #b4bdb9; --ink-3: #8d9793;
+  --line: #2a3133; --line-2: #3a4245; --accent: #f08a5d;
+  --s-cortisol: #d95926; --s-global: #3987e5; --s-static: #199e70; --s-retrain: #c98500; --s-llm: #7d878c;
+  --band: rgba(237, 241, 239, 0.045); --good-ink: #4ccb4c; --bad-ink: #ef7d7d;
+  --heat-0: #181d1f; --heat-1: #e8743f; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--surface); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { padding-block: 28px 18px; display: grid; gap: 10px; }
+.eyebrow { font-family: var(--font-data); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+h1 { font-family: var(--font-display); font-stretch: 112%; font-weight: 750; font-size: clamp(28px, 4.2vw, 44px); line-height: 1.05; margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h1 .acc { color: var(--accent); }
+.lede { max-width: 68ch; color: var(--ink-2); margin: 0; font-size: 15px; }
+.note { display: flex; gap: 10px; align-items: flex-start; max-width: 80ch; font-size: 13px; color: var(--ink-2); border-left: 3px solid var(--warn); padding: 6px 0 6px 12px; }
+.note b { color: var(--ink); }
+h2 { font-family: var(--font-display); font-stretch: 105%; font-weight: 700; font-size: 18px; margin: 0; text-wrap: balance; }
+.sub { color: var(--ink-3); font-size: 13px; margin: 2px 0 0; }
+
+/* replay bar */
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--surface); border-bottom: 1px solid var(--line); border-top: 1px solid var(--line); }
+.bar .wrap { display: grid; grid-template-columns: auto 1fr auto; gap: 14px; align-items: center; padding-block: 10px; }
+.btn { font: 600 13px var(--font-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line-2); border-radius: 6px; padding: 7px 12px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.btn:hover { border-color: var(--ink-3); }
+.btn:focus-visible, select:focus-visible, input:focus-visible, .seg button:focus-visible { outline: 2px solid var(--s-global); outline-offset: 2px; }
+.btn.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); min-width: 92px; justify-content: center; }
+.scrub { display: grid; gap: 4px; min-width: 0; }
+.ribbon { position: relative; height: 16px; font-family: var(--font-data); font-size: 11px; color: var(--ink-3); }
+.ribbon span { position: absolute; top: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-left: 4px; border-left: 1px solid var(--line-2); }
+input[type=range] { width: 100%; accent-color: var(--accent); margin: 0; }
+.clock { font-family: var(--font-data); font-size: 13px; text-align: right; white-space: nowrap; }
+.clock b { font-weight: 500; font-variant-numeric: tabular-nums; }
+.bar-tools { display: flex; gap: 8px; align-items: center; }
+select { font: 13px var(--font-body); color: var(--ink); background: var(--bg); border: 1px solid var(--line-2); border-radius: 6px; padding: 6px 8px; }
+
+main { display: grid; gap: 22px; padding-block: 22px 48px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+
+/* method switch + tiles */
+.seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 7px; overflow: hidden; flex-wrap: wrap; }
+.seg button { font: 500 12.5px var(--font-body); background: var(--surface); color: var(--ink-2); border: 0; border-right: 1px solid var(--line); padding: 6px 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--surface); }
+.key { width: 14px; height: 0; border-top: 2px solid; display: inline-block; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--line); }
+.tile { padding: 14px 16px 6px 0; display: grid; gap: 2px; align-content: start; }
+.tile + .tile { padding-left: 16px; border-left: 1px solid var(--line); }
+.tile .lab { font-size: 12.5px; color: var(--ink-2); }
+.tile .val { font-family: var(--font-display); font-weight: 650; font-stretch: 100%; font-size: 32px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.tile .cmp { font-size: 12.5px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.delta-good { color: var(--good-ink); }
+.delta-bad { color: var(--bad-ink); }
+
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+.chart { position: relative; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--ink-2); margin-top: 8px; }
+.legend label { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.legend input { margin: 0; accent-color: var(--ink); }
+.tip { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line-2); border-radius: 6px; padding: 8px 10px; font-size: 12px; min-width: 150px; box-shadow: 0 4px 16px rgba(0,0,0,.08); z-index: 3; }
+.tip .h { font-family: var(--font-data); color: var(--ink-3); margin-bottom: 4px; }
+.tip .r { display: grid; grid-template-columns: 14px auto 1fr; gap: 6px; align-items: center; }
+.tip .r b { font-variant-numeric: tabular-nums; font-weight: 600; }
+.tip .r span:last-child { color: var(--ink-3); }
+
+/* heatmap */
+.heat-wrap { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 8px; }
+.heat-labels { display: grid; font-family: var(--font-data); font-size: 10.5px; color: var(--ink-3); }
+.heat-labels div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1; display: flex; align-items: center; gap: 4px; }
+.heat-labels .tag { font-size: 9.5px; padding: 0 4px; border-radius: 3px; border: 1px solid var(--line-2); color: var(--ink-2); flex: none; }
+canvas.heat { width: 100%; display: block; border-radius: 4px; }
+.scale { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-3); margin-top: 8px; flex-wrap: wrap; }
+.scale .ramp { width: 140px; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--heat-0), var(--heat-1)); border: 1px solid var(--line); }
+
+/* events + feed */
+.cols { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 22px; }
+.events { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; max-height: 420px; overflow-y: auto; }
+.events li { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.events time { font-family: var(--font-data); color: var(--ink-3); font-size: 12px; font-variant-numeric: tabular-nums; }
+.pill { display: inline-block; font-size: 11px; font-weight: 600; letter-spacing: .02em; padding: 1px 7px; border-radius: 999px; margin-right: 6px; border: 1px solid var(--line-2); color: var(--ink-2); }
+.pill.k-promoted { border-color: var(--s-global); }
+.pill.k-spike, .pill.k-global_alarm { border-color: var(--s-cortisol); color: var(--accent); }
+.pill.k-phase { background: var(--bg); }
+.pill.k-novel_label { border-color: var(--s-retrain); }
+.feed { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.feed th { text-align: left; font-weight: 500; color: var(--ink-3); font-size: 12px; padding: 0 8px 6px 0; border-bottom: 1px solid var(--line-2); }
+.feed td { padding: 7px 8px 7px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.feed td.q { color: var(--ink); }
+.feed td.m { font-family: var(--font-data); font-size: 11.5px; color: var(--ink-2); word-break: break-word; }
+.who { font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.who.cheap::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--s-cortisol); margin-right: 5px; }
+.who.llm::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 1px; background: var(--s-llm); margin-right: 5px; }
+.ok { color: var(--good-ink); font-weight: 600; white-space: nowrap; }
+.no { color: var(--bad-ink); font-weight: 600; white-space: nowrap; }
+.scroll-x { overflow-x: auto; }
+
+/* results table */
+table.res { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+table.res th { text-align: right; font-weight: 500; color: var(--ink-3); font-size: 12px; padding: 0 0 8px 12px; border-bottom: 1px solid var(--line-2); white-space: nowrap; }
+table.res th:first-child, table.res td:first-child { text-align: left; padding-left: 0; }
+table.res td { text-align: right; padding: 9px 0 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+table.res tr.focus td { font-weight: 600; }
+
+.flow { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; counter-reset: s; }
+.flow div { border-top: 2px solid var(--ink); padding-top: 8px; font-size: 13px; color: var(--ink-2); }
+.flow b { display: block; color: var(--ink); font-family: var(--font-display); font-stretch: 105%; font-size: 14px; margin-bottom: 2px; }
+.flow div.hot { border-top-color: var(--s-cortisol); }
+footer { color: var(--ink-3); font-size: 12px; padding-block: 0 40px; }
+
+@media (max-width: 900px) {
+  .grid2, .cols { grid-template-columns: minmax(0, 1fr); }
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tile:nth-child(3) { border-left: 0; padding-left: 0; }
+  .tile:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .bar .wrap { grid-template-columns: auto 1fr; }
+  .bar-tools { grid-column: 1 / -1; justify-content: space-between; }
+  .heat-wrap { grid-template-columns: minmax(0, 1fr); }
+  .heat-labels { display: none; }
+  .tile .val { font-size: 26px; }
+  .flow { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<header class="top wrap">
+  <div class="eyebrow" id="eyebrow">Replay</div>
+  <h1 id="headline">Cortisol replay</h1>
+  <p class="lede" id="lede"></p>
+  <p class="note" id="caveat" hidden></p>
+</header>
+
+<div class="bar">
+  <div class="wrap">
+    <button class="btn primary" id="play" type="button" aria-label="Play the replay from the start">▶ Replay</button>
+    <div class="scrub">
+      <div class="ribbon" id="ribbon" aria-hidden="true"></div>
+      <input type="range" id="t" min="0" max="1" step="1" value="1" aria-label="Queries processed">
+    </div>
+    <div class="bar-tools">
+      <div class="clock"><b id="clock">0</b> queries</div>
+      <select id="speed" aria-label="Replay speed"><option value="1">1×</option><option value="3" selected>3×</option><option value="8">8×</option></select>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+  <section class="panel" aria-labelledby="h-sum">
+    <div class="panel-head">
+      <div><h2 id="h-sum">So far</h2><p class="sub">Measured against the human labels in the datasets, up to the replay point.</p></div>
+      <div class="seg" id="methodSeg" role="group" aria-label="Method shown in the tiles"></div>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <div style="margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:12.5px; color:var(--ink-2)">
+      <label for="price">Price the LLM like</label>
+      <select id="price"><option value="1">Claude Haiku 5.5 (list price)</option><option value="10">a model 10× pricier</option><option value="50">a model 50× pricier</option></select>
+      <span class="sub" style="margin:0">Cost scales with the teacher's price; the compiled models run on a CPU.</span>
+    </div>
+  </section>
+
+  <section class="grid2">
+    <div class="panel" aria-labelledby="h-llm">
+      <h2 id="h-llm">Share of queries that needed the LLM</h2>
+      <p class="sub">Escalations plus audits, rolling over 200 queries.</p>
+      <div class="chart" id="c-llm"></div>
+    </div>
+    <div class="panel" aria-labelledby="h-acc">
+      <h2 id="h-acc">Accuracy against human labels</h2>
+      <p class="sub">End-to-end triage answer, rolling over 400 queries.</p>
+      <div class="chart" id="c-acc"></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-heat">
+    <div class="panel-head">
+      <div><h2 id="h-heat">Where the system is stressed</h2>
+      <p class="sub">Local cortisol per region of query space (rows), over time. Hot regions escalate more, get audited more and trigger retraining.</p></div>
+      <div class="seg" id="gateSeg" role="group" aria-label="Gate shown in the map">
+        <button type="button" data-g="intent" aria-pressed="true">Intent gate</button>
+        <button type="button" data-g="scope" aria-pressed="false">Scope gate</button>
+      </div>
+    </div>
+    <div class="chart" id="c-glob" style="margin-bottom:14px"></div>
+    <div class="heat-wrap chart" id="heatbox">
+      <div class="heat-labels" id="heatLabels"></div>
+      <canvas class="heat" id="heat" height="520" tabindex="0" aria-label="Heat map of local cortisol by region and time"></canvas>
+    </div>
+    <div class="scale"><span>calm</span><span class="ramp"></span><span>stressed (0.3+)</span><span>· Row labels name the region's most common intent;
+      <span class="pill">launch</span> marks regions where the new product's questions landed, <span class="pill">off-topic</span> where out-of-scope ones did.</span></div>
+  </section>
+
+  <section class="cols">
+    <div class="panel" aria-labelledby="h-ev">
+      <h2 id="h-ev">What the system did</h2>
+      <p class="sub">Newest first. Nobody pressed a button.</p>
+      <ul class="events" id="events"></ul>
+    </div>
+    <div class="panel" aria-labelledby="h-feed">
+      <h2 id="h-feed">Live triage</h2>
+      <p class="sub">A sample of queries near the replay point (every tenth query).</p>
+      <div class="scroll-x"><table class="feed"><thead><tr><th>Customer wrote</th><th>Handled by</th><th>Answer</th><th>Human label</th></tr></thead><tbody id="feed"></tbody></table></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-res">
+    <h2 id="h-res">Full run, all methods</h2>
+    <p class="sub" id="res-sub"></p>
+    <div class="scroll-x"><table class="res" id="res"></table></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-how">
+    <h2 id="h-how" style="margin-bottom:12px">How a query moves</h2>
+    <div class="flow">
+      <div><b>Scope gate</b>A compiled model decides banking or off-topic, if its doubt is under the bar.</div>
+      <div><b>Intent gate</b>A second compiled model picks one of 77 intents; team and urgency follow from a lookup table.</div>
+      <div><b>Escalate</b>When either gate doubts, one LLM call answers and its label joins the training pool.</div>
+      <div><b>Audit</b>A sample of cheap answers is re-checked by the LLM, more often where cortisol is high.</div>
+      <div class="hot"><b>Cortisol</b>Misses and surprises raise the bar globally and locally; new labels retrain the students.</div>
+    </div>
+  </section>
+</main>
+<footer class="wrap" id="foot"></footer>
+
+<script>
+const DATA = /*__DATA__*/null;
+(function () {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const fmt = (x, d = 1) => (x == null || isNaN(x) ? "–" : (x * 100).toFixed(d) + "%");
+  const ORDER = ["cortisol", "global", "retrain", "static", "llm_only"].filter((m) => DATA.methods[m]);
+  const COLOR = { cortisol: "--s-cortisol", global: "--s-global", retrain: "--s-retrain", static: "--s-static", llm_only: "--s-llm" };
+  const BIN = DATA.bin;
+  const nb = DATA.methods[ORDER[0]].bins.n.length;
+  const N = DATA.methods[ORDER[0]].bins.n.reduce((a, b) => a + b, 0);
+  let tb = nb; // replay position in bins (exclusive)
+  let focus = DATA.focus && DATA.methods[DATA.focus] ? DATA.focus : ORDER[0];
+  let gate = "intent";
+  const shown = new Set(ORDER);
+  let priceMul = 1;
+
+  // ---------------------------------------------------------------- header
+  const M = DATA.meta;
+  $("eyebrow").textContent = `Replay · ${M.run}`;
+  $("lede").textContent = `A banking-support triage agent replayed on ${N.toLocaleString()} real customer queries ` +
+    `(Banking77 and CLINC150), after ${M.history.toLocaleString()} queries of shadow mode. Repeated LLM decisions get ` +
+    `compiled into small CPU models; a cortisol field decides, query by query, when those models may answer.`;
+  (function headline() {
+    const S = DATA.summary, f = S[DATA.focus] || S[ORDER[0]];
+    if (!f || f.accuracy_delta_pts == null) return;
+    const h = $("headline"); h.textContent = "";
+    const d = f.accuracy_delta_pts;
+    const tail = Math.abs(d) < 0.05 ? "at the same accuracy" : d > 0 ? `and ${d.toFixed(1)} points more accurate` : `within ${Math.abs(d).toFixed(1)} points of its accuracy`;
+    const em = document.createElement("span"); em.className = "acc"; em.textContent = fmt(1 - f.llm_share, 0);
+    h.append(em, document.createTextNode(` of support queries answered without the LLM, ${tail}`));
+  })();
+  if (String(M.teacher).startsWith("simulated")) {
+    const c = $("caveat");
+    c.hidden = false;
+    c.innerHTML = "<span><b>Simulated teacher.</b> </span>";
+    c.querySelector("span").append(`The LLM here is a stand-in that is ${fmt(M.teacher_accuracy_live, 0)} accurate and wrong mostly on ambiguous queries. ` +
+      "Read the curves as the mechanism working, not as a measurement of a real model. Rerun with a real teacher to measure that.");
+  }
+  $("foot").textContent = `Teacher: ${M.teacher}. Seed ${M.seed}. Costs at ${M.price_model || "the run's price profile"} prices × the selected multiplier. ` +
+    "Accuracy uses the datasets' human labels, which the system never sees.";
+
+  // ---------------------------------------------------------------- phases ribbon
+  const phases = DATA.phases || [];
+  const PH_NAME = { steady: "Steady", launch: "Product launch", oos_surge: "Off-topic surge", settle: "New normal" };
+  phases.forEach((p) => {
+    const s = document.createElement("span");
+    s.style.left = (p.start / N * 100) + "%";
+    s.style.width = ((p.end - p.start) / N * 100) + "%";
+    s.textContent = PH_NAME[p.name] || p.name;
+    $("ribbon").append(s);
+  });
+
+  // ---------------------------------------------------------------- method switch
+  ORDER.forEach((m) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.setAttribute("aria-pressed", m === focus);
+    const k = document.createElement("i");
+    k.className = "key"; k.style.borderColor = css(COLOR[m]);
+    b.append(k, document.createTextNode(DATA.methods[m].title));
+    b.onclick = () => { focus = m; [...$("methodSeg").children].forEach((x) => x.setAttribute("aria-pressed", x === b)); renderTiles(); };
+    $("methodSeg").append(b);
+  });
+
+  // ---------------------------------------------------------------- aggregates
+  function sumTo(arr, k) { let s = 0; for (let i = 0; i < k; i++) s += arr[i] || 0; return s; }
+  function agg(m, k) {
+    const B = DATA.methods[m].bins;
+    const n = sumTo(B.n, k);
+    return { n, acc: sumTo(B.ok, k) / n, llm: sumTo(B.llm, k) / n, usd: sumTo(B.usd, k) * priceMul, bad: sumTo(B.bad, k) / n };
+  }
+  function renderTiles() {
+    const k = Math.max(1, tb);
+    const f = agg(focus, k), base = DATA.methods.llm_only ? agg("llm_only", k) : null;
+    const tiles = [
+      { lab: "Accuracy", val: fmt(f.acc), cmp: base ? deltaPts(f.acc - base.acc) + " vs LLM only (" + fmt(base.acc) + ")" : "" },
+      { lab: "Handled without the LLM", val: fmt(1 - f.llm, 0), cmp: `${Math.round(f.llm * f.n).toLocaleString()} LLM calls for ${f.n.toLocaleString()} queries` },
+      { lab: "LLM cost per 1,000 queries", val: "$" + money(f.usd / f.n * 1000), cmp: base ? `LLM only: $${money(base.usd / base.n * 1000)}` : "" },
+      { lab: "Cheap-path errors per 1,000", val: (f.bad * 1000).toFixed(1), cmp: "compiled-model answers the human label disagrees with" },
+    ];
+    const box = $("tiles"); box.textContent = "";
+    tiles.forEach((t) => {
+      const d = document.createElement("div"); d.className = "tile";
+      const a = document.createElement("div"); a.className = "lab"; a.textContent = t.lab;
+      const v = document.createElement("div"); v.className = "val"; v.textContent = t.val;
+      const c = document.createElement("div"); c.className = "cmp";
+      if (t.cmp && (t.cmp.startsWith("+") || t.cmp.startsWith("−"))) {
+        const sp = document.createElement("span"); const neg = t.cmp.startsWith("−");
+        const [head, ...rest] = t.cmp.split(" vs ");
+        sp.className = neg ? "delta-bad" : "delta-good"; sp.textContent = head;
+        c.append(sp, document.createTextNode(" vs " + rest.join(" vs ")));
+      } else c.textContent = t.cmp;
+      d.append(a, v, c); box.append(d);
+    });
+  }
+  const money = (x) => (x >= 1 ? x.toFixed(2) : x >= 0.1 ? x.toFixed(3) : x.toFixed(4));
+  const deltaPts = (d) => (d >= 0 ? "+" : "−") + Math.abs(d * 100).toFixed(1) + " pts";
+
+  // ---------------------------------------------------------------- line charts
+  function rolling(m, field, win) {
+    const B = DATA.methods[m].bins, out = [];
+    for (let i = 0; i < nb; i++) {
+      let s = 0, n = 0;
+      for (let j = Math.max(0, i - win + 1); j <= i; j++) { s += B[field][j]; n += B.n[j]; }
+      out.push(n ? s / n : null);
+    }
+    return out;
+  }
+  function lineChart(el, opts) {
+    const W = Math.max(300, el.clientWidth || 560), H = 230, L = 44, R = 12, T = 14, Bm = 26;
+    const NS = "http://www.w3.org/2000/svg";
+    el.textContent = "";
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+    svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", opts.label);
+    const x = (b) => L + (b + 0.5) / nb * (W - L - R);
+    const y = (v) => T + (1 - (v - opts.min) / (opts.max - opts.min)) * (H - T - Bm);
+    const mk = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+    phases.forEach((p, i) => {
+      if (i % 2 === 1) svg.append(mk("rect", { x: L + p.start / N * (W - L - R), y: T, width: (p.end - p.start) / N * (W - L - R), height: H - T - Bm, fill: css("--band") }));
+    });
+    opts.ticks.forEach((v) => {
+      svg.append(mk("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: css("--line"), "stroke-width": 1 }));
+      const t = mk("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--ink-3"), "font-family": css("--font-data") });
+      t.textContent = opts.tickFmt(v); svg.append(t);
+    });
+    [0, 0.25, 0.5, 0.75, 1].forEach((f) => {
+      const q = Math.round(f * N / 1000) * 1000;
+      const t = mk("text", { x: L + q / N * (W - L - R), y: H - 8, "text-anchor": f === 0 ? "start" : f === 1 ? "end" : "middle", "font-size": 11, fill: css("--ink-3"), "font-family": css("--font-data") });
+      t.textContent = q === 0 ? "0" : (q / 1000) + "k"; svg.append(t);
+    });
+    const series = opts.series.filter((s) => shown.has(s.m));
+    series.forEach((s) => {
+      let d = "";
+      s.v.forEach((v, i) => { if (i >= tb || v == null) return; d += (d ? "L" : "M") + x(i).toFixed(1) + " " + y(v).toFixed(1); });
+      if (!d) return;
+      svg.append(mk("path", { d, fill: "none", stroke: css(COLOR[s.m]), "stroke-width": s.m === "llm_only" ? 1.5 : 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+      const last = Math.min(tb, nb) - 1;
+      if (last >= 0 && s.v[last] != null) svg.append(mk("circle", { cx: x(last), cy: y(s.v[last]), r: 4, fill: css(COLOR[s.m]), stroke: css("--surface"), "stroke-width": 2 }));
+    });
+    const cursor = mk("line", { y1: T, y2: H - Bm, stroke: css("--ink-3"), "stroke-width": 1, visibility: "hidden" });
+    svg.append(cursor);
+    const hit = mk("rect", { x: L, y: T, width: W - L - R, height: H - T - Bm, fill: "transparent" });
+    svg.append(hit);
+    el.append(svg);
+    const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; el.append(tip);
+    function show(ev) {
+      const r = svg.getBoundingClientRect();
+      const px = (ev.clientX - r.left) / r.width * W;
+      const b = Math.max(0, Math.min(Math.min(tb, nb) - 1, Math.floor((px - L) / (W - L - R) * nb)));
+      cursor.setAttribute("x1", x(b)); cursor.setAttribute("x2", x(b)); cursor.setAttribute("visibility", "visible");
+      tip.textContent = "";
+      const h = document.createElement("div"); h.className = "h"; h.textContent = `queries ${(b * BIN).toLocaleString()}–${((b + 1) * BIN).toLocaleString()}`; tip.append(h);
+      series.forEach((s) => {
+        const row = document.createElement("div"); row.className = "r";
+        const k = document.createElement("i"); k.className = "key"; k.style.borderColor = css(COLOR[s.m]);
+        const v = document.createElement("b"); v.textContent = s.v[b] == null ? "–" : opts.tickFmt(s.v[b], true);
+        const n = document.createElement("span"); n.textContent = DATA.methods[s.m].title;
+        row.append(k, v, n); tip.append(row);
+      });
+      tip.hidden = false;
+      const er = el.getBoundingClientRect();
+      let left = ev.clientX - er.left + 14; if (left + 190 > er.width) left = ev.clientX - er.left - 200;
+      tip.style.left = Math.max(0, left) + "px"; tip.style.top = Math.max(0, ev.clientY - er.top - 20) + "px";
+    }
+    hit.addEventListener("pointermove", show);
+    hit.addEventListener("pointerleave", () => { tip.hidden = true; cursor.setAttribute("visibility", "hidden"); });
+    if (opts.legend) {
+      const lg = document.createElement("div"); lg.className = "legend";
+      opts.series.forEach((s) => {
+        const lab = document.createElement("label");
+        const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = shown.has(s.m); cb.id = `lg-${opts.id}-${s.m}`;
+        cb.onchange = () => { cb.checked ? shown.add(s.m) : shown.delete(s.m); renderCharts(); };
+        const k = document.createElement("i"); k.className = "key"; k.style.borderColor = css(COLOR[s.m]);
+        lab.append(cb, k, document.createTextNode(DATA.methods[s.m].title)); lg.append(lab);
+      });
+      el.append(lg);
+    }
+  }
+  const SER = {
+    llm: ORDER.map((m) => ({ m, v: rolling(m, "llm", 4) })),
+    acc: ORDER.map((m) => ({ m, v: rolling(m, "ok", 8) })),
+  };
+  function renderCharts() {
+    lineChart($("c-llm"), { id: "llm", label: "Share of queries sent to the LLM over the replay", series: SER.llm, min: 0, max: 1, ticks: [0, 0.25, 0.5, 0.75, 1], tickFmt: (v, p) => fmt(v, p ? 1 : 0), legend: true });
+    lineChart($("c-acc"), { id: "acc", label: "Accuracy against human labels over the replay", series: SER.acc, min: 0.8, max: 1, ticks: [0.8, 0.85, 0.9, 0.95, 1], tickFmt: (v, p) => fmt(v, p ? 1 : 0), legend: true });
+    renderGlobal();
+  }
+
+  // ---------------------------------------------------------------- global cortisol (focus method)
+  function renderGlobal() {
+    const fm = DATA.methods.cortisol ? "cortisol" : focus;
+    const B = DATA.methods[fm].bins;
+    const el = $("c-glob");
+    const key = gate === "intent" ? "gi" : "gs";
+    const W = Math.max(300, el.clientWidth || 560);
+    el.textContent = "";
+    const NS = "http://www.w3.org/2000/svg";
+    const H = 96, L = 44, R = 12, T = 22, Bm = 8;
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", `0 0 ${W} ${H}`); svg.setAttribute("role", "img");
+    svg.setAttribute("aria-label", "Global cortisol level of the " + gate + " gate");
+    const mk = (tag, attrs) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; };
+    const vals = B[key].map((v) => (v == null ? null : Math.max(0, Math.min(1, v))));
+    const x = (b) => L + (b + 0.5) / nb * (W - L - R);
+    const y = (v) => T + (1 - v / 0.6) * (H - T - Bm);
+    [0, 0.3, 0.6].forEach((v) => {
+      svg.append(mk("line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: css("--line"), "stroke-width": 1 }));
+      const t = mk("text", { x: L - 6, y: y(v) + 4, "text-anchor": "end", "font-size": 11, fill: css("--ink-3"), "font-family": css("--font-data") }); t.textContent = v.toFixed(1); svg.append(t);
+    });
+    let d = "", area = "";
+    vals.forEach((v, i) => { if (i >= tb || v == null) return; const vv = Math.min(v, 0.6); d += (d ? "L" : "M") + x(i).toFixed(1) + " " + y(vv).toFixed(1); });
+    if (d) {
+      const lastIdx = Math.min(tb, nb) - 1;
+      area = d + `L${x(lastIdx).toFixed(1)} ${y(0)}L${x(0).toFixed(1)} ${y(0)}Z`;
+      svg.append(mk("path", { d: area, fill: css("--s-cortisol"), "fill-opacity": 0.1 }));
+      svg.append(mk("path", { d, fill: "none", stroke: css("--s-cortisol"), "stroke-width": 2, "stroke-linejoin": "round" }));
+    }
+    const lab = mk("text", { x: L, y: 12, "font-size": 12, fill: css("--ink-2"), "font-family": css("--font-body") });
+    lab.textContent = `Global cortisol, ${gate} gate: the most doubtful share of queries escalated everywhere`;
+    svg.append(lab);
+    el.append(svg);
+    renderHeat();
+  }
+
+  // ---------------------------------------------------------------- heat map
+  const HEAT = DATA.heat;
+  function mix(a, b, t) {
+    const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+    const A = p(a), Bc = p(b);
+    return `rgb(${A.map((v, i) => Math.round(v + (Bc[i] - v) * t)).join(",")})`;
+  }
+  function renderHeat() {
+    if (!HEAT) { $("heatbox").hidden = true; return; }
+    const rows = HEAT.rows, R = rows.length;
+    const labs = $("heatLabels");
+    if (!labs.childElementCount) {
+      const seen = {};
+      rows.forEach((r) => {
+        const d = document.createElement("div");
+        d.style.height = (520 / R) + "px";
+        seen[r.label] = (seen[r.label] || 0) + 1;
+        const s = document.createElement("span"); s.textContent = r.label.replace(/_/g, " ") + (seen[r.label] > 1 ? " · " + seen[r.label] : "");
+        d.title = `${r.label}: ${r.n} live queries`;
+        if (r.launch_share >= 0.25) { const t = document.createElement("span"); t.className = "tag"; t.textContent = "launch"; d.append(t); }
+        else if (r.oos_share >= 0.25) { const t = document.createElement("span"); t.className = "tag"; t.textContent = "off-topic"; d.append(t); }
+        d.append(s); labs.append(d);
+      });
+      labs.style.gridTemplateRows = `repeat(${R}, 1fr)`;
+    }
+    const cv = $("heat");
+    const dpr = window.devicePixelRatio || 1;
+    const w = cv.clientWidth || 600, h = 520;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); cv.style.height = h + "px";
+    const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const M2 = HEAT[gate], T = HEAT.t.length;
+    const c0 = css("--heat-0"), c1 = css("--heat-1");
+    ctx.fillStyle = css("--bg"); ctx.fillRect(0, 0, w, h);
+    const tMax = tb * BIN;
+    const cw = w / T, ch = h / R;
+    for (let j = 0; j < T; j++) {
+      if (HEAT.t[j] > tMax) break;
+      for (let i = 0; i < R; i++) {
+        const v = Math.min(1, M2[j][i] / 0.3);
+        ctx.fillStyle = mix(c0, c1, v);
+        ctx.fillRect(j * cw, i * ch, Math.ceil(cw) + 0.5, Math.ceil(ch) - 1);
+      }
+    }
+    // phase boundaries
+    ctx.strokeStyle = css("--line-2"); ctx.lineWidth = 1;
+    phases.forEach((p) => { const xx = Math.round(p.start / N * w) + 0.5; ctx.beginPath(); ctx.moveTo(xx, 0); ctx.lineTo(xx, h); ctx.stroke(); });
+  }
+  (function heatTip() {
+    const cv = $("heat"), box = $("heatbox");
+    const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; box.append(tip);
+    cv.addEventListener("pointermove", (ev) => {
+      if (!HEAT) return;
+      const r = cv.getBoundingClientRect();
+      const j = Math.floor((ev.clientX - r.left) / r.width * HEAT.t.length);
+      const i = Math.floor((ev.clientY - r.top) / r.height * HEAT.rows.length);
+      if (j < 0 || i < 0 || j >= HEAT.t.length || i >= HEAT.rows.length || HEAT.t[j] > tb * BIN) { tip.hidden = true; return; }
+      tip.textContent = "";
+      const hh = document.createElement("div"); hh.className = "h"; hh.textContent = `query ${HEAT.t[j].toLocaleString()}`;
+      const row = document.createElement("div"); row.className = "r";
+      const k = document.createElement("i"); const v = document.createElement("b"); v.textContent = HEAT[gate][j][i].toFixed(2);
+      const n = document.createElement("span"); n.textContent = HEAT.rows[i].label.replace(/_/g, " ");
+      row.append(k, v, n); tip.append(hh, row); tip.hidden = false;
+      const br = box.getBoundingClientRect();
+      let left = ev.clientX - br.left + 14; if (left + 200 > br.width) left = ev.clientX - br.left - 210;
+      tip.style.left = left + "px"; tip.style.top = (ev.clientY - br.top - 30) + "px";
+    });
+    cv.addEventListener("pointerleave", () => (tip.hidden = true));
+  })();
+  [...$("gateSeg").children].forEach((b) => (b.onclick = () => {
+    gate = b.dataset.g; [...$("gateSeg").children].forEach((x) => x.setAttribute("aria-pressed", x === b)); renderGlobal();
+  }));
+
+  // ---------------------------------------------------------------- events + feed
+  const KIND = { golive: "Go-live", promoted: "Retrained", novel_label: "New intent", spike: "Cortisol spike", calm: "Calm", global_alarm: "Alarm", global_calm: "Calm", phase: "Traffic" };
+  const PH_TEXT = { launch: "The bank launches virtual cards and wallet pay. New questions start arriving.", oos_surge: "A campaign brings a wave of off-topic questions.", settle: "Traffic settles into a new normal." };
+  function renderEvents() {
+    const fm = DATA.methods.cortisol ? "cortisol" : focus;
+    const ev = DATA.methods[fm].events.slice();
+    phases.forEach((p) => { if (PH_TEXT[p.name]) ev.push({ t: p.start, kind: "phase", text: PH_TEXT[p.name] }); });
+    ev.sort((a, b) => b.t - a.t || (a.kind === "phase" ? 1 : -1));
+    const ul = $("events"); ul.textContent = "";
+    const tMax = tb * BIN;
+    ev.filter((e) => e.t <= tMax).forEach((e) => {
+      const li = document.createElement("li");
+      const tm = document.createElement("time"); tm.textContent = e.t < 0 ? "start" : "#" + e.t.toLocaleString();
+      const d = document.createElement("div");
+      const p = document.createElement("span"); p.className = "pill k-" + e.kind; p.textContent = KIND[e.kind] || e.kind;
+      d.append(p, document.createTextNode(e.text.replace(/_/g, " ")));
+      li.append(tm, d); ul.append(li);
+    });
+  }
+  function renderFeed() {
+    const tb_ = $("feed"); tb_.textContent = "";
+    if (!DATA.feed) return;
+    const tMax = tb * BIN;
+    const rows = DATA.feed.filter((r) => r.t < tMax).slice(-9).reverse();
+    rows.forEach((r) => {
+      const tr = document.createElement("tr");
+      const q = document.createElement("td"); q.className = "q"; q.textContent = r.text;
+      const w = document.createElement("td");
+      const s = document.createElement("span");
+      s.className = "who " + (r.d === "accept" ? "cheap" : "llm");
+      s.textContent = r.d === "accept" ? (r.a ? "Compiled + audit" : "Compiled model") : "LLM";
+      w.append(s);
+      const a = document.createElement("td"); a.className = "m"; a.textContent = r.f.replace(/_/g, " ") + " → " + r.route.replace(/_/g, " ");
+      const g = document.createElement("td");
+      const ok = document.createElement("span"); ok.className = r.ok ? "ok" : "no"; ok.textContent = r.ok ? "✓ match" : "✗ " + r.g.replace(/_/g, " ");
+      g.append(ok);
+      tr.append(q, w, a, g); tb_.append(tr);
+    });
+  }
+
+  // ---------------------------------------------------------------- results table
+  function renderResults() {
+    const S = DATA.summary;
+    $("res-sub").textContent = `${N.toLocaleString()} live queries. “Cheap-path errors” are compiled-model answers the human label disagrees with. ` +
+      `Shadow mode before go-live used ${(S[ORDER[0]].onboarding_llm_calls || 0).toLocaleString()} LLM calls for every method.`;
+    const cols = [
+      ["Method", (s) => s.title],
+      ["Accuracy", (s) => fmt(s.accuracy)],
+      ["vs LLM only", (s) => (s.accuracy_delta_pts == null || s.title === "LLM only" ? "baseline" : (s.accuracy_delta_pts >= 0 ? "+" : "−") + Math.abs(s.accuracy_delta_pts).toFixed(1) + " pts")],
+      ["LLM calls", (s) => fmt(s.llm_share, 0)],
+      ["Cost / 1k", (s) => "$" + money(s.cost_per_1k_usd * priceMul)],
+      ["Cheap errors / 1k", (s) => s.cheap_errors_per_1k.toFixed(1)],
+      ["Launch questions", (s) => fmt(s.launch_accuracy)],
+      ["Off-topic", (s) => fmt(s.oos_accuracy)],
+      ["Retrains", (s) => s.promotions],
+    ];
+    const t = $("res"); t.textContent = "";
+    const hr = document.createElement("tr");
+    cols.forEach(([h]) => { const th = document.createElement("th"); th.textContent = h; hr.append(th); });
+    const th = document.createElement("thead"); th.append(hr); t.append(th);
+    const tbd = document.createElement("tbody");
+    ORDER.forEach((m) => {
+      const tr = document.createElement("tr"); if (m === "cortisol") tr.className = "focus";
+      cols.forEach(([, f], i) => {
+        const td = document.createElement("td");
+        if (i === 0) { const k = document.createElement("i"); k.className = "key"; k.style.borderColor = css(COLOR[m]); k.style.marginRight = "8px"; td.append(k); }
+        td.append(document.createTextNode(String(f(S[m])))); tr.append(td);
+      });
+      tbd.append(tr);
+    });
+    t.append(tbd);
+  }
+
+  // ---------------------------------------------------------------- replay control
+  const range = $("t"); range.max = nb; range.value = nb;
+  function renderAll() {
+    $("clock").textContent = Math.min(N, tb * BIN).toLocaleString();
+    renderTiles(); renderCharts(); renderEvents(); renderFeed();
+  }
+  range.addEventListener("input", () => { tb = +range.value; stop(); renderAll(); });
+  let timer = null;
+  function stop() { if (timer) { clearInterval(timer); timer = null; } $("play").textContent = "▶ Replay"; }
+  $("play").addEventListener("click", () => {
+    if (timer) { stop(); return; }
+    if (tb >= nb) tb = 0;
+    $("play").textContent = "❚❚ Pause";
+    timer = setInterval(() => {
+      tb = Math.min(nb, tb + +$("speed").value);
+      range.value = tb; renderAll();
+      if (tb >= nb) stop();
+    }, 90);
+  });
+  $("price").addEventListener("change", (e) => { priceMul = +e.target.value; renderTiles(); renderResults(); });
+  let rz = null;
+  window.addEventListener("resize", () => { clearTimeout(rz); rz = setTimeout(() => renderCharts(), 120); });
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  if (mq.addEventListener) mq.addEventListener("change", () => { renderAll(); renderResults(); });
+  new MutationObserver(() => { renderAll(); renderResults(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  renderAll(); renderResults();
+})();
+</script>

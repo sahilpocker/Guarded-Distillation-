@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cortisol-mvp"
+version = "0.1.0"
+description = "Self-maintaining LLM-to-classical distillation for agent pipelines, steered by a cortisol field"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=1.26",
+  "pandas>=2.1",
+  "scipy>=1.11",
+  "scikit-learn>=1.4",
+]
+
+[project.optional-dependencies]
+llm = ["anthropic>=0.40", "openai>=1.40"]
+sbert = ["sentence-transformers>=3.0"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+cortisol = "cortisol.cli:main"
+
+[tool.setuptools]
+packages = ["cortisol"]
+
+[tool.setuptools.package-data]
+cortisol = ["templates/*.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
