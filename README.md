@@ -14,7 +14,7 @@ customer queries from Banking77 and CLINC150, through a product launch and an of
 ## Quick start
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
+python3.11 -m venv .venv && source .venv/bin/activate   # Homebrew Python 3.11, same as ../vaers
 pip install -e ".[dev]"
 python -m pytest -q          # 7 tests in test_aci_spec.py fail until you write aci_update
 cortisol demo                # downloads data, simulated teacher, 5 methods, report (~3 min, free)

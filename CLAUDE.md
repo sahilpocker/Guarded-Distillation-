@@ -53,7 +53,7 @@ docs/RESULTS.md.
 ## Commands
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
+python3.11 -m venv .venv && source .venv/bin/activate   # Homebrew Python 3.11, same as ../vaers
 pip install -e ".[dev]"            # add ,llm for real teachers; ,sbert for --map sbert
 python -m pytest -q                # 7 spec tests fail until aci_update exists; the rest pass or skip
 cortisol demo                      # data + simulated labels + all methods + report (~3 min, free)
