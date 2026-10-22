@@ -295,7 +295,7 @@ const DATA = {"meta":{"run":"simulated-s0","teacher":"simulated (acc 93%)","seed
     if (!f || f.accuracy_delta_pts == null) return;
     const h = $("headline"); h.textContent = "";
     const d = f.accuracy_delta_pts;
-    const tail = Math.abs(d) < 0.05 ? "at the same accuracy" : d > 0 ? `and ${d.toFixed(1)} points more accurate` : `within ${Math.abs(d).toFixed(1)} points of its accuracy`;
+    const tail = d >= -0.05 ? "with no loss of accuracy" : `within ${Math.abs(d).toFixed(1)} points of its accuracy`;
     const em = document.createElement("span"); em.className = "acc"; em.textContent = fmt(1 - f.llm_share, 0);
     h.append(em, document.createTextNode(` of support queries answered without the LLM, ${tail}`));
   })();
@@ -452,9 +452,20 @@ const DATA = {"meta":{"run":"simulated-s0","teacher":"simulated (acc 93%)","seed
     llm: ORDER.map((m) => ({ m, v: rolling(m, "llm", 4) })),
     acc: ORDER.map((m) => ({ m, v: rolling(m, "ok", 8) })),
   };
+  // Accuracy axis: starts at the data minimum less 0.01, rounded down to a multiple of 0.05;
+  // ticks every 0.05, or every 0.1 when the axis spans more than 0.3.
+  const ACC_AXIS = (() => {
+    let lo = 1;
+    SER.acc.forEach((s) => s.v.forEach((v) => { if (v != null && !isNaN(v) && v < lo) lo = v; }));
+    const min = Math.max(0, Math.floor((lo - 0.01) / 0.05 + 1e-9) * 0.05);
+    const step = +(1 - min).toFixed(4) > 0.3 ? 0.1 : 0.05;
+    const ticks = [];
+    for (let k = Math.ceil(min / step - 1e-9); k * step <= 1 + 1e-9; k++) ticks.push(+(k * step).toFixed(2));
+    return { min: +min.toFixed(2), ticks };
+  })();
   function renderCharts() {
     lineChart($("c-llm"), { id: "llm", label: "Share of queries sent to the LLM over the replay", series: SER.llm, min: 0, max: 1, ticks: [0, 0.25, 0.5, 0.75, 1], tickFmt: (v, p) => fmt(v, p ? 1 : 0), legend: true });
-    lineChart($("c-acc"), { id: "acc", label: "Accuracy against human labels over the replay", series: SER.acc, min: 0.8, max: 1, ticks: [0.8, 0.85, 0.9, 0.95, 1], tickFmt: (v, p) => fmt(v, p ? 1 : 0), legend: true });
+    lineChart($("c-acc"), { id: "acc", label: "Accuracy against human labels over the replay", series: SER.acc, min: ACC_AXIS.min, max: 1, ticks: ACC_AXIS.ticks, tickFmt: (v, p) => fmt(v, p ? 1 : 0), legend: true });
     renderGlobal();
   }
 
