@@ -121,7 +121,41 @@ def _phase_at(cfg: StreamConfig, t: int) -> tuple[Phase, float]:
     return p, within
 
 
-def build_stream(pools: Pools, cfg: StreamConfig) -> tuple[pd.DataFrame, pd.DataFrame]:
+FEWSHOT_PATH = Path("data/fewshot.csv")
+
+
+def choose_fewshot(pools: Pools, shots: int, seed: int = 0) -> pd.DataFrame:
+    """`shots` examples per label (77 intents + out_of_scope), chosen with a fixed seed."""
+    b = pools.banking.sample(frac=1.0, random_state=seed).reset_index(drop=True)
+    o = pools.oos.sample(frac=1.0, random_state=seed).reset_index(drop=True)
+    few = [b[b.label == lab].head(shots) for lab in pools.intents] + [o.head(shots)]
+    return pd.concat(few).reset_index(drop=True)
+
+
+def load_fewshot(pools: Pools, shots: int, path: str | Path = FEWSHOT_PATH) -> pd.DataFrame:
+    """The prompt's few-shot set, chosen once and saved, so every seed shares one system prompt."""
+    path = Path(path)
+    if path.exists():
+        fs = pd.read_csv(path, keep_default_na=False)
+        if len(fs) != shots * (len(pools.intents) + 1):
+            raise ValueError(f"{path} has {len(fs)} rows; it does not match --shots {shots}. Delete it to rechoose.")
+        return fs
+    fs = choose_fewshot(pools, shots)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fs.to_csv(path, index=False)
+    return fs
+
+
+def pool_texts(pools: Pools, fewshot: pd.DataFrame) -> pd.DataFrame:
+    """Every unique Banking77 + CLINC out-of-scope text outside the few-shot set, in a fixed order
+    (text, gold). Labelled once per teacher; every seed's stream is drawn from this pool."""
+    df = pd.concat([pools.banking, pools.oos]).drop_duplicates("text")
+    df = df[~df.text.isin(set(fewshot.text))].sample(frac=1.0, random_state=0)
+    return df.rename(columns={"label": "gold"}).reset_index(drop=True)
+
+
+def build_stream(pools: Pools, cfg: StreamConfig,
+                 fewshot: pd.DataFrame | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Return (stream, fewshot).
 
     stream columns: t, text, gold, phase, is_launch. The first cfg.history rows have
@@ -133,8 +167,8 @@ def build_stream(pools: Pools, cfg: StreamConfig) -> tuple[pd.DataFrame, pd.Data
     b = pools.banking.sample(frac=1.0, random_state=cfg.seed).reset_index(drop=True)
     o = pools.oos.sample(frac=1.0, random_state=cfg.seed).reset_index(drop=True)
 
-    few = [b[b.label == lab].head(cfg.shots) for lab in pools.intents] + [o.head(cfg.shots)]
-    fewshot = pd.concat(few).reset_index(drop=True)
+    if fewshot is None:
+        fewshot = choose_fewshot(pools, cfg.shots)
     used = set(fewshot.text)
     b = b[~b.text.isin(used)]
     o = o[~o.text.isin(used)]

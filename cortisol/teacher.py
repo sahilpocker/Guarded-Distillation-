@@ -49,8 +49,17 @@ def build_system_prompt(intents: tuple[str, ...], fewshot: pd.DataFrame | None) 
 
 
 def approx_tokens(s: str) -> int:
-    """Rough token count (about 4 characters per token for English)."""
+    """Rough token count for short English text (about 4 characters per token)."""
     return max(1, round(len(s) / 4))
+
+
+# Measured on the Haiku 5.5 pilot (200 calls): the 8,791-character system prompt is 3,327 tokens.
+# The list of snake_case intent names tokenizes far worse than English prose.
+PROMPT_CHARS_PER_TOKEN = 8791 / 3327
+
+
+def approx_prompt_tokens(s: str) -> int:
+    return max(1, round(len(s) / PROMPT_CHARS_PER_TOKEN))
 
 
 def parse_label(raw: str, labels: list[str]) -> str:
@@ -83,6 +92,7 @@ class Price:
 PRICES = {
     "haiku-5.5": Price("claude-haiku-5-5", 0.10, 0.50, 0.01, 0.125),
     "opus-5.5": Price("claude-opus-5-5", 4.00, 20.00, 0.40, 5.00),
+    "llama-3.1-8b-or": Price("meta-llama/llama-3.1-8b-instruct via OpenRouter", 0.02, 0.04, 0.0, 0.0),
     "free": Price("local model", 0.0, 0.0, 0.0, 0.0),
 }
 
@@ -159,17 +169,67 @@ class SimulatedTeacher:
 
 # ----------------------------------------------------------------------------- LLM teachers
 
+class CapExceeded(RuntimeError):
+    """The spend cap would be exceeded by the next call."""
+
+
+class FatalAPIError(RuntimeError):
+    """A non-retryable API error (bad key, bad request, unknown model)."""
+
+
+class Ledger:
+    """Cumulative USD spent per teacher, persisted to a JSON file shared across runs.
+
+    Spend is computed from the usage the API returns. `reserve` holds back a worst-case cost
+    for each in-flight call, so concurrent workers cannot overshoot the cap.
+    """
+
+    def __init__(self, path: str | Path, cap_usd: float | None = None):
+        self.path, self.cap = Path(path), cap_usd
+        self._lock = threading.Lock()
+        self._reserved = 0.0
+        self.by_model: dict[str, float] = {}
+        if self.path.exists():
+            self.by_model = json.loads(self.path.read_text()).get("by_model", {})
+
+    def spent(self, model: str) -> float:
+        return self.by_model.get(model, 0.0)
+
+    def reserve(self, model: str, worst: float) -> bool:
+        with self._lock:
+            if self.cap is not None and self.spent(model) + self._reserved + worst > self.cap:
+                return False
+            self._reserved += worst
+            return True
+
+    def settle(self, model: str, worst: float, actual: float) -> None:
+        with self._lock:
+            self._reserved -= worst
+            self.by_model[model] = self.spent(model) + actual
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self.path.write_text(json.dumps({"by_model": self.by_model}, indent=2))
+
+
 class LLMTeacher:
-    """Labels texts with a real model, with an append-only on-disk cache (safe to interrupt)."""
+    """Labels texts with a real model, with an append-only on-disk cache (safe to interrupt).
+
+    Failed calls are never cached. A cache hit costs nothing. With a ledger, every call is
+    charged from the usage the API returned and the run stops before the cap is exceeded.
+    With readonly=True nothing is ever sent: missing texts raise instead.
+    """
 
     def __init__(self, provider: str, model: str, system_prompt: str, labels: list[str],
-                 cache_path: Path, base_url: str | None = None, max_workers: int = 8):
+                 cache_path: Path, base_url: str | None = None, max_workers: int = 8,
+                 price: Price | None = None, ledger: Ledger | None = None, readonly: bool = False):
         self.provider, self.model = provider, model
         self.system_prompt, self.labels = system_prompt, labels
         self.cache_path = Path(cache_path)
         self.base_url = base_url
         self.max_workers = max_workers
+        self.price, self.ledger, self.readonly = price, ledger, readonly
         self._lock = threading.Lock()
+        self._stop = threading.Event()
+        self.cap_hit, self.fatal, self.last_error = False, None, None
         self._client = None
         self.name = f"{provider}:{model}"
 
@@ -203,8 +263,10 @@ class LLMTeacher:
     def _call(self, text: str) -> dict:
         c = self._client_get()
         if self.provider == "anthropic":
+            # No temperature (sampling parameters are rejected by current models) and thinking
+            # off: the reply is one intent name and must fit in max_tokens.
             r = c.messages.create(
-                model=self.model, max_tokens=24, temperature=0,
+                model=self.model, max_tokens=24, thinking={"type": "disabled"},
                 system=[{"type": "text", "text": self.system_prompt, "cache_control": {"type": "ephemeral"}}],
                 messages=[{"role": "user", "content": text}],
             )
@@ -224,17 +286,61 @@ class LLMTeacher:
                          cache_read_tokens=0, cache_write_tokens=0)
         return {"raw": raw, "label": parse_label(raw, self.labels), **usage}
 
+    def _worst(self, text: str) -> float:
+        """Upper bound on one call's cost, held back in the ledger while the call is in flight."""
+        p = self.price
+        tokens = 1.5 * (approx_prompt_tokens(self.system_prompt) + approx_tokens(text) + 50)
+        return (tokens * max(p.input, p.cache_write) + 24 * p.output) / 1e6
+
+    def _call_retry(self, text: str, tries: int = 4) -> dict | None:
+        """One record, or None (cap hit, fatal error, or transient failure: nothing is cached)."""
+        import time
+        if self._stop.is_set():
+            return None
+        worst = self._worst(text) if self.price else 0.0
+        if self.ledger and not self.ledger.reserve(self.name, worst):
+            self.cap_hit = True
+            self._stop.set()
+            return None
+        actual = 0.0
+        try:
+            for i in range(tries):
+                try:
+                    rec = self._call(text)
+                    if self.price:
+                        actual = CallCost(rec["input_tokens"], rec["output_tokens"], rec["cache_read_tokens"],
+                                          rec["cache_write_tokens"]).usd(self.price)
+                    rec["usd"] = actual
+                    return rec
+                except Exception as e:
+                    self.last_error = f"{type(e).__name__}: {e}"
+                    if isinstance(e, ImportError) or getattr(e, "status_code", None) in (400, 401, 403, 404):
+                        self.fatal = f"{type(e).__name__}: {e}"
+                        self._stop.set()
+                        return None
+                    if i == tries - 1:
+                        return None
+                    time.sleep(2 ** i)
+        finally:
+            if self.ledger:
+                self.ledger.settle(self.name, worst, actual)
+        return None
+
     def label_all(self, texts: list[str], progress: bool = True) -> list[dict]:
         cache = self._load_cache()
         todo = [t for t in dict.fromkeys(texts) if self._key(t) not in cache]
+        if todo and self.readonly:
+            raise RuntimeError(f"{len(todo):,} of {len(set(texts)):,} texts are not in {self.cache_path}; "
+                               "run `cortisol label-pool` for this teacher first")
         if todo:
             self.cache_path.parent.mkdir(parents=True, exist_ok=True)
             done = 0
-            with ThreadPoolExecutor(self.max_workers) as ex, self.cache_path.open("a") as f:
-                futs = {ex.submit(self._call_retry, t): t for t in todo}
-                for fut in as_completed(futs):
-                    t = futs[fut]
-                    rec = {"key": self._key(t), "text": t, **fut.result()}
+            with self.cache_path.open("a") as f:
+                def store(t, rec):
+                    nonlocal done
+                    if rec is None:
+                        return
+                    rec = {"key": self._key(t), "text": t, **rec}
                     with self._lock:
                         f.write(json.dumps(rec) + "\n")
                         f.flush()
@@ -242,19 +348,23 @@ class LLMTeacher:
                     done += 1
                     if progress and done % 250 == 0:
                         print(f"  labelled {done}/{len(todo)}", flush=True)
-        return [cache[self._key(t)] for t in texts]
 
-    def _call_retry(self, text: str, tries: int = 4) -> dict:
-        import time
-        for i in range(tries):
-            try:
-                return self._call(text)
-            except Exception as e:  # network / rate limit: back off and retry
-                if i == tries - 1:
-                    return {"raw": f"ERROR {type(e).__name__}: {e}", "label": "unparseable",
-                            "input_tokens": 0, "output_tokens": 0, "cache_read_tokens": 0, "cache_write_tokens": 0}
-                time.sleep(2 ** i)
-        raise AssertionError("unreachable")
+                if self.provider == "anthropic" and not self.cache_path.stat().st_size:
+                    store(todo[0], self._call_retry(todo[0]))   # first call alone: writes the prompt cache
+                    todo = todo[1:]
+                with ThreadPoolExecutor(self.max_workers) as ex:
+                    futs = {ex.submit(self._call_retry, t): t for t in todo}
+                    for fut in as_completed(futs):
+                        store(futs[fut], fut.result())
+        if self.fatal:
+            raise FatalAPIError(self.fatal)
+        if self.cap_hit:
+            raise CapExceeded(f"spend cap reached at ${self.ledger.spent(self.name):.4f}; "
+                              f"{sum(self._key(t) not in cache for t in set(texts)):,} texts unlabelled")
+        missing = [t for t in texts if self._key(t) not in cache]
+        if missing:
+            raise RuntimeError(f"{len(missing):,} calls failed after retries (not cached); last error: {self.last_error}")
+        return [cache[self._key(t)] for t in texts]
 
 
 # ----------------------------------------------------------------------------- precompute
@@ -262,13 +372,13 @@ class LLMTeacher:
 def precompute(stream: pd.DataFrame, teacher, system_prompt: str) -> pd.DataFrame:
     """Teacher label and token usage for every stream row (t, teacher, input_tokens, ...)."""
     if isinstance(teacher, SimulatedTeacher):
-        sys_tokens = approx_tokens(system_prompt)
+        sys_tokens = approx_prompt_tokens(system_prompt)
         recs = []
         for i, r in enumerate(stream.itertuples(index=False)):
             # Priced as a cached system prompt: the first call writes the cache, later calls read it.
             recs.append(dict(teacher=teacher.label(r.text, r.gold),
-                             input_tokens=approx_tokens(r.text) + 4,
-                             output_tokens=6,
+                             input_tokens=approx_tokens(r.text) + 10,   # pilot: 23.8 uncached tokens per call
+                             output_tokens=10,                          # pilot: 10.4 (intent names are long)
                              cache_read_tokens=sys_tokens if i else 0,
                              cache_write_tokens=0 if i else sys_tokens))
         out = pd.DataFrame(recs)

@@ -6,11 +6,11 @@ Teacher: **simulated (acc 93%)**. Stream: 8,000 live queries after 4,000 shadow-
 
 | Method | Accuracy | vs LLM only | LLM calls | Cost / 1k queries | Cheap-path errors / 1k | Launch queries | Off-topic queries | Retrains |
 |---|---|---|---|---|---|---|---|---|
-| LLM only | 92.8% | baseline | 100% | $0.0268 | 0.0 | 94.8% | 97.6% | 0 |
-| Static gate | 91.4% | -1.5 pts | 45% | $0.0120 | 29.8 | 80.9% | 95.9% | 0 |
-| Static gate + retraining | 92.5% | -0.3 pts | 41% | $0.0111 | 18.0 | 92.2% | 96.8% | 4 |
-| Global cortisol | 92.7% | -0.2 pts | 49% | $0.0133 | 11.8 | 92.8% | 96.8% | 4 |
-| Cortisol field | 92.5% | -0.3 pts | 47% | $0.0127 | 12.8 | 91.7% | 97.3% | 4 |
+| LLM only | 92.8% | baseline | 100% | $0.0407 | 0.0 | 94.8% | 97.6% | 0 |
+| Static gate | 91.4% | -1.5 pts | 45% | $0.0183 | 29.8 | 80.9% | 95.9% | 0 |
+| Static gate + retraining | 92.5% | -0.3 pts | 41% | $0.0168 | 18.0 | 92.2% | 96.8% | 4 |
+| Global cortisol | 92.7% | -0.2 pts | 49% | $0.0202 | 11.8 | 92.8% | 96.8% | 4 |
+| Cortisol field | 92.5% | -0.3 pts | 47% | $0.0193 | 12.8 | 91.7% | 97.3% | 4 |
 
 ## By phase (accuracy / LLM calls)
 

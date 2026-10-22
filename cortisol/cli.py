@@ -1,4 +1,4 @@
-"""Command line: cortisol data | label | replay | report | demo
+"""Command line: cortisol data | label | label-pool | replay | report | demo
 
     cortisol demo                                   # everything, simulated teacher, free
     cortisol label --teacher anthropic --model claude-haiku-5-5 --run runs/haiku-s0 --yes
@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import pickle
 import sys
 import time
@@ -20,9 +21,19 @@ import pandas as pd
 from . import data as D
 from .engine import METHODS, EngineConfig, config_dict, run_method
 from .report import write_all
-from .teacher import PRICES, CallCost, LLMTeacher, SimulatedTeacher, approx_tokens, build_system_prompt, precompute
+from .teacher import (PRICES, CallCost, CapExceeded, Ledger, LLMTeacher, SimulatedTeacher, approx_prompt_tokens,
+                      build_system_prompt, precompute)
 
 ROOT = Path.cwd()
+
+
+def _load_env(path: Path = Path(".env")) -> None:
+    """KEY=VALUE lines of ./.env into os.environ (the file is gitignored; it holds API keys)."""
+    if path.exists():
+        for line in path.read_text().splitlines():
+            if "=" in line and not line.lstrip().startswith("#"):
+                k, v = line.split("=", 1)
+                os.environ[k.strip()] = v.strip().strip("'\"")
 
 
 def _run_dir(args) -> Path:
@@ -40,16 +51,22 @@ def cmd_label(args) -> None:
     run.mkdir(parents=True, exist_ok=True)
     pools = D.load_pools(args.raw)
     sc = D.StreamConfig(history=args.history, n=args.n, seed=args.seed, shots=args.shots)
-    stream, fewshot = D.build_stream(pools, sc)
+    fewshot = D.load_fewshot(pools, args.shots)
+    stream, fewshot = D.build_stream(pools, sc, fewshot)
     system_prompt = build_system_prompt(pools.intents, fewshot)
     if args.teacher == "simulated":
         teacher = SimulatedTeacher(pd.concat([pools.banking, pools.oos]), acc=args.acc, seed=args.seed)
         name = f"simulated (acc {args.acc:.0%})"
+    elif args.labels:
+        # Shared pool labels (cortisol label-pool): read-only, never calls the API, costs nothing.
+        teacher = LLMTeacher(args.teacher, args.model, system_prompt, list(pools.intents) + [D.OOS],
+                             cache_path=args.labels, readonly=True)
+        name = f"{args.teacher}:{args.model}"
     else:
         if not args.model:
             sys.exit("--model is required for a real teacher")
         n_calls = len(stream)
-        sys_tok = approx_tokens(system_prompt)
+        sys_tok = approx_prompt_tokens(system_prompt)
         price = PRICES.get(args.price)
         est = n_calls * (sys_tok + 25) * price.input / 1e6 + n_calls * 8 * price.output / 1e6 if price else None
         print(f"{n_calls:,} teacher calls; system prompt ~{sys_tok:,} tokens.")
@@ -74,6 +91,59 @@ def cmd_label(args) -> None:
     (run / "meta.json").write_text(json.dumps(meta, indent=2))
     print(f"labelled {len(stream):,} queries in {time.time() - t0:.0f}s; teacher accuracy vs human labels "
           f"(live part) {acc:.1%}; saved to {run}")
+
+
+def cmd_label_pool(args) -> None:
+    """Label every unique Banking77 + CLINC out-of-scope text once, into a shared cache."""
+    if not args.model:
+        sys.exit("--model is required")
+    price = PRICES[args.price]
+    paid = price.input > 0 or price.output > 0
+    if paid and args.cap_usd is None:
+        sys.exit("a paid teacher needs --cap-usd (hard spend cap)")
+    pools = D.load_pools(args.raw)
+    fewshot = D.load_fewshot(pools, args.shots)
+    system_prompt = build_system_prompt(pools.intents, fewshot)
+    pool = D.pool_texts(pools, fewshot)
+    if args.limit:
+        pool = pool.head(args.limit)
+    labels_path = Path(args.labels or f"labels/{args.model.replace('/', '_')}.jsonl")
+    ledger = Ledger(args.ledger, args.cap_usd)
+    teacher = LLMTeacher(args.teacher, args.model, system_prompt, list(pools.intents) + [D.OOS],
+                         cache_path=labels_path, base_url=args.base_url, max_workers=args.workers,
+                         price=price, ledger=ledger)
+    cached = teacher._load_cache()
+    todo = sum(teacher._key(t) not in cached for t in pool.text)
+    sys_tok = approx_prompt_tokens(system_prompt)
+    est_hi = todo * ((sys_tok + 25) * price.input + 8 * price.output) / 1e6
+    print(f"{len(pool):,} texts in this pool run, {todo:,} not yet labelled; prompt ~{sys_tok:,} tokens (rough).")
+    print(f"Upper bound without prompt caching ({price.name}): ${est_hi:.2f}. "
+          f"Spent so far on {teacher.name}: ${ledger.spent(teacher.name):.4f}; cap {args.cap_usd}.")
+    if todo and not args.yes:
+        sys.exit("Add --yes to make the calls. Answers are cached in the labels file; reruns are free.")
+    stop = None
+    t0 = time.time()
+    try:
+        teacher.label_all(pool.text.tolist())
+    except CapExceeded as e:
+        stop = str(e)
+    cached = teacher._load_cache()
+    recs = [cached[teacher._key(t)] for t in pool.text if teacher._key(t) in cached]
+    gold = dict(zip(pool.text, pool.gold))
+    if recs:
+        r = pd.DataFrame(recs)
+        r["gold"] = r.text.map(gold)
+        ok = (r.label == r.gold)
+        print(f"\n{len(r):,} labelled in {time.time() - t0:.0f}s with {teacher.name}")
+        print(f"  accuracy vs human labels: {ok.mean():.1%}   unparseable replies: {(r.label == 'unparseable').mean():.1%}")
+        print(f"  per call: input {r.input_tokens.mean():.1f}, cache-read {r.cache_read_tokens.mean():.1f}, "
+              f"cache-write {r.cache_write_tokens.mean():.1f}, output {r.output_tokens.mean():.1f} tokens")
+        print(f"  calls with a cache read: {(r.cache_read_tokens > 0).mean():.1%}")
+        if "usd" in r:
+            print(f"  real cost per call: ${r.usd.mean():.6f}  (these {len(r):,} calls: ${r.usd.sum():.4f})")
+    print(f"  ledger: ${ledger.spent(teacher.name):.4f} spent on {teacher.name} (cap {args.cap_usd})")
+    if stop:
+        sys.exit(f"STOPPED: {stop}")
 
 
 def _load_run(run: Path):
@@ -159,6 +229,20 @@ def main(argv=None) -> None:
     q.add_argument("--base-url", default=None, help="OpenAI-compatible endpoint, e.g. http://localhost:8000/v1")
     q.add_argument("--workers", type=int, default=8)
     q.add_argument("--yes", action="store_true", help="really make the (paid) calls")
+    q.add_argument("--labels", default=None, help="shared pool labels (from label-pool): read them, never call")
+
+    q = sub.add_parser("label-pool", help="label every unique pool text once into a shared cache, with a spend cap")
+    q.add_argument("--teacher", default="anthropic", choices=["anthropic", "openai"])
+    q.add_argument("--model", default=None)
+    q.add_argument("--base-url", default=None)
+    q.add_argument("--price", default="haiku-5.5", choices=sorted(PRICES))
+    q.add_argument("--labels", default=None, help="output cache (default labels/<model>.jsonl)")
+    q.add_argument("--ledger", default="labels/spend.json", help="spend ledger shared across runs")
+    q.add_argument("--cap-usd", type=float, default=None, help="hard cap on total spend for this teacher")
+    q.add_argument("--limit", type=int, default=0, help="label only the first N pool texts (pilot)")
+    q.add_argument("--shots", type=int, default=1)
+    q.add_argument("--workers", type=int, default=8)
+    q.add_argument("--yes", action="store_true", help="really make the (paid) calls")
 
     def replay_args(q):
         q.add_argument("--methods", default="llm_only,static,retrain,global,cortisol")
@@ -178,7 +262,8 @@ def main(argv=None) -> None:
     replay_args(q)
 
     args = p.parse_args(argv)
-    {"data": cmd_data, "label": cmd_label, "replay": cmd_replay, "report": cmd_report, "demo": cmd_demo}[args.cmd](args)
+    _load_env()
+    {"data": cmd_data, "label": cmd_label, "label-pool": cmd_label_pool, "replay": cmd_replay, "report": cmd_report, "demo": cmd_demo}[args.cmd](args)
 
 
 if __name__ == "__main__":
