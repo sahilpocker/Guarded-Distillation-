@@ -22,6 +22,9 @@ class Triage:
         self.teacher, self.store, self.audit_p = teacher, store, audit_p
         self.rng = np.random.default_rng(seed)
         self.lock = threading.Lock()
+        self.prev: dict | None = None          # {"bundle", "rate", "audited"} of the version before the current one
+        self.blocked: set[str] = set()         # versions rolled back: never promoted again
+        self.n_cur, self.checked = 0, False
         self.set_bundle(bundle)
         self.started = time.time()
 
@@ -80,6 +83,9 @@ class Triage:
         if degraded:
             rec["degraded"] = degraded
         self.store.add_decision(b.version, rec)
+        self.n_cur += 1
+        from .rollout import maybe_rollback
+        maybe_rollback(self)
         out = {k: rec[k] for k in ("decision", "audited", "source", "u_intent", "latency_ms")}
         out.update(intent=answer, team=route(answer) if answer else None, urgency=urgency(answer) if answer else None,
                    model_version=b.version, cost_usd=rec["usd"])

@@ -83,8 +83,13 @@ def build_bundle(texts: list[str], labels: list[str], intents: list[str], versio
     ik = [i for i, y in enumerate(y_tr) if y in intents]
     ick = [i for i, y in enumerate(y_cal) if y in intents]
     sc = Student(SCOPE_UNIVERSE, seed=seed, backend="sbert").fit(x_tr, ys_tr, holdout=(x_cal, ys_cal))
+    sw = None
+    if balance:       # an intent with few labels (a new one) counts as much as the median intent, up to 20x, until it has 50
+        cnt = Counter(y_tr[i] for i in ik)
+        med = float(np.median(list(cnt.values())))
+        sw = np.array([min(20.0, max(1.0, med / cnt[y_tr[i]])) if cnt[y_tr[i]] < 50 else 1.0 for i in ik])
     it = Student(intents, seed=seed, backend="sbert").fit([x_tr[i] for i in ik], [y_tr[i] for i in ik],
-                                                           holdout=([x_cal[i] for i in ick], [y_cal[i] for i in ick]))
+                                                           holdout=([x_cal[i] for i in ick], [y_cal[i] for i in ick]), sample_weight=sw)
     out = {}
     for name, st, xs, ys, uni in (("scope", sc, x_cal, ys_cal, SCOPE_UNIVERSE),
                                   ("intent", it, [x_cal[i] for i in ick], [y_cal[i] for i in ick], intents)):

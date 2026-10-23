@@ -308,11 +308,22 @@ def main(argv=None) -> None:
     q.add_argument("--host", default="0.0.0.0")
     q.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8000)))
 
+    q = sub.add_parser("retrain", help="build a candidate model from history + the service's labels, gate it, publish a release")
+    q.add_argument("--seed", type=int, default=0)
+    q.add_argument("--eval-seed", type=int, default=1, help="stream the candidate is judged on (not the one it learned from)")
+    q.add_argument("--export-url", default=None, help="service URL; labels via /admin/export (needs $ADMIN_TOKEN)")
+    q.add_argument("--labels-file", default=None, help="JSON {labels:[{text,label}]} instead of the service")
+    q.add_argument("--repo", default=None, help="owner/repo holding the model-vN releases")
+    q.add_argument("--current", default="models/v1", help="current bundle when the registry is empty")
+    q.add_argument("--out", default="models/candidates")
+    q.add_argument("--publish", action="store_true", help="create the GitHub release when the gate passes")
+
     q = sub.add_parser("traffic", help="replay a stream against a running service")
     q.add_argument("--stream", required=True, help="run folder with stream.csv")
     q.add_argument("--url", default="http://localhost:8000")
     q.add_argument("--rate", type=float, default=5.0, help="requests per second")
     q.add_argument("--limit", type=int, default=0, help="stop after N queries (0 = the whole live stream)")
+    q.add_argument("--start", type=int, default=0, help="skip the first N live queries (the launch starts at 2800)")
     q.add_argument("--skip-history", action="store_true", default=True)
 
     q = sub.add_parser("demo", help="data + simulated labels + replay + report")
@@ -324,7 +335,7 @@ def main(argv=None) -> None:
     if args.cmd == "eval":
         from .evalgate import cmd_eval
         return cmd_eval(args)
-    if args.cmd in ("bundle", "serve", "traffic"):
+    if args.cmd in ("bundle", "serve", "traffic", "retrain"):
         from .serve import cli as scli
         return getattr(scli, "cmd_" + args.cmd)(args)
     {"data": cmd_data, "label": cmd_label, "label-pool": cmd_label_pool, "replay": cmd_replay, "report": cmd_report, "demo": cmd_demo}[args.cmd](args)

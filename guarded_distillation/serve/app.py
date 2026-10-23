@@ -53,6 +53,9 @@ def make_app(bundle_dir: str | Path | None = None, db: str | None = None, cap_us
     store = Store(db or os.environ.get("GD_DB", "data/service.db"))
     tri = Triage(bundle, teacher, store)
     app = FastAPI(title="Guarded Distillation triage", version=bundle.version)
+    if os.environ.get("MODEL_REGISTRY"):          # owner/repo whose releases hold model-vN bundles
+        from .rollout import start_poller
+        start_poller(tri, os.environ["MODEL_REGISTRY"], int(os.environ.get("REGISTRY_POLL_S", 900)))
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST"], allow_headers=["*"])
     app.state.triage = tri
 
@@ -91,6 +94,6 @@ def make_app(bundle_dir: str | Path | None = None, db: str | None = None, cap_us
     def reload(path: str, x_admin_token: str | None = Header(default=None)):
         admin(x_admin_token)
         from .rollout import swap
-        return swap(tri, path)
+        return swap(tri, path, reason="admin")
 
     return app

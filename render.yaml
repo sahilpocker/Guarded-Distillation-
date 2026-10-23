@@ -13,5 +13,9 @@ services:
         value: "1.0"
       - key: ANTHROPIC_API_KEY
         sync: false          # paste in the Render dashboard; without it the service answers from the label cache only
+      - key: MODEL_REGISTRY
+        value: sahilpocker/Guarded-Distillation-   # releases tagged model-vN hold the bundles the service promotes
+      - key: REGISTRY_POLL_S
+        value: "600"
       - key: ADMIN_TOKEN
         generateValue: true  # protects /admin/export and /admin/reload
