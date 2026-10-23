@@ -211,6 +211,9 @@ def cmd_report(args) -> None:
                f"fewest LLM calls whose overall accuracy stays within {-g['bar_pts']:g} points of LLM-only and whose launch-question accuracy "
                f"stays within {-g['launch_bar_pts']:g} points of it, on every one of seeds {', '.join(map(str, g['seeds']))}. "
                f"Settings outside either bar are still shown; hover for overall accuracy and cheap-path errors. ")
+        if RECOMMENDED.get("balance"):
+            cap += ("This page's run adds class-balanced retraining (a new intent is weighted up to its nearest old neighbour until it has "
+                    "50 labels), which was found after the grid was run; the grid points above are without it. ")
         if g["field_on_curve"]:
             cap += "The cortisol field is on the curve at one point only and is not the default, so it stays experimental."
         else:
