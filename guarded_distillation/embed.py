@@ -53,6 +53,9 @@ def encode(texts: list[str], model: str = MODEL) -> np.ndarray:
         V = enc.encode(todo) if hasattr(enc, "tok") else enc.encode(todo, batch_size=128, show_progress_bar=False, normalize_embeddings=True)
         for t, v in zip(todo, V):
             _cache[(model, t)] = np.asarray(v, dtype=np.float32)
+        if os.environ.get("GD_EMBED") == "onnx" and len(_cache) > 30000:      # a service must not grow without bound
+            for key in list(_cache)[:15000]:
+                del _cache[key]
     if not len(texts):
         return np.zeros((0, 384), dtype=np.float32)
     return np.vstack([_cache[(model, t)] for t in texts])

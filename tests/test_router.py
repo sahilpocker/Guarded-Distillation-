@@ -15,7 +15,7 @@ def test_router_falls_back_to_margin_then_learns_and_weights_matter():
     rng = np.random.default_rng(0)
     r = LearnedRouter(refit_every=50, min_samples=40)
     x = features(np.array([0.5, 0.3, 0.2]), 0.4, 0.1, 8, 0.0)
-    assert r.score(x) == x[0]                                    # untrained: margin
+    assert r.score(x) == x[2]                                    # untrained: max-probability doubt, not margin
     for _ in range(200):                                         # feature 3 (fit distance) predicts error
         dist = rng.random()
         v = features(np.array([0.5, 0.3, 0.2]), dist, 0.1, 8, 0.0)

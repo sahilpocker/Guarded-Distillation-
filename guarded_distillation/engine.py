@@ -75,7 +75,8 @@ METHODS: dict[str, Method] = {m.name: m for m in [
 # the [sbert] extra, so EngineConfig's own defaults stay light (TF-IDF, 0.03) for tests and the free
 # demo; `gdistill replay --preset recommended` applies the student.
 # Class-balanced retraining was added afterwards (docs/RESULTS.md, semantic cortisol): same calls, launch Δ -3.4 -> -0.3 on seeds 3-5.
-RECOMMENDED = {"method": "retrain", "student_backend": "sbert", "alpha_intent": 0.03, "map_backend": "tfidf", "balance": True}
+RECOMMENDED = {"method": "retrain", "student_backend": "sbert", "alpha_intent": 0.03, "map_backend": "tfidf", "balance": True,
+               "router": "learned"}     # routing benchmark: the learned router beats margin at every call budget (docs/RESULTS.md)
 
 
 @dataclass(frozen=True)

@@ -34,6 +34,15 @@ def evaluate(b: Bundle, live) -> dict:
     texts = live.text.tolist()
     Ps, Pi = b.scope.proba(texts), b.intent.proba(texts)
     us, ui = b.scale_scope(runner_up(Ps)), b.scale_intent(runner_up(Pi))
+    if getattr(b, "router", None) is not None:             # score with the learned router, as the service does
+        from .. import embed
+        from .bundle import query_features
+        E = embed.encode(texts)
+        prior = np.full(len(b.intents), 0.15)
+        X = np.array([query_features(b, texts[n], Pi[n], E[n], prior)[0] for n in range(len(texts))])
+        sc = b.router.score_many(X)
+        ref = np.sort(np.asarray(b.rwin)) if len(b.rwin) else np.sort(sc)
+        ui = np.searchsorted(ref, sc, side="left") / len(ref)
     scope_top = np.where(Ps[:, b.scope.index[IN]] >= Ps[:, b.scope.index[OOS]], IN, OOS)
     intent_top = np.array(b.intent.universe)[Pi.argmax(1)]
     scope_ok = accepts(us, b.q0_scope)

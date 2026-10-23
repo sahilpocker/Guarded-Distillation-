@@ -17,7 +17,9 @@ from pathlib import Path
 import numpy as np
 
 from ..compat import load_pickle
+from .. import embed
 from ..gate import DoubtScale, choose_level, expected_wrong, runner_up
+from ..router import LearnedRouter, features, init_router
 from ..student import Student
 from ..taxonomy import OOS
 
@@ -52,6 +54,9 @@ class Bundle:
     alpha_scope: float
     alpha_intent: float
     meta: dict = field(default_factory=dict)
+    router: LearnedRouter | None = None          # learned router for the intent gate (None in older bundles: margin gate)
+    rwin: list = field(default_factory=list)     # recent router scores: the reference for the percentile
+    ex_emb: dict = field(default_factory=dict)   # intent index -> training-example embeddings (the fit-distance feature)
 
     def save(self, path: str | Path) -> None:
         path = Path(path)
@@ -66,8 +71,17 @@ class Bundle:
             return load_pickle(f)
 
 
+def query_features(b: "Bundle", text: str, P_row: np.ndarray, e: np.ndarray, err_rate: np.ndarray):
+    """Router features for one query: (feature vector, predicted intent index)."""
+    k = int(P_row.argmax())
+    ex = b.ex_emb.get(k)
+    dist = 1.0 - float((e @ ex.T).max()) if ex is not None and len(ex) else 1.0
+    nov = float(np.clip((b.intent.oov_fraction([text])[0] - 0.10) / 0.40, 0.0, 1.0))
+    return features(P_row, dist, float(err_rate[k]), len(text.split()), nov), k
+
+
 def build_bundle(texts: list[str], labels: list[str], intents: list[str], version: str, seed: int = 0,
-                 alpha_scope: float = 0.01, alpha_intent: float = 0.03, balance: bool = True, meta: dict | None = None) -> Bundle:
+                 alpha_scope: float = 0.01, alpha_intent: float = 0.03, balance: bool = True, learned: bool = True, meta: dict | None = None) -> Bundle:
     keep = [i for i, y in enumerate(labels) if y == OOS or y in intents]
     texts, labels = [texts[i] for i in keep], [labels[i] for i in keep]
     n = len(texts)
@@ -100,9 +114,29 @@ def build_bundle(texts: list[str], labels: list[str], intents: list[str], versio
         wrong = (np.array(uni)[P.argmax(1)] != np.array(ys)).astype(float)
         w = np.ones(len(xs))
         out[name] = (scale, choose_level(u, wrong, w, alpha_scope if name == "scope" else alpha_intent), Calib(u, wrong, w))
+    # learned router for the intent gate, trained on the calibration split (two-fold) as the engine does
+    router = rwin = ex_emb = None
+    if learned:
+        iidx = {lab: i for i, lab in enumerate(intents)}
+        ex_lists: dict[int, list[int]] = {}
+        for j in ik:
+            ex_lists.setdefault(iidx[y_tr[j]], []).append(j)
+        E_tr = embed.encode([x_tr[j] for j in ik])
+        pos = {j: n_ for n_, j in enumerate(ik)}
+        ex_emb = {k: E_tr[[pos[j] for j in v]] for k, v in ex_lists.items()}
+        proto = Bundle(version, list(intents), sc, it, out["scope"][0], out["intent"][0], out["scope"][1], out["intent"][1],
+                       out["scope"][2], out["intent"][2], alpha_scope, alpha_intent, ex_emb=ex_emb)
+        Xc = [x_cal[j] for j in ick]
+        Pc, Ec = it.proba(Xc), embed.encode(Xc)
+        prior = np.full(len(intents), 0.15)
+        X = np.array([query_features(proto, Xc[n_], Pc[n_], Ec[n_], prior)[0] for n_ in range(len(Xc))])
+        wr = np.array([float(intents[int(Pc[n_].argmax())] != y_cal[j]) for n_, j in enumerate(ick)])
+        router, order, q0 = init_router(X, wr, alpha_intent, seed)
+        out["intent"] = (out["intent"][0], q0, out["intent"][2])
+        rwin = [float(v) for v in np.random.default_rng(seed).permutation(order)[-2000:]]
     return Bundle(version=version, intents=list(intents), scope=sc, intent=it, scale_scope=out["scope"][0], scale_intent=out["intent"][0],
                   q0_scope=out["scope"][1], q0_intent=out["intent"][1], calib_scope=out["scope"][2], calib_intent=out["intent"][2],
-                  alpha_scope=alpha_scope, alpha_intent=alpha_intent,
+                  alpha_scope=alpha_scope, alpha_intent=alpha_intent, router=router, rwin=rwin or [], ex_emb=ex_emb or {},
                   meta={"built": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "n_labels": n, "n_intents": len(intents),
-                        "intent_holdout_acc": float(it.holdout_acc), "scope_holdout_acc": float(sc.holdout_acc),
+                        "intent_holdout_acc": float(it.holdout_acc), "learned_router": bool(learned), "scope_holdout_acc": float(sc.holdout_acc),
                         "label_counts": dict(Counter(labels).most_common(5)), **(meta or {})})

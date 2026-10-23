@@ -57,10 +57,28 @@ class LearnedRouter:
 
     def score(self, x: np.ndarray) -> float:
         if self.model is None:
-            return float(x[0])                     # until trained, fall back to margin
+            return float(x[2])                     # until trained, fall back to max probability (1 - top probability)
         return float(self.model.predict_proba(((x - self.mu) / self.sd)[None])[0, 1])
 
     def score_many(self, X: np.ndarray) -> np.ndarray:
         if self.model is None:
-            return X[:, 0]
+            return X[:, 2]
         return self.model.predict_proba((X - self.mu) / self.sd)[:, 1]
+
+
+def init_router(X: np.ndarray, wrong: np.ndarray, alpha: float, seed: int = 0):
+    """Train a router on a labelled calibration split, two-fold so the scores that set the starting level are out of
+    sample. Returns (router, sorted cross-fitted scores, starting level from conformal risk control)."""
+    from .gate import choose_level
+    half = np.random.default_rng(seed).permutation(len(X)) % 2
+    s = np.zeros(len(X))
+    for f in (0, 1):
+        r = LearnedRouter(min_samples=30)
+        r.fit(X[half != f], wrong[half != f], np.ones((half != f).sum()))
+        s[half == f] = r.score_many(X[half == f])
+    router = LearnedRouter()
+    router.fit(X, wrong, np.ones(len(X)))
+    router.X, router.y, router.w = list(X), [float(v) for v in wrong], [1.0] * len(X)     # keeps learning from these
+    order = np.sort(s)
+    u = np.searchsorted(order, s, side="right") / len(order)
+    return router, order, choose_level(u, wrong, np.ones(len(X)), alpha)

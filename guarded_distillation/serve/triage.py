@@ -1,6 +1,7 @@
 """The online gate: scope gate, intent gate, escalation, audits, per-intent stress (monitor only)."""
 from __future__ import annotations
 
+import copy
 import threading
 import time
 from types import SimpleNamespace
@@ -10,7 +11,7 @@ import numpy as np
 from ..gate import accepts, runner_up
 from ..semantic import IntentGraph, SemanticField
 from ..taxonomy import OOS, route, urgency
-from .bundle import IN, Bundle
+from .bundle import IN, Bundle, query_features
 from .store import Store
 from .teacher_access import TeacherAccess, TeacherUnavailable
 
@@ -31,6 +32,9 @@ class Triage:
     def set_bundle(self, bundle: Bundle) -> None:
         self.b = bundle
         self.idx = {n: i for i, n in enumerate(bundle.intents)}
+        self.router = copy.deepcopy(bundle.router) if getattr(bundle, "router", None) is not None else None   # learns online, in memory
+        self.rwin = list(getattr(bundle, "rwin", []))
+        self.err_rate = np.full(len(bundle.intents), 0.15)
         cfg = SimpleNamespace(sem_gain=0.7, sem_top=3, sem_spread=0.5, sem_hot=0.4, sem_decay=0.002, sem_release=30)
         g = IntentGraph(bundle.intents)
         g.rebuild({}, [])
@@ -46,6 +50,14 @@ class Triage:
         P_i = b.intent.proba([text])
         u_i = float(b.scale_intent(runner_up(P_i))[0])
         intent_top = b.intent.universe[int(P_i[0].argmax())]
+        feat = None
+        if self.router is not None:                         # the learned router replaces margin as the intent-gate score
+            from .. import embed
+            feat, _ = query_features(b, text, P_i[0], embed.encode([text])[0], self.err_rate)
+            sc = self.router.score(feat)
+            win = np.asarray(self.rwin[-2000:])
+            u_i = float((win < sc).mean()) if len(win) else 0.5
+            self.rwin.append(sc)
         intent_ran = scope_ok and scope_top == IN
         rec = {"text": text, "u_scope": round(u_s, 4), "u_intent": round(u_i, 4), "student_intent": intent_top, "student_scope": scope_top}
         usd, degraded = 0.0, None
@@ -75,6 +87,9 @@ class Triage:
             if teacher_label in self.idx and intent_top in self.idx:        # teacher-seen answer: update observed stress
                 wrong = float(intent_top != teacher_label)
                 k = self.idx[intent_top]
+                if feat is not None:                                         # train the router: escalations at 1, audits at 1/p
+                    self.router.add(feat, wrong, 1.0 if decision == "escalate" else 1.0 / self.audit_p)
+                    self.err_rate[k] = 0.9 * self.err_rate[k] + 0.1 * wrong
                 self.stress.observe(k, wrong == 0.0)
                 self.stress.inject(k, 0.15 * (wrong - float(b.calib_intent(u_i))))
             self.stress.tick()
