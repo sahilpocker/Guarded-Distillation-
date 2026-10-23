@@ -44,13 +44,16 @@ within 0.3 pts of LLM only **and** launch-question accuracy within 2 pts, on eve
 | Seeds 3-5 (held out) | Accuracy | LLM calls | Cost / 1,000 queries | Cheap-path errors / 1k | Launch questions |
 |---|---|---|---|---|---|
 | LLM only (Haiku) | 80.8% | 100% | $0.041 | 0 | 84.8% |
-| Recommended | 81.3% (+0.45 pts) | 51% (46-58) | $0.021 | 43 | 81.4% (-3.4 pts) |
+| Recommended, no balancing | 81.3% (+0.45 pts) | 51% (46-58) | $0.021 | 43 | 81.4% (-3.4 pts) |
+| Recommended + balanced retraining | +0.57 pts | 50% (46-58) | n/a | 42 | -0.3 pts |
 
-**Held-out caveat:** overall accuracy and call savings held up, but launch-question accuracy did
-not. It missed the -2 pt bar on two of three held-out seeds (seed 5: -6.3 pts), so this setting
-saves about half the LLM calls at a real cost on a new product's questions. The pick was within
-noise of the bar on the selection seeds. TF-IDF settings kept launch accuracy near or above LLM
-only on seeds 0-2 at 63-69% calls; they have not been run on seeds 3-5.
+**Held-out caveat:** with the recommended setting as first chosen (no class balancing), overall
+accuracy and call savings held up but launch-question accuracy did not (-3.4 pts, two of three seeds
+missed the -2 pt bar). Class-balanced retraining (a new intent is weighted up to the size of its
+nearest old neighbour until it has 50 labels; `--preset recommended` now turns it on) fixes most of
+it: on seeds 3-5, 50% LLM calls, +0.57 pts overall, launch -0.3 pts, 42 cheap-path errors / 1k. That
+fix was found after seeing the seeds 3-5 result, so those numbers are no longer a clean held-out test
+of the preset.
 
 ![Operating points](docs/operating-points.svg)
 
@@ -61,9 +64,15 @@ cortisol report --run runs/<run> --focus retrain
 ```
 
 **The cortisol field (the local, per-region part) is experimental.** It is on the trade-off
-curve at one point only (TF-IDF, alpha_intent 0.05: 63% calls, launch +0.4 pts) and no experiment
-has yet shown it beating the static gate with retraining (E3, E4 in docs/ROADMAP.md test where it
-should).
+curve at one point only and no experiment has shown it beating the static gate with retraining.
+
+**Semantic cortisol (experimental, `semantic` method):** per-intent stress on a graph of intents,
+instead of k-means cells. On seeds 3-5, at 57% LLM calls it reaches launch accuracy +0.4 pts vs
+LLM only and 0.0 in the first 600 launch-phase queries; the balanced plain gate at the same calls is
+-0.3 and -2.4. The gain comes from per-intent error residuals spread to graph neighbours; the new-intent,
+fit-check and LLM-sensor parts add little (the LLM sensor as specified never fired). Three seeds, tuned
+on 0-2 with more freedom than the baseline; see docs/RESULTS.md. The CLINC150 domain holdout has not
+been run.
 
 ## Real teachers
 

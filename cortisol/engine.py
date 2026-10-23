@@ -28,8 +28,10 @@ from dataclasses import asdict, dataclass, field
 import numpy as np
 import pandas as pd
 
+from . import embed
 from .gate import (CortisolField, DoubtScale, FieldConfig, accepts, choose_level, expected_wrong,
                    runner_up)
+from .semantic import IntentGraph, OutsideClusters, SemanticField, radii
 from .space import MapSpace
 from .student import Student
 from .taxonomy import OOS
@@ -50,6 +52,8 @@ class Method:
     directed_audits: bool = False
     retrain: bool = True
     hot_cell_retrain: bool = False
+    semantic: bool = False        # per-intent stress on the intent graph (cortisol/semantic.py)
+    sensor: bool = False          # ... plus the LLM sensor on clusters outside every intent's radius
 
 
 METHODS: dict[str, Method] = {m.name: m for m in [
@@ -59,6 +63,8 @@ METHODS: dict[str, Method] = {m.name: m for m in [
     Method("global", "Global cortisol"),
     Method("cortisol", "Cortisol field", local=True, novelty=True, directed_audits=True,
            hot_cell_retrain=True),
+    Method("semantic", "Semantic cortisol", tonic=False, guard=False, semantic=True),
+    Method("semantic_llm", "Semantic cortisol + LLM sensor", tonic=False, guard=False, semantic=True, sensor=True),
 ]}
 
 
@@ -67,7 +73,8 @@ METHODS: dict[str, Method] = {m.name: m for m in [
 # (docs/RESULTS.md): static gate + retraining, MiniLM student, alpha_intent 0.03, TF-IDF map. It needs
 # the [sbert] extra, so EngineConfig's own defaults stay light (TF-IDF, 0.03) for tests and the free
 # demo; `cortisol replay --preset recommended` applies the student.
-RECOMMENDED = {"method": "retrain", "student_backend": "sbert", "alpha_intent": 0.03, "map_backend": "tfidf"}
+# Class-balanced retraining was added afterwards (docs/RESULTS.md, semantic cortisol): same calls, launch Δ -3.4 -> -0.3 on seeds 3-5.
+RECOMMENDED = {"method": "retrain", "student_backend": "sbert", "alpha_intent": 0.03, "map_backend": "tfidf", "balance": True}
 
 
 @dataclass(frozen=True)
@@ -95,6 +102,24 @@ class EngineConfig:
     student_backend: str = "tfidf"   # "sbert": frozen MiniLM embeddings + logistic regression (E2)
     snapshot_every: int = 50
     seed: int = 0
+    # class-balanced retraining (needs the [sbert] extra): a newly learned intent is weighted up to the
+    # size of its nearest old neighbour until it has `balance_to` teacher labels
+    balance: bool = False
+    balance_to: int = 50
+    # semantic cortisol (see cortisol/semantic.py)
+    sem_gain: float = 1.0         # level added to an intent's predictions per unit of stress
+    sem_top: int = 3              # stress spreads to this many graph neighbours
+    sem_spread: float = 0.5       # ... scaled by this and the edge weight
+    sem_hot: float = 0.25         # probation starts at this stress
+    sem_decay: float = 0.002
+    sem_release: int = 30         # consecutive teacher-seen agreements that end probation
+    sem_audit: float = 0.5        # audit probability for accepted answers of an intent on probation
+    sem_new: float = 1.0          # (a) stress on a new intent the student does not know
+    sem_fit: float = 0.05         # (b) stress per fit-check failure
+    sem_resid: float = 0.15       # (c) gain on (wrong - expected wrong)
+    sem_sensor: float = 0.6       # (d) stress on the intents the LLM sensor names
+    sem_cluster: int = 20         # (d) queries in a cluster before the LLM sensor is asked
+    sem_sim: float = 0.6          # (d) cosine similarity to join a cluster
 
 
 @dataclass
@@ -153,7 +178,8 @@ class SkillGate:
 
 class Replay:
     def __init__(self, stream: pd.DataFrame, teacher: pd.DataFrame, intents: tuple[str, ...],
-                 method: Method, cfg: EngineConfig, call_cost_usd: np.ndarray):
+                 method: Method, cfg: EngineConfig, call_cost_usd: np.ndarray, sensor=None):
+        self.sensor = sensor
         self.s, self.m, self.cfg = stream.reset_index(drop=True), method, cfg
         self.texts = self.s.text.tolist()
         self.n = len(self.s)
@@ -173,6 +199,9 @@ class Replay:
         self.alarm = {"scope": False, "intent": False}
         self.S = SkillGate("scope", SCOPE_UNIVERSE, cfg.alpha_scope, self.n)
         self.I = SkillGate("intent", self.intents, cfg.alpha_intent, self.n)
+        self.esc_log: list[tuple[int, int]] = []     # (student's intent, teacher's intent) of escalations
+        self.sensor_calls = 0
+        self.sensor_stop = False
 
     # ------------------------------------------------------------------ helpers
     def _event(self, i: int, kind: str, text: str, **kw) -> None:
@@ -193,9 +222,40 @@ class Replay:
             intent_h = ([hx[k] for k in hk], [hy[k] for k in hk])
         sc = Student(SCOPE_UNIVERSE, seed=self.cfg.seed, backend=self.cfg.student_backend).fit(x, ys, holdout=scope_h)
         keep = [k for k, v in enumerate(y) if v in self.intents]
-        it = Student(self.intents, seed=self.cfg.seed, backend=self.cfg.student_backend).fit([x[k] for k in keep], [y[k] for k in keep], holdout=intent_h)
+        sw = self._weights([y[k] for k in keep]) if self.cfg.balance and hasattr(self, "graph") else None
+        it = Student(self.intents, seed=self.cfg.seed, backend=self.cfg.student_backend).fit(
+            [x[k] for k in keep], [y[k] for k in keep], holdout=intent_h, sample_weight=sw)
         sc.version = it.version = version
         return sc, it
+
+    def _weights(self, labels: list[str]) -> np.ndarray:
+        """Sample weights: an intent the go-live student did not know, with fewer than `balance_to`
+        labels, counts as much as its nearest old neighbour (by intent-graph cosine)."""
+        cnt = Counter(labels)
+        sw = np.ones(len(labels))
+        old = [j for j, lab in enumerate(self.intents) if lab in self.base_known and cnt.get(lab, 0) > 0]
+        for lab, c in cnt.items():
+            if lab in self.base_known or c >= self.cfg.balance_to or not old:
+                continue
+            k = self.I.index[lab]
+            j = old[int(np.argmax(self.graph.cos[k, old]))]
+            target = cnt[self.intents[j]]
+            if target > c:
+                sw[np.array(labels) == lab] = target / c
+        return sw
+
+    def _sem_refresh(self) -> None:
+        """Rebuild the intent graph (cosine from names + training examples, confusion from the
+        escalation log), the per-intent examples for the fit check, and the 95th-percentile radii."""
+        ex: dict[int, list[int]] = {}
+        for k in self.pool[-self.cfg.pool_cap:]:
+            lab = self.y_teacher[k]
+            if lab in self.I.index:
+                ex.setdefault(self.I.index[lab], []).append(k)
+        self.ex_emb = {k: self.E[v] for k, v in ex.items()}
+        self.graph.rebuild(self.ex_emb, self.esc_log)
+        if self.m.semantic:
+            self.cen, self.rad, self.have = radii(self.ex_emb, len(self.intents))
 
     def _refresh(self, i0: int) -> None:
         self.S.refresh_predictions(self.texts, i0)
@@ -242,6 +302,23 @@ class Replay:
         n_cal = len(perm) // 4
         cal, tr = sorted(perm[:n_cal].tolist()), sorted(perm[n_cal:].tolist())
         self.S.student, self.I.student = self._fit_pair(tr, cal, version=1)
+        self.base_known = set(self.I.student.known)
+        if cfg.balance or m.semantic:
+            self.E = embed.encode(self.texts)
+            self.graph = IntentGraph(self.intents)
+            self.clusters = OutsideClusters(sim=cfg.sem_sim, size=cfg.sem_cluster)
+            self._sem_refresh()
+            if m.semantic:
+                self.sem = SemanticField(self.graph, cfg)
+                # fit-check threshold: 95th percentile, over history, of the distance from a training
+                # example to the nearest other example of its own intent
+                d = []
+                for E in self.ex_emb.values():
+                    if len(E) >= 2:
+                        S = E @ E.T
+                        np.fill_diagonal(S, -np.inf)
+                        d.append(1.0 - S.max(1))
+                self.fit_thr = float(np.quantile(np.concatenate(d), 0.95))
         self._refresh(i + 1)
 
         # starting level: conformal risk control on the held-out history labels
@@ -271,6 +348,8 @@ class Replay:
 
     def _retrain(self, i: int, reason: str) -> None:
         cfg = self.cfg
+        if hasattr(self, "graph"):
+            self._sem_refresh()
         pool = self.pool[-cfg.pool_cap:]
         recent = pool[-1500:]
         rng = np.random.default_rng(cfg.seed + len(pool))
@@ -354,14 +433,39 @@ class Replay:
         if i >= self.warm and lab in self.intents and lab not in self.teacher_seen \
                 and st is not None and lab not in st.known:
             self._event(i, "novel_label", f"Teacher used an intent the student has never seen: {lab}", label=lab)
+        if self.m.semantic and hasattr(self, "sem") and i >= self.warm and lab in self.intents \
+                and st is not None and lab not in st.known:
+            self.sem.inject(self.I.index[lab], self.cfg.sem_new, mode="max")          # (a) a new intent appears
         self.teacher_seen[lab] += 1
+
+    def _sense(self, i: int) -> None:
+        """(d) An escalated query outside every intent's 95th-percentile radius joins a cluster; a
+        cluster of `sem_cluster` is shown to the LLM once and the intents it names get stress."""
+        e = self.E[i]
+        d = 1.0 - self.cen @ e
+        if np.any(d[self.have] <= self.rad[self.have]):
+            return
+        members = self.clusters.add(i, e)
+        if members is None:
+            return
+        from .teacher import CapExceeded
+        try:
+            names = self.sensor.ask([self.texts[k] for k in members[: self.cfg.sem_cluster]], self.intents)
+        except CapExceeded:
+            self.sensor_stop = True
+            return
+        self.sensor_calls += 1
+        for nm in names:
+            self.sem.inject(self.I.index[nm], self.cfg.sem_sensor, spread=False, mode="max")
+        self._event(i, "sensor", f"LLM sensor on {len(members)} unfamiliar queries: {', '.join(names) or 'no intents named'}",
+                    intents=names)
 
     # ------------------------------------------------------------------ main loop
     def run(self) -> RunResult:
         cfg, m = self.cfg, self.m
         cols = ("decision", "audited", "llm_call", "final", "cost_usd", "level_scope", "level_intent",
                 "glevel_scope", "glevel_intent", "u_scope", "u_intent", "cell", "version", "novelty",
-                "audit_p", "leak_teacher")
+                "audit_p", "leak_teacher", "probation", "extra_calls")
         rec = {k: [] for k in cols}
         for i in range(self.n):
             y = self.y_teacher[i]
@@ -372,7 +476,8 @@ class Replay:
                 row = dict(decision="history" if i < self.warm else "llm", audited=False, llm_call=True,
                            final=y, cost_usd=self.cost[i], level_scope=np.nan, level_intent=np.nan,
                            glevel_scope=np.nan, glevel_intent=np.nan, u_scope=np.nan, u_intent=np.nan,
-                           cell=-1, version=0, novelty=0.0, audit_p=0.0, leak_teacher=False)
+                           cell=-1, version=0, novelty=0.0, audit_p=0.0, leak_teacher=False,
+                           probation=False, extra_calls=0.0)
                 for k in cols:
                     rec[k].append(row[k])
                 if not m.llm_only and i == self.warm - 1:
@@ -386,6 +491,12 @@ class Replay:
             scope_top, intent_top = self.S.top(i), self.I.top(i)
             scope_ok = bool(accepts(us, ls))
             intent_ran = scope_ok and scope_top == IN
+            sem = self.sem if m.semantic else None
+            ki = self.I.index[intent_top]
+            li_base, on = li, False
+            if sem is not None:
+                on = intent_ran and sem.probation(ki)
+                li = li + sem.level(ki)
             intent_ok = intent_ran and bool(accepts(ui, li))
 
             if scope_ok and scope_top == OOS:
@@ -399,9 +510,17 @@ class Replay:
                 observed, p_obs, audited, p_a = True, 1.0, False, 0.0
             else:
                 p_a = self._audit_p(c, nov)
+                if on:
+                    p_a = max(p_a, cfg.sem_audit)
                 audited = bool(self.rng.random() < p_a)
                 observed, p_obs = audited, p_a
             w = (1.0 / p_obs) if (observed and valid) else 0.0
+            extra = 0.0
+            if on:      # LLM calls the probation caused: extra escalations, and audits above the base rate
+                if escalate and bool(accepts(ui, li_base)):
+                    extra = 1.0
+                elif audited:
+                    extra = 1.0 - self._audit_p(c, nov) / p_a
 
             # --- scope gate evidence (every query is in its population)
             truth_s = (OOS if y == OOS else IN) if (observed and valid) else None
@@ -422,6 +541,19 @@ class Replay:
             if intent_ran or truth_i is not None:
                 self.I.log(i, ui, wrong_i, w if truth_i is not None else 0.0)
 
+            if sem is not None:
+                if intent_ran and ki in self.ex_emb:                  # (b) fit check, label-free
+                    if 1.0 - float((self.E[i] @ self.ex_emb[ki].T).max()) > self.fit_thr:
+                        sem.inject(ki, cfg.sem_fit)
+                if truth_i is not None:
+                    if escalate:
+                        self.esc_log.append((ki, self.I.index[y]))
+                    if sem.observe(ki, wrong_i == 0.0):
+                        self._event(i, "released", f"{intent_top} released from probation")
+                    sem.inject(ki, cfg.sem_resid * (wrong_i - float(self.I.expected(ui))))      # (c) residual
+                if m.sensor and escalate and truth_i is not None and not self.sensor_stop and self.sensor is not None:
+                    self._sense(i)
+                sem.tick()
             self.Fs.tick()
             self.Fi.tick()
             if observed and valid:
@@ -431,7 +563,7 @@ class Replay:
                        final=final, cost_usd=self.cost[i] if observed else 0.0, level_scope=ls, level_intent=li,
                        glevel_scope=self.Fs.global_level, glevel_intent=self.Fi.global_level, u_scope=us,
                        u_intent=ui, cell=c, version=self.I.student.version, novelty=float(self.nov[i]),
-                       audit_p=p_a, leak_teacher=leak_t)
+                       audit_p=p_a, leak_teacher=leak_t, probation=on, extra_calls=extra)
             for k in cols:
                 rec[k].append(row[k])
 
@@ -458,8 +590,8 @@ class Replay:
         return RunResult(method=m, calls=calls, snapshots=self.snapshots, events=self.events, cells=cells)
 
 
-def run_method(stream, teacher_df, intents, method: Method, cfg: EngineConfig, call_cost_usd) -> RunResult:
-    return Replay(stream, teacher_df, intents, method, cfg, call_cost_usd).run()
+def run_method(stream, teacher_df, intents, method: Method, cfg: EngineConfig, call_cost_usd, sensor=None) -> RunResult:
+    return Replay(stream, teacher_df, intents, method, cfg, call_cost_usd, sensor).run()
 
 
 def config_dict(cfg: EngineConfig) -> dict:

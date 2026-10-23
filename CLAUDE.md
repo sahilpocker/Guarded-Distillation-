@@ -27,6 +27,13 @@ Sister project: `../vaers` (same idea on VAERS pharmacovigilance; its week-1 les
   experimental**: on the trade-off curve at one point only, never beats the static gate at the same
   student and alpha. Do not present it as the product default or claim a local advantage until E3/E4
   show one. Next: E3/E4 in docs/ROADMAP.md, Llama via OpenRouter, TF-IDF settings on seeds 3-5.
+- **Semantic cortisol** (22-23 Oct 2026; `cortisol/semantic.py`, method `semantic`, `scripts/semantic.py`,
+  results in docs/RESULTS.md): per-intent stress on an intent graph. Class-balanced retraining
+  (`EngineConfig.balance`, now in the recommended preset) lifts the plain gate's launch Δ from -3.4 to -0.3
+  (seeds 3-5). Semantic cortisol beats that balanced gate on launch accuracy at matched calls (57% calls:
+  +0.44 vs -0.26 launch, 0.00 vs -2.41 first-600). The driver is per-intent residual + neighbour spread;
+  the LLM sensor never fired as specified (relaxed trigger: no gain; spent $0.0017 of its $0.50 cap in
+  `labels/sensor-spend.json`). Not done: the CLINC150 domain holdout (needs new Haiku labels and a go-ahead).
 - **No Claude API calls without Sahil's explicit go-ahead for that specific run.** His key lives in
   `.env` (gitignored, loaded by the CLI); do not read it, print it, or touch `../vaers/.env`.
   Paid calls need `--cap-usd`; spend is in `labels/spend.json`.

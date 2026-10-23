@@ -164,7 +164,7 @@ def cmd_replay(args) -> None:
                               int(r.cache_write_tokens)).usd(price) for r in tdf.itertuples()])
     overrides = json.loads(args.config) if args.config else {}
     if args.preset == "recommended":      # student and alpha_intent of the chosen operating point; the map stays TF-IDF
-        overrides = {"alpha_intent": RECOMMENDED["alpha_intent"], **overrides}
+        overrides = {"alpha_intent": RECOMMENDED["alpha_intent"], "balance": RECOMMENDED["balance"], **overrides}
         args.student = args.student or RECOMMENDED["student_backend"]
     student = args.student or args.map     # --map sbert also gives the sbert student, unless --student says otherwise
     cfg = EngineConfig(seed=meta["seed"], map_backend=args.map, student_backend=student, **overrides)

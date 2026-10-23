@@ -235,6 +235,122 @@ Reproduce: `python scripts/grid.py`, `python scripts/operating_points.py`, then
 `python scripts/grid.py --seeds 3 4 5 --students minilm --alphas 0.03 --methods llm_only,retrain`
 and `python scripts/operating_points.py --confirm retrain minilm 0.03 --seeds 3 4 5`.
 
+## Semantic cortisol: per-intent stress on an intent graph (Haiku labels, MiniLM student)
+
+**Why.** The launch errors of the retraining gate are mostly imbalance after a retrain: a newly
+learned intent has a handful of labels and loses to its old neighbour, and neither doubt nor
+embedding-space novelty sees it. The cortisol field's k-means cells know *where* a query is, not
+*which intent* it is about. Semantic cortisol keeps one stress value per intent
+(`cortisol/semantic.py`, method `semantic`, engine settings `sem_*`).
+
+**What was built.**
+1. *Baseline fix for every method:* class-balanced retraining. An intent the go-live student did not
+   know is weighted up to the size of its nearest old neighbour (intent-graph cosine) until it has
+   50 teacher labels (`EngineConfig.balance`).
+2. *Intent graph:* nodes are the 77 intents; edge = max(cosine of MiniLM vectors, normalised
+   confusion counts). An intent's vector is its name plus the mean of its training examples; the
+   confusion part comes from the escalation log and is rebuilt at every retrain.
+3. *Per-intent stress* replaces the k-means cells. Sensors: (a) the teacher uses an intent the
+   student does not know; (b) fit-check failure: distance to the nearest training example of the
+   predicted intent above the 95th percentile on history (label-free); (c) residuals: wrong minus
+   expected-wrong at that doubt on every teacher-seen answer. Stress spreads to the top-3 graph
+   neighbours (scaled by edge weight × 0.5), decays 0.2% per query, and while an intent's stress is
+   ≥ 0.4 it is on probation: its level is raised by 0.7 × stress and accepted answers are audited
+   at 50%. Probation ends after 30 consecutive teacher-seen answers agree. "Escalate its predictions"
+   is implemented as this raised level, not as escalate-all, because escalate-all would leave nothing
+   to audit.
+4. *LLM sensor* (`cortisol/sensor.py`, `semantic_llm`): see below.
+
+Semantic cortisol sits on the static gate (no tonic, no guard), so the comparison with "plain gate +
+balanced retraining" isolates the per-intent stress. Settings otherwise as the recommended point
+(MiniLM student, α 0.03, TF-IDF map). No API calls except the sensor.
+
+**Protocol.** Seeds 0-2 for every choice, 3-5 for reporting. Semantic parameters were chosen
+among 11 configurations on seeds 0-2 by the rule "highest launch accuracy in the first 600
+launch-phase queries among settings using at most 61% LLM calls" (gain 0.7, hot 0.4; the rest at the
+defaults in `EngineConfig`). The plain gate got a nine-point sweep of α (0.03 down to 0.0075) so
+it can be compared at matched LLM calls. The baseline had one knob and semantic cortisol had
+several, so semantic cortisol had more tuning effort; seeds 3-5 are the fair test.
+
+Launch Δ is launch-intent query accuracy minus LLM-only's; "first 600" restricts to the first 600
+queries of the launch phase (about 123 launch-intent queries per seed). Ranges are the lowest and
+highest seed.
+
+Seeds 0-2 (selection):
+
+| Setting | LLM calls, % | Overall Δ, pts | Launch Δ, pts | Launch Δ, first 600 launch-phase queries, pts | Cheap-path errors / 1k | Extra LLM calls on probation, % of queries |
+|---|---|---|---|---|---|---|
+| Plain gate, no balancing (α 0.03) | 54.3 [47.4 to 63.9] | 0.57 [0.46 to 0.68] | -0.91 [-1.62 to 0.37] | -3.06 [-5.22 to 0.00] | 38.7 [34.4 to 43.9] | 0.0 [0.0 to 0.0] |
+| Plain gate + balanced (α 0.03) | 54.0 [47.6 to 63.4] | 0.62 [0.51 to 0.81] | -0.31 [-1.11 to 0.19] | -2.80 [-5.22 to 0.00] | 38.1 [32.6 to 42.4] | 0.0 [0.0 to 0.0] |
+| Plain gate + balanced (α 0.0175, calls-matched) | 59.6 [53.1 to 68.2] | 0.45 [0.40 to 0.47] | -0.24 [-0.56 to 0.19] | -1.96 [-4.76 to 1.49] | 27.0 [22.5 to 29.2] | 0.0 [0.0 to 0.0] |
+| Plain gate + balanced (α 0.0125) | 64.8 [61.5 to 71.2] | 0.37 [0.29 to 0.49] | -0.07 [-0.93 to 0.37] | -1.79 [-2.99 to 0.00] | 19.8 [17.8 to 22.1] | 0.0 [0.0 to 0.0] |
+| Semantic cortisol | 60.2 [54.2 to 68.8] | 0.59 [0.45 to 0.71] | 0.43 [0.18 to 0.56] | -0.53 [-1.59 to 0.00] | 25.0 [21.2 to 27.0] | 2.2 [2.0 to 2.5] |
+
+Seeds 3-5 (held out):
+
+| Setting | LLM calls, % | Overall Δ, pts | Launch Δ, pts | Launch Δ, first 600 launch-phase queries, pts | Cheap-path errors / 1k | Extra LLM calls on probation, % of queries |
+|---|---|---|---|---|---|---|
+| Plain gate, no balancing (α 0.03) | 50.9 [46.2 to 58.3] | 0.45 [0.41 to 0.49] | -3.41 [-6.32 to -1.52] | -11.64 [-17.60 to -7.32] | 43.2 [38.9 to 48.1] | 0.0 [0.0 to 0.0] |
+| Plain gate + balanced (α 0.03) | 50.4 [45.7 to 57.9] | 0.57 [0.52 to 0.61] | -0.31 [-2.11 to 1.90] | -5.98 [-8.00 to -2.44] | 41.5 [37.0 to 48.6] | 0.0 [0.0 to 0.0] |
+| Plain gate + balanced (α 0.02) | 55.7 [49.5 to 64.8] | 0.46 [0.40 to 0.52] | -0.07 [-1.92 to 1.52] | -4.33 [-7.20 to -1.63] | 29.8 [22.8 to 36.8] | 0.0 [0.0 to 0.0] |
+| Plain gate + balanced (α 0.0175, calls-matched) | 57.7 [53.9 to 64.8] | 0.40 [0.40 to 0.41] | -0.26 [-2.30 to 1.52] | -2.41 [-5.60 to 0.00] | 27.0 [22.8 to 31.4] | 0.0 [0.0 to 0.0] |
+| Plain gate + balanced (α 0.0125) | 61.2 [58.2 to 65.9] | 0.36 [0.35 to 0.38] | -0.01 [-1.34 to 0.76] | -2.13 [-5.60 to 0.83] | 22.1 [20.6 to 24.8] | 0.0 [0.0 to 0.0] |
+| Semantic cortisol | 57.0 [53.5 to 62.8] | 0.63 [0.56 to 0.70] | 0.44 [0.18 to 0.95] | 0.00 [0.00 to 0.00] | 27.0 [24.0 to 30.9] | 2.2 [1.6 to 2.6] |
+| Semantic cortisol + LLM sensor (relaxed trigger) | 57.4 [54.1 to 63.6] | 0.63 [0.56 to 0.71] | 0.44 [0.00 to 1.14] | 0.00 [0.00 to 0.00] | 26.5 [22.5 to 31.0] | 2.4 [1.8 to 2.8] |
+
+**Result.**
+- **Balancing is a large part of the old launch gap.** On seeds 3-5 the plain gate's launch Δ goes
+  from −3.4 pts to −0.3 pts and its first-600 Δ from −11.6 to −6.0, at the same LLM calls (50%).
+  That balanced gate is the new bar.
+- **Semantic cortisol beats the balanced gate on launch accuracy at similar LLM calls.** At 57%
+  calls (balanced gate at the same calls: 57.7%): launch Δ +0.44 vs −0.26 pts, first-600 launch Δ
+  0.00 vs −2.41, overall Δ +0.63 vs +0.40, cheap-path errors 27 vs 27 per 1,000. By seed (3, 4, 5),
+  first-600 launch Δ is 0.0, 0.0, 0.0 for semantic cortisol and 0.0, −1.6, −5.6 for the balanced gate;
+  whole-stream launch Δ is +0.18, +0.95, +0.19 against 0.0, +1.52, −2.30, so seed 4 goes the other way. It
+  also holds on the selection seeds (60.2% vs 59.6% calls: launch +0.43 vs −0.24, first-600 −0.53
+  vs −1.96), though that is where it was tuned.
+- **Mechanism, not magic.** In the first 600 launch-phase queries semantic cortisol sends 91% of the
+  launch-intent queries to the LLM; the matched balanced gate sends 83% and the default-α gate 76%.
+  The accepted rest agree with the LLM (first-600 Δ is exactly 0.00 because every accepted
+  launch-intent answer was as correct as the LLM's). It moves LLM calls from steady traffic into
+  the drift window rather than adding calls. Extra calls caused by probation (escalations that the
+  static level would have accepted, plus audits above the base rate): 2.2% of queries.
+- **Where the gain comes from (ablations on seeds 0-2, reference: 60.2% calls, launch +0.43, first
+  600 −0.53):** removing (a) new-intent stress changes nothing (60.0%, +0.55, −0.53); removing (b)
+  the fit check costs about 0.4 pts of launch accuracy (59.9%, 0.00, −0.79); removing (c) the
+  residual sensor loses the effect (54.9%, −0.37, −2.29, the same as the plain gate at that
+  calls); removing the spread to neighbours also loses most of it (56.3%, −0.12, −1.56). The
+  per-intent residual with graph spread is what works. Sensor (a) is redundant because the
+  residual sensor reacts to the first wrong answers anyway.
+- **LLM sensor.** As specified (a cluster of 20+ escalated queries, similarity ≥ 0.6, outside every
+  intent's 95th-percentile radius) it never fired: 0 calls, $0, on seeds 0-2 (`semantic_llm` equals
+  `semantic`). On seed 0 only 131 of 3,689 escalated queries are outside every radius, and 24 of
+  those are launch queries; banking intents are close neighbours, so new intents usually sit inside
+  an old intent's radius. With a looser trigger I chose after seeing that (clusters of 10, similarity
+  ≥ 0.4) it fired 12 times over six seeds ($0.0017 of the $0.50 cap), and the answers were sensible
+  (the virtual-card cluster named `get_disposable_virtual_card`, `getting_virtual_card`,
+  `virtual_card_not_working`; the top-up cluster named the top-up intents). It made no measurable
+  difference: held-out launch Δ +0.44 vs +0.44, first-600 0.00 vs 0.00, LLM calls 57.4% vs 57.0%.
+  Its cluster trigger is a post-hoc choice and the held-out comparison has three seeds.
+
+Verdict: semantic cortisol does beat the balanced plain gate on launch accuracy at similar LLM calls,
+in direction on the first-600 window (at least as good on all three held-out seeds, strictly
+better on two, +2.4 pts on average) and on two of three seeds for whole-stream launch Δ, without costing overall accuracy or cheap-path errors. The effect is concentrated in
+the per-intent residual with neighbour spread, not in the new-intent, fit-check or LLM sensors.
+
+Caveats: three held-out seeds that share most of the pool; first-600 has about 123 launch-intent
+queries per seed, so single-seed differences of a few points are within sampling noise (the claim
+rests on the direction across seeds and the call-matched comparison); parameters were tuned on
+seeds 0-2 with more freedom than the baseline had; one LLM, one prompt, one domain, one launch
+event; I compared only with the plain gate, not with the earlier cortisol field or global cortisol
+re-run under balancing; probation raises LLM calls in the drift window by design, so a user who
+cares about the steady state sees slightly more calls there. The CLINC150 domain holdout has not
+been run (see below).
+
+Reproduce: `python scripts/semantic.py --seeds 3 4 5 --tag H-g07h4 --methods llm_only,semantic
+--config '{"sem_gain":0.7,"sem_hot":0.4}'`, `python scripts/semantic_table.py`; the sensor needs
+`--sensor` and a key in `.env`.
+
 ## Seed 0 by phase, simulated teacher (accuracy / LLM calls)
 
 | Method | steady | launch | off-topic surge | settle |

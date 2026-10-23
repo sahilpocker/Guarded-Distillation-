@@ -44,7 +44,8 @@ class Student:
             TfidfVectorizer(analyzer="char_wb", ngram_range=(3, 5), sublinear_tf=True, min_df=2, max_features=60000),
         )
 
-    def fit(self, texts: list[str], labels: list[str], holdout: tuple[list[str], list[str]] | None = None) -> "Student":
+    def fit(self, texts: list[str], labels: list[str], holdout: tuple[list[str], list[str]] | None = None,
+            sample_weight: np.ndarray | None = None) -> "Student":
         labels = [lab for lab in labels]
         self.known = set(labels)
         if self.backend == "tfidf":
@@ -57,10 +58,10 @@ class Student:
             self.clf = None
         elif self.backend == "tfidf":
             self.const = None
-            self.clf = LinearSVC(C=self.C, random_state=self.seed).fit(X, labels)
+            self.clf = LinearSVC(C=self.C, random_state=self.seed).fit(X, labels, sample_weight=sample_weight)
         else:
             self.const = None
-            self.clf = LogisticRegression(C=self.lr_C, max_iter=300, random_state=self.seed).fit(X, labels)
+            self.clf = LogisticRegression(C=self.lr_C, max_iter=300, random_state=self.seed).fit(X, labels, sample_weight=sample_weight)
         if holdout is not None and len(holdout[0]) >= 20:
             self._fit_temperature(*holdout)
             self.holdout_acc = self.accuracy(*holdout)
