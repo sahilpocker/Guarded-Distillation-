@@ -1,0 +1,290 @@
+{"text": "I would like to request a virtual card.", "intent": "getting_virtual_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Can I get instructions on how to obtain a virtual card?", "intent": "getting_virtual_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Is it possible to have a virtual card issued for my account?", "intent": "getting_virtual_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I need assistance activating a virtual card.", "intent": "getting_virtual_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Please let me know the steps to get a virtual card.", "intent": "getting_virtual_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "yo can i get a virtual card link pls", "intent": "getting_virtual_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "how do i order a virtual card from the app", "intent": "getting_virtual_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "i want a virtual card but idk how to start", "intent": "getting_virtual_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "anyone know where to find virtual cards in this app", "intent": "getting_virtual_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "can u help me get a virtual card", "intent": "getting_virtual_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I tried to enable the virtual card feature in my app last night, but the button kept glitching. Can you check if my request went through?", "intent": "getting_virtual_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I just got a new phone and I'm trying to set up my banking app from scratch. I need to order a virtual card but I can't find the option anywhere.", "intent": "getting_virtual_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My physical card expired recently and I was hoping to use the virtual one for my online purchases today, but I don't know how to activate it.", "intent": "getting_virtual_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I saw an offer for a virtual card upgrade in my email, but when I clicked the link it said the feature isn't available on my current account type.", "intent": "getting_virtual_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I'm traveling abroad next week and I want to make sure I have a virtual card set up as a backup payment method before I leave.", "intent": "getting_virtual_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Where is my virtual card?", "intent": "getting_virtual_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Activate virtual card please", "intent": "getting_virtual_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I need a virtual card now", "intent": "getting_virtual_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Can I have a virtual card?", "intent": "getting_virtual_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Show my virtual card", "intent": "getting_virtual_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I would like to request a disposable virtual card for one-time use.", "intent": "get_disposable_virtual_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Could you explain the steps to obtain a disposable virtual card?", "intent": "get_disposable_virtual_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Is it possible to generate a disposable virtual card through the app?", "intent": "get_disposable_virtual_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I need a temporary virtual card for a single transaction.", "intent": "get_disposable_virtual_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "How do I activate a disposable virtual card once issued?", "intent": "get_disposable_virtual_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "yo does this app do disposable virtual cards", "intent": "get_disposable_virtual_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "how do i get a disposable card through here", "intent": "get_disposable_virtual_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "can i get a temp card that self destructs", "intent": "get_disposable_virtual_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "want a one time use virtual card", "intent": "get_disposable_virtual_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "is there a disposable card option in this app", "intent": "get_disposable_virtual_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I tried using my regular card for an online purchase last week, but it got flagged for suspicious activity. Can I set up a disposable virtual card to avoid this issue in the future?", "intent": "get_disposable_virtual_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I'm planning to make a purchase from a website I haven't used before, and I'm worried about my main card details being compromised. Do you offer disposable virtual cards for one-time use?", "intent": "get_disposable_virtual_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Recently, I had some unauthorized charges on my account, and I'm looking for a safer way to shop online. How can I get a disposable virtual card to protect my information?", "intent": "get_disposable_virtual_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I usually shop on my phone, but I want to make sure my financial details are secure. I'm interested in getting a disposable virtual card - what's the process to request one?", "intent": "get_disposable_virtual_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My current card is expired, and I need a temporary solution for an upcoming online transaction. Is it possible to generate a disposable virtual card instantly through the app?", "intent": "get_disposable_virtual_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Create virtual card now", "intent": "get_disposable_virtual_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Disposable card steps", "intent": "get_disposable_virtual_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Virtual card request", "intent": "get_disposable_virtual_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Get disposable card", "intent": "get_disposable_virtual_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Activate virtual card", "intent": "get_disposable_virtual_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My virtual card was declined at the store today.", "intent": "virtual_card_not_working", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "The digital card I generated isn't being accepted online.", "intent": "virtual_card_not_working", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I'm trying to pay with my virtual card and it keeps failing.", "intent": "virtual_card_not_working", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I can't use my disposable virtual card for this transaction.", "intent": "virtual_card_not_working", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "The system is rejecting my virtual card number.", "intent": "virtual_card_not_working", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "my virtual card keeps saying declined even tho i have money", "intent": "virtual_card_not_working", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "virtual card not working at stores online whatever", "intent": "virtual_card_not_working", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "can't activate my virtual card its just a blank screen", "intent": "virtual_card_not_working", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "this digital card is bugging out on me", "intent": "virtual_card_not_working", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "tried to pay and it just froze", "intent": "virtual_card_not_working", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I tried to pay for my groceries with my virtual card but it got declined at the terminal. Can you tell me why this happened?", "intent": "virtual_card_not_working", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My virtual card seems to have frozen while I was trying to book a hotel room online. I need help unlocking it or finding out what's wrong.", "intent": "virtual_card_not_working", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I received a notification that my virtual card was used, but when I tried to make a purchase myself, the payment failed. What's going on?", "intent": "virtual_card_not_working", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I attempted to add my virtual card to my digital wallet, but the transaction kept failing. I'm not sure if it's set up correctly.", "intent": "virtual_card_not_working", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My virtual card keeps showing as inactive when I try to pay for my daily coffee. I need this fixed urgently for my expenses.", "intent": "virtual_card_not_working", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Virtual card error code", "intent": "virtual_card_not_working", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Virtual card refused transaction", "intent": "virtual_card_not_working", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Virtual card declined ATM", "intent": "virtual_card_not_working", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Virtual card not loading", "intent": "virtual_card_not_working", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Virtual card system error", "intent": "virtual_card_not_working", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "How many disposable cards can I create per month?", "intent": "disposable_card_limits", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "What is the spending cap for each disposable card?", "intent": "disposable_card_limits", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Can I set the validity period for my disposable card?", "intent": "disposable_card_limits", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Is there a total limit on the number of disposable cards?", "intent": "disposable_card_limits", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "What happens if I reach the disposable card limit?", "intent": "disposable_card_limits", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "yo can i set limits on my disposable cards before they expire", "intent": "disposable_card_limits", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "how many times can i reload a single disposable card", "intent": "disposable_card_limits", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "i keep getting error when i try to make a new disposable card", "intent": "disposable_card_limits", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "can i stack multiple disposable cards at once", "intent": "disposable_card_limits", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "what happens if i hit the disposable card limit", "intent": "disposable_card_limits", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I was trying to set up disposable cards for my weekend market stall, but I'm only seeing a limit of three per day. How can I increase that limit?", "intent": "disposable_card_limits", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I recently lost my physical wallet and need temporary cards to cover my online purchases while I wait for a replacement. Is there a way to generate more than two disposable cards a day?", "intent": "disposable_card_limits", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I'm planning to make several small online purchases across different sites and wanted to use disposable cards for each one. What's the daily maximum I can generate?", "intent": "disposable_card_limits", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I tried to use a disposable card for a subscription service, but it got declined after just one transaction. Are there transaction limits I should know about?", "intent": "disposable_card_limits", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I frequently shop at different pop-up shops and need a new disposable card for each vendor. Is there a cap on how many I can create in a 24-hour period?", "intent": "disposable_card_limits", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "my disposable card limit", "intent": "disposable_card_limits", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "limits on disposable cards", "intent": "disposable_card_limits", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "can i increase my card limit", "intent": "disposable_card_limits", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "transaction limit virtual card", "intent": "disposable_card_limits", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "daily disposable card cap", "intent": "disposable_card_limits", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I tried to add my debit card to Google Pay but it keeps rejecting it.", "intent": "apple_pay_or_google_pay", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Can I use Apple Pay to pay for my monthly subscription?", "intent": "apple_pay_or_google_pay", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My iPhone wallet won't verify my card for Apple Pay.", "intent": "apple_pay_or_google_pay", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Is it possible to link a business account to Google Pay?", "intent": "apple_pay_or_google_pay", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I'm getting an error when trying to confirm my Apple Pay setup.", "intent": "apple_pay_or_google_pay", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "yo why does my apple pay keep declining on top up?", "intent": "apple_pay_or_google_pay", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "can i use google pay to add money or what?", "intent": "apple_pay_or_google_pay", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "my iphone wallet is bugging out wont let me pay", "intent": "apple_pay_or_google_pay", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "anyone else having issues with apple pay top ups rn?", "intent": "apple_pay_or_google_pay", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "tried to pay with saved card in apple pay but error", "intent": "apple_pay_or_google_pay", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I tried adding my card to Apple Pay this morning but it keeps failing. Can you explain how the top up process works with the digital wallet?", "intent": "apple_pay_or_google_pay", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My Google Pay has been declining transactions at the store lately. I want to make sure my top up is set up correctly before I try again.", "intent": "apple_pay_or_google_pay", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I recently switched phones and now Apple Pay won't let me top up my balance. I'm not sure if I need to re-enter my card details.", "intent": "apple_pay_or_google_pay", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I'm trying to send money to a friend using Google Pay, but the top up option is greyed out. What could be preventing me from topping up?", "intent": "apple_pay_or_google_pay", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My Apple Pay keeps asking me to verify my top up limit. I've already verified my identity, so I'm not sure why it's still happening.", "intent": "apple_pay_or_google_pay", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "apple pay top up fail", "intent": "apple_pay_or_google_pay", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "google pay not working", "intent": "apple_pay_or_google_pay", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "can i use apple pay", "intent": "apple_pay_or_google_pay", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "google pay top up error", "intent": "apple_pay_or_google_pay", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "apple pay decline", "intent": "apple_pay_or_google_pay", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I need to check the status of my replacement card that was sent last month.", "intent": "card_arrival", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My card is overdue, when can I expect it to be delivered?", "intent": "card_arrival", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Is there a way to see if my new card has been shipped?", "intent": "card_arrival", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I'm checking on the arrival time for my new debit card.", "intent": "card_arrival", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I haven't received my card yet, can you help me track it?", "intent": "card_arrival", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "hey when does the card usually show up", "intent": "card_arrival", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "my card still hasn't showed up yet", "intent": "card_arrival", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "can i check the tracking on my card", "intent": "card_arrival", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "when will my card be at my door", "intent": "card_arrival", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "i lost the card you sent", "intent": "card_arrival", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I received the welcome email yesterday, but there's no sign of the physical card yet. I was wondering if there's a tracking number I can use to check its status?", "intent": "card_arrival", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I've been waiting for my new debit card for about ten days now and I'm getting a bit impatient. Could you let me know if it's been dispatched and when I might expect delivery?", "intent": "card_arrival", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I checked my account online and it says my card is ready to be sent, but I haven't received anything in the mail. Is there a way to see where it is currently?", "intent": "card_arrival", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I requested a replacement card two weeks ago due to a demagnetized old one, but I still haven't gotten the new one. Can you help me figure out where it is?", "intent": "card_arrival", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I just got the notification that my card has been shipped, but the estimated delivery date has passed. I'd like to check if there are any delays with the post.", "intent": "card_arrival", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Where is my card delivery", "intent": "card_arrival", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Can't find my new card", "intent": "card_arrival", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Track my card arrival", "intent": "card_arrival", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "When will my card arrive", "intent": "card_arrival", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Status of card shipment", "intent": "card_arrival", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Can you tell me the estimated delivery date for my new card?", "intent": "card_delivery_estimate", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "What is the typical shipping timeframe for a replacement card?", "intent": "card_delivery_estimate", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "How many days does it usually take for a card to arrive?", "intent": "card_delivery_estimate", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Is there an estimated delivery window for my card shipment?", "intent": "card_delivery_estimate", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "When should I expect to receive my card in the mail?", "intent": "card_delivery_estimate", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "how long before my card shows up", "intent": "card_delivery_estimate", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "what the wait time for card delivery", "intent": "card_delivery_estimate", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "can i pick the delivery date for my card", "intent": "card_delivery_estimate", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "when should i expect my card im in the us", "intent": "card_delivery_estimate", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "delivery time for physical card typo", "intent": "card_delivery_estimate", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I tried to place an online order for a new card last week, but the checkout process kept timing out. I just want to know if the card has been shipped and roughly how many days it will take to reach me.", "intent": "card_delivery_estimate", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I received a notification that my replacement card is ready, but I'm leaving for a business trip next week. Could you tell me the latest delivery date so I can make arrangements?", "intent": "card_delivery_estimate", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I'm checking my account and I see the status says 'card produced,' but I haven't gotten any shipping information yet. How long does the physical delivery usually take once it's produced?", "intent": "card_delivery_estimate", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I need my card urgently for an upcoming trip, but I'm not sure if the standard shipping option is fast enough. What is the typical delivery window for standard mail?", "intent": "card_delivery_estimate", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I recently reported my card lost and requested a new one, and I'm just checking in on the estimated arrival time since I haven't received any tracking updates.", "intent": "card_delivery_estimate", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "card when arrive?", "intent": "card_delivery_estimate", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "how long shipping?", "intent": "card_delivery_estimate", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "express delivery cost?", "intent": "card_delivery_estimate", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "choose delivery date?", "intent": "card_delivery_estimate", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "delivery time estimate", "intent": "card_delivery_estimate", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My card was taken from my wallet and I need to block it.", "intent": "lost_or_stolen_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I misplaced my debit card and suspect it may be stolen.", "intent": "lost_or_stolen_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Someone used my card without permission and I want to report it lost.", "intent": "lost_or_stolen_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I cannot find my card anywhere and am concerned it was taken.", "intent": "lost_or_stolen_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I need to report my card as lost after leaving it at a store.", "intent": "lost_or_stolen_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "my card got stolen and i need it blocked ASAP", "intent": "lost_or_stolen_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "can u freeze my card i think i lost it", "intent": "lost_or_stolen_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "help card missing prob stolen", "intent": "lost_or_stolen_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "my card was nicked idk what to do", "intent": "lost_or_stolen_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "stolen card pls block it thx", "intent": "lost_or_stolen_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I was at the grocery store yesterday and I'm pretty sure I left my card on the payment terminal. I've checked my bag twice already. Can you help me freeze it temporarily while I search?", "intent": "lost_or_stolen_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My wallet fell out of my pocket when I was getting gas this morning. I noticed it's missing now and I'm worried about unauthorized charges. What's the fastest way to get a replacement sent to me?", "intent": "lost_or_stolen_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I think my card was stolen from my mailbox overnight. I noticed it's missing when I went to pay a bill. I need to report this as stolen and order a new one immediately.", "intent": "lost_or_stolen_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I lent my card to a friend last week and they haven't returned it. I've asked multiple times but they're ignoring me. I need to cancel the card and get a new number for security reasons.", "intent": "lost_or_stolen_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My card got caught in the ATM machine and it was swallowed by the machine last night. I've contacted the branch but I'm not sure if they recovered it. Can you block the card just in case?", "intent": "lost_or_stolen_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "card stolen help", "intent": "lost_or_stolen_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "card lost report", "intent": "lost_or_stolen_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "need to block card ASAP", "intent": "lost_or_stolen_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "my card gone", "intent": "lost_or_stolen_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "stolen card police report", "intent": "lost_or_stolen_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I noticed a charge I didn't make and want to request a replacement card.", "intent": "compromised_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Someone used my card details online without my permission.", "intent": "compromised_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I suspect my card number was compromised and need it reissued.", "intent": "compromised_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "There are unfamiliar transactions on my statement from yesterday.", "intent": "compromised_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I believe my card information was stolen and I need a new one sent.", "intent": "compromised_card", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "hey can i freeze my card someone tried to buy stuff", "intent": "compromised_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "my card got skimmed at the gas station help", "intent": "compromised_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "i think my card info got leaked what are my options", "intent": "compromised_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "suspicious charges on my card plz help", "intent": "compromised_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "someone used my card online idk what to do", "intent": "compromised_card", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I noticed some unusual activity on my account yesterday and I'm really worried about my card's safety. I see a small transaction I don't recognize - could you please check if this is fraudulent and help me secure my account?", "intent": "compromised_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My partner lost their wallet earlier today and I'm now checking my banking app out of panic. I can't find my physical card anywhere and I'm afraid it might have been taken. What's the fastest way to freeze it remotely?", "intent": "compromised_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I just checked my statements and there are three charges from a store in a city I've never visited. I've never been there and I definitely didn't make these purchases. I need to dispute these immediately.", "intent": "compromised_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Something just felt off when I logged into my banking app this morning. I saw a notification about a online purchase I definitely didn't make. I'm scared my card details have been leaked, what should I do right now?", "intent": "compromised_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I'm traveling and suddenly my card was declined at a gas station, which is weird because I just used it at a cafe. I suspect someone might be cloning my card or using it fraudulently from far away.", "intent": "compromised_card", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Card used fraudulently", "intent": "compromised_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Help lost card", "intent": "compromised_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Stop card immediately", "intent": "compromised_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Unknown card charges", "intent": "compromised_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Card blocked urgent", "intent": "compromised_card", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My debit card is showing an error message every time I try to make a purchase.", "intent": "card_not_working", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I attempted to pay for my groceries and the transaction was declined.", "intent": "card_not_working", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My contactless payment method is not responding.", "intent": "card_not_working", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I cannot use my card online, it keeps getting rejected.", "intent": "card_not_working", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "The ATM retained my card and it is not working anymore.", "intent": "card_not_working", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "my card keeps saying declined at the store idk whats going on", "intent": "card_not_working", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "can u help my card isnt reading properly lol", "intent": "card_not_working", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "idk why my card got declined at the gas station", "intent": "card_not_working", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "transaction failed on my card again wtf", "intent": "card_not_working", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "my card is acting up wont let me pay", "intent": "card_not_working", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I tried to pay for my groceries this morning but the terminal kept declining my card. I've used it successfully last week, so I'm not sure what changed. Can you help me figure out why it's not going through?", "intent": "card_not_working", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I took my card out of my wallet and noticed the chip looks scratched, but I still need to make an urgent payment. Is there a way to verify if the chip is damaged or if there's another issue preventing transactions?", "intent": "card_not_working", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I made three small purchases yesterday without any problems, but today the card is being rejected at the ATM. I'm traveling and need access to cash, so I'm concerned about what might have happened overnight.", "intent": "card_not_working", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My card was working fine yesterday, but this morning I got a notification saying the card is frozen. I didn't freeze it myself, so I need to know how to unfreeze it or if there's a security alert I should be aware of.", "intent": "card_not_working", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I attempted to fill up my gas tank and the machine kept saying 'card declined.' I've checked my balance and I have plenty of funds, so I'm wondering if there's a technical issue with the card itself.", "intent": "card_not_working", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Card declined help", "intent": "card_not_working", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Why won't my card work", "intent": "card_not_working", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Card not working at all", "intent": "card_not_working", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Can't use my card", "intent": "card_not_working", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Card blocked declined", "intent": "card_not_working", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My online payment is showing as pending and I need to know when it will be processed.", "intent": "pending_card_payment", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I made a card payment yesterday but it is still pending, can you check the status?", "intent": "pending_card_payment", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "The payment on my card is pending, how long does it normally take to clear?", "intent": "pending_card_payment", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Why is my recent card payment still pending and not posted to my balance?", "intent": "pending_card_payment", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I see a pending transaction on my card, when should I expect it to complete?", "intent": "pending_card_payment", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "yo why is my card payment still pending lol", "intent": "pending_card_payment", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "my payment from yesterday is still showing as pending", "intent": "pending_card_payment", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "whats taking so long my payment pending", "intent": "pending_card_payment", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "payment stuck in pending mode", "intent": "pending_card_payment", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "why does my payment say pending rn", "intent": "pending_card_payment", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I noticed my online purchase from yesterday is still showing as pending on my card, and the amount hasn't been deducted from my available balance. Can you check if there's an issue with the transaction?", "intent": "pending_card_payment", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I tried to pay for my grocery order this morning, but the transaction is stuck on pending and I'm not sure if it went through or if I need to try again.", "intent": "pending_card_payment", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My card payment for the utility bill has been pending for over 24 hours now, and I'm concerned it might fail or be duplicated. What could be causing this delay?", "intent": "pending_card_payment", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I received a notification about a pending charge, but when I check my banking app, there's no clear status update. I just want to confirm if the payment was successful.", "intent": "pending_card_payment", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I attempted a contactless payment yesterday, but it's been sitting in pending status since then. Is there a limit or hold that's keeping the payment from completing?", "intent": "pending_card_payment", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Payment stuck pending", "intent": "pending_card_payment", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Why is my payment pending?", "intent": "pending_card_payment", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "How long pending payment?", "intent": "pending_card_payment", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Pending charge not going through", "intent": "pending_card_payment", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Card pending status", "intent": "pending_card_payment", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My card was declined at the ATM this morning.", "intent": "declined_card_payment", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I tried to buy groceries but the transaction was rejected.", "intent": "declined_card_payment", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My payment was declined when I tried to pay for gas.", "intent": "declined_card_payment", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I received a declined notification for an online purchase.", "intent": "declined_card_payment", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "The terminal showed my card was declined for the fare.", "intent": "declined_card_payment", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "my card just got declined at the store for no reason lol", "intent": "declined_card_payment", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "why does my payment keep getting rejected i have money in my acount", "intent": "declined_card_payment", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "trying to pay and it says transaction declined what gives", "intent": "declined_card_payment", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "my card keeps saying declined every time i swipe help", "intent": "declined_card_payment", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "why was my payment declined i literally just checked my balance", "intent": "declined_card_payment", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My card was declined at the grocery store this morning and I'm not sure if it's a fraud block or a technical issue.", "intent": "declined_card_payment", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I tried to pay for my lunch and the transaction was rejected, can you check why this happened?", "intent": "declined_card_payment", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I just received a notification that my card payment was declined, I need to know if I need to take any action.", "intent": "declined_card_payment", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My online payment was declined even though I have sufficient funds, what could be causing this?", "intent": "declined_card_payment", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I attempted to withdraw cash from an ATM and the card was declined, please help me understand why.", "intent": "declined_card_payment", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Card blocked why?", "intent": "declined_card_payment", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Why payment rejected?", "intent": "declined_card_payment", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Payment declined help", "intent": "declined_card_payment", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Card transaction failed", "intent": "declined_card_payment", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Why can't I pay?", "intent": "declined_card_payment", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I want to check the current exchange rate for my transfer.", "intent": "exchange_rate", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Is the exchange rate fixed or does it vary daily?", "intent": "exchange_rate", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Can you provide the mid-market exchange rate for USD?", "intent": "exchange_rate", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "What determines the exchange rate applied to my transaction?", "intent": "exchange_rate", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I need the real-time exchange rate for my international payment.", "intent": "exchange_rate", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "whats the best rate u guys have right now for usd", "intent": "exchange_rate", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "can u check the rate for euros before i buy anything", "intent": "exchange_rate", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "how much is 100 dollars in local money", "intent": "exchange_rate", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "does the rate change daily or weekly", "intent": "exchange_rate", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "is there a fee on top of the exchange rate", "intent": "exchange_rate", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I just logged into my account to check my balance before my trip and noticed the exchange rate displayed is different from the one I saw yesterday. Could you explain why there is a discrepancy?", "intent": "exchange_rate", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I'm trying to send money to my sister abroad and the amount she will receive keeps changing. Can you tell me what determines the exchange rate at the moment of transfer?", "intent": "exchange_rate", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I attempted to convert some currency this morning but the rate quoted was lower than expected. I'd like to understand how the rate is set for online exchanges.", "intent": "exchange_rate", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I have an upcoming flight and need to lock in an exchange rate for my spending money. How stable are your rates throughout the day?", "intent": "exchange_rate", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I'm comparing your rates with another bank and I'm not sure which one offers a better value. What is the current exchange rate for USD to EUR?", "intent": "exchange_rate", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "usd rate today?", "intent": "exchange_rate", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "eur buy sell price", "intent": "exchange_rate", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "exchange rate update", "intent": "exchange_rate", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "what is the rate?", "intent": "exchange_rate", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "weekend fx rate", "intent": "exchange_rate", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Topping up my card failed, can you check why the transaction didn't go through?", "intent": "top_up_failed", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My top-up attempt was rejected, please help me understand what went wrong", "intent": "top_up_failed", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I tried to add funds but the payment was declined, what should I do?", "intent": "top_up_failed", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "The top-up transaction failed on my end, could you verify the status?", "intent": "top_up_failed", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Having issues topping up my account, the payment kept failing", "intent": "top_up_failed", "style": "plain", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "bro my top up got stuck at 0% pls help", "intent": "top_up_failed", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "tried to put money in but it says failed lol", "intent": "top_up_failed", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "my card declined for the top up again", "intent": "top_up_failed", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "topup error plz check my balance", "intent": "top_up_failed", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "why wont my top up go through", "intent": "top_up_failed", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I was trying to add funds to my account from my savings account, but the transaction kept timing out. Can you check why the top up failed?", "intent": "top_up_failed", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I attempted to transfer money from my linked debit card, but the process stopped halfway through. I'm not sure if it went through or not.", "intent": "top_up_failed", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "My phone showed an error message when I tried to top up my prepaid card, and now the balance hasn't changed. What should I do?", "intent": "top_up_failed", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I tried topping up my account yesterday evening, but the confirmation never arrived and the money was deducted from my bank. Can you help?", "intent": "top_up_failed", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "The app froze right as I was confirming the top up amount, and now I'm worried the payment went through twice. Can you verify the status?", "intent": "top_up_failed", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "ayo did my transfer go thru the person still says they got nada", "intent": "transfer_not_received_by_recipient", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "i sent cash to my girl like 3 days ago she checking her phone like wher it at", "intent": "transfer_not_received_by_recipient", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "i did a send and now the receiver saying its missing in action", "intent": "transfer_not_received_by_recipient", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "transfer said completed but the homie still trippin no funds", "intent": "transfer_not_received_by_recipient", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "moved money over and the guy im paying trippin he aint get it", "intent": "transfer_not_received_by_recipient", "style": "casual", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I initiated a transfer to a friend's account two days ago, but they are saying the funds haven't shown up in their balance yet. Could you check if there's a delay on your end?", "intent": "transfer_not_received_by_recipient", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I sent money to my sister's account this morning, and the system confirmed it was successful, but she hasn't received any notification. Can you help me figure out where the payment went?", "intent": "transfer_not_received_by_recipient", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "The transfer I made yesterday to pay for a service is still pending on the recipient's side. I've checked my history and it says completed, but they haven't got the money. What should I do?", "intent": "transfer_not_received_by_recipient", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I transferred a large sum to a business account last week, and while it shows as deducted from my balance, the business owner says it hasn't arrived. Is there a processing issue I should be aware of?", "intent": "transfer_not_received_by_recipient", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "I made an online transfer yesterday evening, and although the confirmation page said it was successful, the recipient is claiming they haven't received any funds. Can you look into this for me?", "intent": "transfer_not_received_by_recipient", "style": "context", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Transfer not showing up", "intent": "transfer_not_received_by_recipient", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Recipient says no money", "intent": "transfer_not_received_by_recipient", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Sent 2 weeks ago still pending", "intent": "transfer_not_received_by_recipient", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Where is my transfer?", "intent": "transfer_not_received_by_recipient", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
+{"text": "Money gone but receiver empty", "intent": "transfer_not_received_by_recipient", "style": "terse", "generator": "nvidia/nemotron-3.5-lightning-30b-a3b"}
