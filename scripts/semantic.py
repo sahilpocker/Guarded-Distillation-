@@ -48,8 +48,8 @@ def metrics(r, ref):
     }
 
 
-def run_seed(k, methods, cfg_over, sensor, tag):
-    run = Path(f"runs/grid-minilm-a03-s{k}")
+def run_seed(k, methods, cfg_over, sensor, tag, runs="grid-minilm-a03-s"):
+    run = Path(f"runs/{runs}{k}")
     stream, tdf, meta = _load_run(run)
     pools = D.load_pools("data/raw")
     price = PRICES[meta.get("price", "haiku-5.5")]
@@ -59,7 +59,7 @@ def run_seed(k, methods, cfg_over, sensor, tag):
     embed.encode(stream.text.tolist())
     res = {}
     for name in methods:
-        res[name] = run_method(stream, tdf, pools.intents, METHODS[name], cfg, cost, sensor=sensor if METHODS[name].sensor else None)
+        res[name] = run_method(stream, tdf, tuple(meta.get("intents") or pools.intents), METHODS[name], cfg, cost, sensor=sensor if METHODS[name].sensor else None)
     ref = res["llm_only"]
     out = {m: metrics(r, ref) for m, r in res.items() if m != "llm_only"}
     out["_events"] = {m: [e for e in r.events if e["kind"] in ("sensor", "released")][:40] for m, r in res.items() if m != "llm_only"}
@@ -76,6 +76,7 @@ def main():
     ap.add_argument("--tag", required=True)
     ap.add_argument("--methods", default="llm_only,retrain,semantic")
     ap.add_argument("--config", default="{}")
+    ap.add_argument("--runs", default="grid-minilm-a03-s", help="run folder prefix; the seed is appended (e.g. clinc-travel-s)")
     ap.add_argument("--sensor", action="store_true", help="allow Claude calls for the LLM sensor (cap $0.50)")
     a = ap.parse_args()
     methods = a.methods.split(",")
@@ -89,9 +90,9 @@ def main():
     over = json.loads(a.config)
     if sensor is None:
         with ProcessPoolExecutor(len(a.seeds)) as ex:
-            outs = list(ex.map(run_seed, a.seeds, [methods] * len(a.seeds), [over] * len(a.seeds), [None] * len(a.seeds), [a.tag] * len(a.seeds)))
+            outs = list(ex.map(run_seed, a.seeds, [methods] * len(a.seeds), [over] * len(a.seeds), [None] * len(a.seeds), [a.tag] * len(a.seeds), [a.runs] * len(a.seeds)))
     else:      # sequential: one ledger, one cache file
-        outs = [run_seed(k, methods, over, sensor, a.tag) for k in a.seeds]
+        outs = [run_seed(k, methods, over, sensor, a.tag, a.runs) for k in a.seeds]
         print(f"sensor: {sensor.calls} new calls, ${sensor.spent():.4f} spent in total (cap $0.50)")
     keys = [k for k in outs[0] if not k.startswith("_")]
     cols = ["calls", "acc_delta", "launch_delta", "launch600_delta", "errors_per_1k", "extra_calls_pct"]

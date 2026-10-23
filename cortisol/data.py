@@ -154,14 +154,16 @@ def pool_texts(pools: Pools, fewshot: pd.DataFrame) -> pd.DataFrame:
     return df.rename(columns={"label": "gold"}).reset_index(drop=True)
 
 
-def build_stream(pools: Pools, cfg: StreamConfig,
-                 fewshot: pd.DataFrame | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
+def build_stream(pools: Pools, cfg: StreamConfig, fewshot: pd.DataFrame | None = None,
+                 launch_pool: pd.DataFrame | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Return (stream, fewshot).
 
     stream columns: t, text, gold, phase, is_launch. The first cfg.history rows have
     phase == "history" (drawn like the steady phase); t counts from 0 at go-live, so history
     rows have negative t.
     fewshot: cfg.shots examples per label (77 intents + out_of_scope) for the teacher prompt.
+    launch_pool: optional (text, label) frame; when given, the launch event is a whole new domain
+    drawn from it (all 77 Banking77 intents then stay in the base traffic) instead of LAUNCH_INTENTS.
     """
     rng = np.random.default_rng(cfg.seed)
     b = pools.banking.sample(frac=1.0, random_state=cfg.seed).reset_index(drop=True)
@@ -173,10 +175,16 @@ def build_stream(pools: Pools, cfg: StreamConfig,
     b = b[~b.text.isin(used)]
     o = o[~o.text.isin(used)]
 
-    launch_mask = b.label.isin(LAUNCH_INTENTS)
+    if launch_pool is not None:
+        lp = launch_pool.sample(frac=1.0, random_state=cfg.seed).reset_index(drop=True)
+        lp = lp[~lp.text.isin(used)]
+        launch_mask = pd.Series(False, index=b.index)
+    else:
+        launch_mask = b.label.isin(LAUNCH_INTENTS)
+        lp = b[launch_mask]
     queues = {
         "base": list(b[~launch_mask].itertuples(index=False)),
-        "launch": list(b[launch_mask].itertuples(index=False)),
+        "launch": list(lp.itertuples(index=False)),
         "oos": list(o.itertuples(index=False)),
     }
     rows = []

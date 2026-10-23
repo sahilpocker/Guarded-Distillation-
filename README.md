@@ -71,8 +71,10 @@ instead of k-means cells. On seeds 3-5, at 57% LLM calls it reaches launch accur
 LLM only and 0.0 in the first 600 launch-phase queries; the balanced plain gate at the same calls is
 -0.3 and -2.4. The gain comes from per-intent error residuals spread to graph neighbours; the new-intent,
 fit-check and LLM-sensor parts add little (the LLM sensor as specified never fired). Three seeds, tuned
-on 0-2 with more freedom than the baseline; see docs/RESULTS.md. The CLINC150 domain holdout has not
-been run.
+on 0-2 with more freedom than the baseline; see docs/RESULTS.md. **On a CLINC150 domain holdout (a whole
+new 15-intent domain as the launch event) it does not carry over cleanly:** better than the matched
+balanced gate on the adjacent `credit_cards` domain (launch -2.1 vs -3.2 pts), no better on `travel`
+(-3.2 vs -3.8), and no setting meets the -2 pt launch bar there.
 
 ## Real teachers
 

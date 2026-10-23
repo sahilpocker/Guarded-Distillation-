@@ -344,12 +344,94 @@ rests on the direction across seeds and the call-matched comparison); parameters
 seeds 0-2 with more freedom than the baseline had; one LLM, one prompt, one domain, one launch
 event; I compared only with the plain gate, not with the earlier cortisol field or global cortisol
 re-run under balancing; probation raises LLM calls in the drift window by design, so a user who
-cares about the steady state sees slightly more calls there. The CLINC150 domain holdout has not
-been run (see below).
+cares about the steady state sees slightly more calls there. The CLINC150 domain holdout follows below
+and does not replicate this result cleanly.
 
 Reproduce: `python scripts/semantic.py --seeds 3 4 5 --tag H-g07h4 --methods llm_only,semantic
 --config '{"sem_gain":0.7,"sem_hot":0.4}'`, `python scripts/semantic_table.py`; the sensor needs
 `--sensor` and a key in `.env`.
+
+## CLINC150 domain holdout: a whole new domain arrives as the launch event
+
+**Setup** (`scripts/clinc_domain.py`). Instead of 5 virtual-card/wallet intents, the launch event is
+one CLINC150 domain, 15 new intents (renamed `<domain>:<intent>`) that history never contains:
+`credit_cards` (adjacent to Banking77: lost cards, declined cards, fees) and `travel` (distant). The
+teacher's prompt lists the 77 Banking77 intents plus the 15 new ones with one example each, as if the
+prompt were updated at launch. Banking77 and out-of-scope texts keep their earlier labels (made with
+the 77-intent prompt); only the domain's 2,234 texts were labelled under the longer prompt (about
+$0.10 per domain; ledger total $0.79 of the $1.50 cap I set for this step; sensor spend is separate).
+About 540 live queries per seed are from the new domain. Everything else as in the previous section:
+MiniLM student, α 0.03, balanced retraining for all methods, semantic cortisol with the same parameters
+chosen on Banking77 (not retuned), plain gate swept over α. The matched baseline is the α whose LLM
+calls are closest to semantic cortisol's. Seeds 0-2 first, 3-5 as the report.
+
+**Haiku on the new domain:** 78.1% accurate vs CLINC150's labels on `credit_cards` (it answers
+`lost_or_stolen_card` for `report_lost_card`, `declined_card_payment` for `card_declined`,
+`card_payment_fee_charged` for `international_fees`: the same meaning under two label sets), 91.8% on
+`travel` (it calls `translate` out-of-scope, which is defensible for a bank). Launch Δ below is
+relative to LLM only on the same queries, so it is not penalised for the teacher's own errors, but
+accuracy is still scored against the human labels.
+
+### credit_cards, seeds 3-5 (held out)
+
+| Setting | LLM calls, % | Overall Δ, pts | Launch Δ, pts | Launch Δ, first 600 launch-phase queries, pts | Cheap-path errors / 1k | Extra LLM calls on probation, % of queries |
+|---|---|---|---|---|---|---|
+| Plain gate + balanced, α 0.03 | 49.2 [42.1 to 53.3] | 0.32 [0.19 to 0.48] | -6.04 [-7.47 to -4.40] | -11.94 [-13.01 to -10.00] | 51.9 [45.9 to 63.5] | 0.0 [0.0 to 0.0] |
+| Plain gate + balanced, α 0.02 | 52.8 [45.5 to 58.6] | 0.38 [0.29 to 0.55] | -3.46 [-4.98 to -2.66] | -9.50 [-12.80 to -4.88] | 40.9 [32.9 to 51.1] | 0.0 [0.0 to 0.0] |
+| Plain gate + balanced, α 0.015 (calls-matched) | 56.0 [46.3 to 64.3] | 0.32 [0.24 to 0.46] | -3.22 [-6.51 to -0.95] | -8.35 [-16.80 to -3.25] | 34.2 [21.5 to 49.9] | 0.0 [0.0 to 0.0] |
+| Semantic cortisol | 55.9 [50.0 to 60.0] | 0.51 [0.39 to 0.73] | -2.09 [-2.87 to -0.73] | -3.78 [-4.88 to -1.67] | 32.2 [27.2 to 40.2] | 1.9 [1.7 to 2.1] |
+
+### travel, seeds 3-5 (held out)
+
+| Setting | LLM calls, % | Overall Δ, pts | Launch Δ, pts | Launch Δ, first 600 launch-phase queries, pts | Cheap-path errors / 1k | Extra LLM calls on probation, % of queries |
+|---|---|---|---|---|---|---|
+| Plain gate + balanced, α 0.03 | 49.6 [43.3 to 55.1] | 0.57 [0.31 to 0.84] | -2.31 [-2.93 to -1.71] | -6.56 [-9.17 to -4.00] | 43.2 [34.4 to 52.8] | 0.0 [0.0 to 0.0] |
+| Plain gate + balanced, α 0.02 | 53.0 [45.9 to 58.9] | 0.46 [0.38 to 0.59] | -2.95 [-4.60 to -1.33] | -7.88 [-9.60 to -4.88] | 36.2 [27.8 to 46.8] | 0.0 [0.0 to 0.0] |
+| Plain gate + balanced, α 0.015 (calls-matched) | 56.7 [47.4 to 65.8] | 0.25 [0.09 to 0.46] | -3.76 [-5.56 to -0.95] | -8.71 [-11.67 to -3.25] | 31.2 [17.6 to 45.4] | 0.0 [0.0 to 0.0] |
+| Semantic cortisol | 55.8 [49.5 to 61.7] | 0.46 [0.40 to 0.56] | -3.16 [-6.51 to -1.33] | -9.21 [-14.40 to -4.07] | 30.0 [22.1 to 39.0] | 1.5 [1.3 to 1.7] |
+
+Seeds 0-2 for reference (credit_cards, then travel):
+
+| Setting | LLM calls, % | Overall Δ, pts | Launch Δ, pts | Launch Δ, first 600 launch-phase queries, pts | Cheap-path errors / 1k | Extra LLM calls on probation, % of queries |
+|---|---|---|---|---|---|---|
+| Plain gate + balanced, α 0.03 | 55.1 [49.5 to 64.3] | 0.30 [0.00 to 0.46] | -5.96 [-7.09 to -4.85] | -12.97 [-17.39 to -10.32] | 45.3 [34.1 to 55.5] | 0.0 [0.0 to 0.0] |
+| Plain gate + balanced, α 0.02 | 60.9 [55.2 to 69.0] | 0.35 [0.18 to 0.54] | -2.44 [-3.59 to -1.30] | -5.85 [-8.73 to -4.35] | 29.8 [22.6 to 35.2] | 0.0 [0.0 to 0.0] |
+| Plain gate + balanced, α 0.015 | 64.3 [57.5 to 74.1] | 0.26 [0.09 to 0.36] | -2.76 [-3.36 to -2.04] | -5.12 [-6.09 to -3.73] | 25.0 [15.6 to 30.9] | 0.0 [0.0 to 0.0] |
+| Semantic cortisol | 60.8 [55.5 to 69.6] | 0.52 [0.29 to 0.65] | -1.96 [-2.24 to -1.48] | -4.97 [-7.94 to -1.74] | 28.5 [19.2 to 36.5] | 1.7 [1.6 to 1.9] |
+
+| Setting | LLM calls, % | Overall Δ, pts | Launch Δ, pts | Launch Δ, first 600 launch-phase queries, pts | Cheap-path errors / 1k | Extra LLM calls on probation, % of queries |
+|---|---|---|---|---|---|---|
+| Plain gate + balanced, α 0.03 | 55.4 [50.2 to 64.8] | 0.56 [0.38 to 0.89] | -2.40 [-6.46 to 0.00] | -5.36 [-15.08 to 0.75] | 37.9 [25.8 to 47.1] | 0.0 [0.0 to 0.0] |
+| Plain gate + balanced, α 0.02 | 61.3 [56.2 to 68.6] | 0.43 [0.26 to 0.71] | -1.32 [-3.59 to -0.19] | -3.73 [-10.32 to 0.00] | 24.2 [19.5 to 27.6] | 0.0 [0.0 to 0.0] |
+| Plain gate + balanced, α 0.015 | 65.1 [58.0 to 75.3] | 0.30 [0.19 to 0.50] | -1.62 [-4.49 to -0.19] | -3.44 [-10.32 to 0.00] | 20.1 [11.0 to 25.6] | 0.0 [0.0 to 0.0] |
+| Semantic cortisol | 61.0 [56.0 to 68.9] | 0.57 [0.37 to 0.80] | -1.14 [-3.05 to -0.19] | -3.46 [-9.52 to 0.00] | 24.3 [16.8 to 29.6] | 1.3 [0.9 to 1.6] |
+
+**Result: it does not carry over cleanly.**
+- **credit_cards (adjacent): semantic cortisol is better than the matched plain gate.** At 56% calls
+  launch Δ −2.1 vs −3.2, first-600 Δ −3.8 vs −8.4, overall +0.51 vs +0.32, errors per 1,000 32 vs 34.
+  By seed (3, 4, 5) first-600 Δ is −1.7, −4.9, −4.8 against −5.0, −3.3, −16.8: better on two of three
+  seeds; whole-stream launch Δ −0.7, −2.7, −2.9 against −2.2, −0.9, −6.5: also two of three. On
+  seeds 0-2 at 61% calls the edge is smaller (launch −2.0 vs −2.4, first-600 −5.0 vs −5.9).
+- **travel (distant): no advantage.** At 56% calls launch Δ −3.2 vs −3.8 and first-600 Δ −9.2 vs
+  −8.7; semantic is better on one seed of three on each measure. On seeds 0-2 the two are within
+  0.2-0.3 pts.
+- **Nothing meets the launch bar.** A whole new domain is a harsher drift than five new intents:
+  every setting here has launch Δ below −2 pts on the held-out seeds, semantic cortisol included
+  (−2.1 and −3.2). The Banking77 result (launch +0.4) was a milder event.
+- **Likely reason, not tested:** the stress spreads over a graph built from names and a few examples;
+  for a distant domain the new intents' neighbours are weak (banking intents), and the first errors
+  are on intents the student has never seen, which only the new-intent sensor (a) covers, and
+  that one showed no effect on Banking77. An untested guess.
+
+Caveats: three held-out seeds that share most of the pool; both domains have one launch event; the
+domain labels use a different (longer) prompt from the rest of the pool; the matched α was chosen by
+calls on the held-out seeds (no accuracy peeking), so the baseline got a three-point sweep per
+domain; the LLM sensor was not run here (it never fired as specified on Banking77).
+
+Reproduce: `python scripts/clinc_domain.py label --domain credit_cards --cap-usd 1.5 --yes` (Claude
+calls), `python scripts/clinc_domain.py streams --domain credit_cards`, then
+`python scripts/semantic.py --runs clinc-credit_cards-s --seeds 3 4 5 --tag CH-credit_cards-sem
+--methods llm_only,semantic --config '{"sem_gain":0.7,"sem_hot":0.4}'`.
 
 ## Seed 0 by phase, simulated teacher (accuracy / LLM calls)
 
