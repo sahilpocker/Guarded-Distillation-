@@ -19,5 +19,13 @@ services:
         value: "600"
       - key: DATABASE_URL
         sync: false          # a free Postgres (Neon or Supabase) connection string; keeps the log, spend and model version across restarts
+      - key: WEBDAV_URL
+        value: https://app.koofr.net/dav/Koofr   # Koofr WebDAV: the SQLite log, spend and model state are snapshotted here
+      - key: WEBDAV_USER
+        sync: false          # your Koofr account email
+      - key: WEBDAV_PASSWORD
+        sync: false          # a Koofr app password (Preferences > Password > App passwords), not your login password
+      - key: WEBDAV_DIR
+        value: guarded-distillation
       - key: ADMIN_TOKEN
         generateValue: true  # protects /admin/export and /admin/reload
