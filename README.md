@@ -31,6 +31,16 @@ max-probability is a better one-line default. Online Cascade Learning (their pub
 has a cliff and does not reach the 40-60% budgets on two of three streams. Tables and caveats: `docs/RESULTS.md`
 (Routing benchmark); numbers in `docs/routing.json`; plot `docs/routing.svg`.
 
+## Triage service
+
+`gdistill serve` runs the recommended gate behind `POST /triage` (MiniLM student on CPU through ONNX Runtime, escalation
+to Claude Haiku through the label cache first and the live API only on a cache miss, under a daily spend cap),
+with `GET /metrics` and `GET /healthz`. `gdistill traffic --stream runs/<run> --rate 5 --url <service>` replays a
+stream against it. The container (`Dockerfile`, no torch, about 300 MiB resident) fits Render's free tier
+(512 MB, 0.1 CPU): `render.yaml` is a Blueprint. Free-tier caveats: it sleeps after 15 minutes idle and wakes in
+30-50 seconds, and its disk is ephemeral, so the decision log and the spend ledger reset on restart; also set a
+spend limit on the Anthropic key itself.
+
 ## What didn't work
 
 - The original idea, a "cortisol field" of local stress, did not beat a plain gate with retraining.

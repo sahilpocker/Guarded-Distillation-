@@ -1,0 +1,17 @@
+# Render Blueprint: New > Blueprint > pick this repo. Free web service built from the Dockerfile.
+services:
+  - type: web
+    name: guarded-distillation-triage
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: DAILY_CAP_USD
+        value: "1.0"
+      - key: ANTHROPIC_API_KEY
+        sync: false          # paste in the Render dashboard; without it the service answers from the label cache only
+      - key: ADMIN_TOKEN
+        generateValue: true  # protects /admin/export and /admin/reload
