@@ -96,3 +96,12 @@ def test_admin_routes_need_a_token(client, monkeypatch):
     assert client.get("/admin/export").status_code == 401
     monkeypatch.setenv("ADMIN_TOKEN", "t")
     assert client.get("/admin/export", headers={"x-admin-token": "t"}).status_code == 200
+
+
+def test_key_with_trailing_whitespace_is_cleaned(monkeypatch, tmp_path, client):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", ' "sk-ant-x" \n')
+    from guarded_distillation.serve.app import make_app as mk
+    app = mk(tmp_path / "bundle", db=str(tmp_path / "k.db"), live=False)
+    import os
+    assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-x"
+    assert TestClient(app).get("/healthz").json()["key_sanitized"] is True

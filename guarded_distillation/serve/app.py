@@ -42,6 +42,11 @@ class Query(BaseModel):
 def make_app(bundle_dir: str | Path | None = None, db: str | None = None, cap_usd: float | None = None, live: bool | None = None) -> FastAPI:
     bundle_dir = bundle_dir or os.environ.get("GD_BUNDLE", "models/v1")
     bundle = Bundle.load(bundle_dir)
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    clean = key.strip().strip("\"'").strip()
+    sanitized = bool(key) and clean != key          # a pasted key often carries a newline, which breaks the request header
+    if sanitized:
+        os.environ["ANTHROPIC_API_KEY"] = clean
     cap = float(os.environ.get("DAILY_CAP_USD", 1.0)) if cap_usd is None else cap_usd
     live = (bool(os.environ.get("ANTHROPIC_API_KEY")) if live is None else live)
     teacher = TeacherAccess(bundle.intents, cap_usd=cap, live=live, ledger=os.environ.get("GD_LEDGER", "data/service_spend.json"))
@@ -62,7 +67,7 @@ def make_app(bundle_dir: str | Path | None = None, db: str | None = None, cap_us
 
     @app.get("/healthz")
     def healthz():
-        return {"ok": True, "model_version": tri.b.version, "live_api": teacher.live}
+        return {"ok": True, "model_version": tri.b.version, "live_api": teacher.live, "key_sanitized": sanitized}
 
     @app.post("/triage")
     def triage(q: Query):

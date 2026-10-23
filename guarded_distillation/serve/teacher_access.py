@@ -63,7 +63,8 @@ class TeacherAccess:
     def _teacher(self) -> LLMTeacher:
         if self._llm is None:
             self._llm = LLMTeacher("anthropic", MODEL, self._prompt, list(self.intents) + [OOS], cache_path=self.cache_path,
-                                   max_workers=1, price=PRICES["haiku-5.5"], ledger=self.ledger)
+                                   max_workers=1, price=PRICES["haiku-5.5"], ledger=self.ledger,
+                                   client_kwargs={"timeout": 12.0, "max_retries": 0}, tries=1)       # fail fast: a request is waiting
         return self._llm
 
     def spent_today(self) -> float:

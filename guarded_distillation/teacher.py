@@ -220,13 +220,15 @@ class LLMTeacher:
 
     def __init__(self, provider: str, model: str, system_prompt: str, labels: list[str],
                  cache_path: Path, base_url: str | None = None, max_workers: int = 8,
-                 price: Price | None = None, ledger: Ledger | None = None, readonly: bool = False):
+                 price: Price | None = None, ledger: Ledger | None = None, readonly: bool = False,
+                 client_kwargs: dict | None = None, tries: int = 4):
         self.provider, self.model = provider, model
         self.system_prompt, self.labels = system_prompt, labels
         self.cache_path = Path(cache_path)
         self.base_url = base_url
         self.max_workers = max_workers
         self.price, self.ledger, self.readonly = price, ledger, readonly
+        self.client_kwargs, self.tries = client_kwargs or {}, tries
         self._lock = threading.Lock()
         self._stop = threading.Event()
         self.cap_hit, self.fatal, self.last_error = False, None, None
@@ -252,7 +254,7 @@ class LLMTeacher:
         if self._client is None:
             if self.provider == "anthropic":
                 import anthropic
-                self._client = anthropic.Anthropic()
+                self._client = anthropic.Anthropic(**self.client_kwargs)
             elif self.provider == "openai":
                 from openai import OpenAI
                 self._client = OpenAI(base_url=self.base_url, api_key=os.environ.get("OPENAI_API_KEY", "local"))
@@ -292,9 +294,10 @@ class LLMTeacher:
         tokens = 1.5 * (approx_prompt_tokens(self.system_prompt) + approx_tokens(text) + 50)
         return (tokens * max(p.input, p.cache_write) + 24 * p.output) / 1e6
 
-    def _call_retry(self, text: str, tries: int = 4) -> dict | None:
+    def _call_retry(self, text: str, tries: int | None = None) -> dict | None:
         """One record, or None (cap hit, fatal error, or transient failure: nothing is cached)."""
         import time
+        tries = tries or self.tries
         if self._stop.is_set():
             return None
         worst = self._worst(text) if self.price else 0.0
