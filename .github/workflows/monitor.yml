@@ -35,10 +35,11 @@ jobs:
         if: steps.alerts.outputs.count != '0'
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
         run: |
           body=$(jq -r '"Service: '"$SERVICE_URL"'\nModel version: \(.model_version)\n\n" + ([.alerts[] | "- **\(.kind)**: \(.detail)"] | join("\n")) + "\n\nLive view: https://guarded-distillation.vercel.app/replay#live\nMetrics: '"$SERVICE_URL"'/metrics"' alerts.json)
-          existing=$(gh issue list --label service-alert --state open --json number --jq '.[0].number // empty')
           gh label create service-alert --color B60205 --description "Raised by the monitor workflow" 2>/dev/null || true
+          existing=$(gh issue list --label service-alert --state open --json number --jq '.[0].number // empty')
           if [ -n "$existing" ]; then
             gh issue comment "$existing" --body "$body"
           else
