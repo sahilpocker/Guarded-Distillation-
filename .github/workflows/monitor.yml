@@ -1,0 +1,46 @@
+name: monitor
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+    inputs:
+      simulate:
+        description: "Open a test issue without checking the service"
+        type: boolean
+        default: false
+
+permissions:
+  issues: write
+  contents: read
+
+env:
+  SERVICE_URL: ${{ vars.SERVICE_URL || 'https://guarded-distillation-triage.onrender.com' }}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Read /alerts (the free server may take a minute to wake)
+        id: alerts
+        run: |
+          if [ "${{ inputs.simulate }}" = "true" ]; then
+            echo '{"alerts":[{"kind":"test","detail":"simulated alert from the monitor workflow"}],"model_version":"test","window":0}' > alerts.json
+          else
+            curl -sS --retry 6 --retry-delay 15 --retry-all-errors -m 90 "$SERVICE_URL/alerts" -o alerts.json
+          fi
+          cat alerts.json
+          echo "count=$(jq '.alerts | length' alerts.json)" >> "$GITHUB_OUTPUT"
+      - name: Open or update an issue
+        if: steps.alerts.outputs.count != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          body=$(jq -r '"Service: '"$SERVICE_URL"'\nModel version: \(.model_version)\n\n" + ([.alerts[] | "- **\(.kind)**: \(.detail)"] | join("\n")) + "\n\nLive view: https://guarded-distillation.vercel.app/replay#live\nMetrics: '"$SERVICE_URL"'/metrics"' alerts.json)
+          existing=$(gh issue list --label service-alert --state open --json number --jq '.[0].number // empty')
+          gh label create service-alert --color B60205 --description "Raised by the monitor workflow" 2>/dev/null || true
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "Service alert: $(jq -r '.alerts[0].kind' alerts.json)" --label service-alert --body "$body"
+          fi
