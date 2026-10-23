@@ -207,14 +207,13 @@ def cmd_report(args) -> None:
         d = g["default"]
         names = {"retrain": "static gate + retraining", "global": "global cortisol + retraining", "cortisol": "the cortisol field"}
         student = "MiniLM" if d["student"] == "minilm" else "TF-IDF"
-        cap = (f"Default (ringed): <b>{names[d['method']]}</b>, {student} student, alpha_intent {d['alpha']:g}. It is the setting of "
-               f"that method with the fewest LLM calls whose accuracy stays within 0.3 points of LLM-only on every one of seeds "
-               f"{', '.join(map(str, g['seeds']))}. ")
-        b = g.get("best_overall")
-        if b and (b["method"], b["student"], b["alpha"]) != (d["method"], d["student"], d["alpha"]):
-            cap += (f"{names[b['method']].capitalize()} with the same student and alpha_intent uses fewer calls ({b['calls']:.0f}%) but lets "
-                    f"{b['errors']:.0f} cheap-path errors per 1,000 queries through; the accuracy axis does not show that. ")
-        if not g["field_on_curve"]:
+        cap = (f"Default (ringed): <b>{names[d['method']]}</b>, {student} student, alpha_intent {d['alpha']:g}. It is the setting with the "
+               f"fewest LLM calls whose overall accuracy stays within {-g['bar_pts']:g} points of LLM-only and whose launch-question accuracy "
+               f"stays within {-g['launch_bar_pts']:g} points of it, on every one of seeds {', '.join(map(str, g['seeds']))}. "
+               f"Settings outside either bar are still shown; hover for overall accuracy and cheap-path errors. ")
+        if g["field_on_curve"]:
+            cap += "The cortisol field is on the curve at one point only and is not the default, so it stays experimental."
+        else:
             cap += "The cortisol field is not on the trade-off curve, so it is experimental."
         op = operating_points_section(Path(args.operating_points).read_text(encoding="utf-8"), cap)
     write_all(results, meta, run, focus=getattr(args, "focus", "cortisol"), operating_points=op)
@@ -274,7 +273,7 @@ def main(argv=None) -> None:
         q.add_argument("--methods", default="llm_only,static,retrain,global,cortisol")
         q.add_argument("--map", default="tfidf", choices=["tfidf", "sbert"], help="map space backend")
         q.add_argument("--preset", default=None, choices=["recommended"],
-                       help="apply the recommended operating point (MiniLM student, alpha_intent 0.08); report it with --focus global")
+                       help="apply the recommended operating point (MiniLM student; alpha_intent defaults to 0.03); report it with --focus retrain")
         q.add_argument("--student", default=None, choices=["tfidf", "sbert"],
                        help="student backend (default: same as --map; sbert = frozen MiniLM + logistic regression)")
         q.add_argument("--config", default=None, help='JSON overrides for EngineConfig, e.g. \'{"alpha_intent":0.02}\'')

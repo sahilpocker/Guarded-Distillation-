@@ -37,26 +37,33 @@ this stream. See docs/RESULTS.md, and docs/ROADMAP.md for the experiments that t
 
 ## Recommended setting (Claude Haiku 5.5 as the teacher)
 
-Chosen on seeds 0-2 from an 18-setting grid and checked on seeds 3-5 (docs/RESULTS.md):
-**global cortisol + retraining, MiniLM student, `alpha_intent` 0.08**.
+Chosen on seeds 0-2 from an 18-setting grid: the fewest LLM calls such that overall accuracy is
+within 0.3 pts of LLM only **and** launch-question accuracy within 2 pts, on every seed
+(docs/RESULTS.md). **Static gate + retraining, MiniLM student, `alpha_intent` 0.03.**
 
-| | Accuracy | LLM calls | Cost / 1,000 queries | Cheap-path errors / 1k |
-|---|---|---|---|---|
-| LLM only (Haiku) | 80.8% | 100% | $0.041 | 0 |
-| Recommended, seeds 3-5 | 81.2% (+0.34 pts) | 60% (57-64) | $0.024 | 55 |
+| Seeds 3-5 (held out) | Accuracy | LLM calls | Cost / 1,000 queries | Cheap-path errors / 1k | Launch questions |
+|---|---|---|---|---|---|
+| LLM only (Haiku) | 80.8% | 100% | $0.041 | 0 | 84.8% |
+| Recommended | 81.3% (+0.45 pts) | 51% (46-58) | $0.021 | 43 | 81.4% (-3.4 pts) |
+
+**Held-out caveat:** overall accuracy and call savings held up, but launch-question accuracy did
+not. It missed the -2 pt bar on two of three held-out seeds (seed 5: -6.3 pts), so this setting
+saves about half the LLM calls at a real cost on a new product's questions. The pick was within
+noise of the bar on the selection seeds. TF-IDF settings kept launch accuracy near or above LLM
+only on seeds 0-2 at 63-69% calls; they have not been run on seeds 3-5.
 
 ![Operating points](docs/operating-points.svg)
 
 ```bash
 pip install -e ".[llm,sbert]"
 cortisol replay --run runs/<run> --preset recommended
-cortisol report --run runs/<run> --focus global
+cortisol report --run runs/<run> --focus retrain
 ```
 
-**The cortisol field (the local, per-region part) is experimental.** It was not on the
-trade-off curve, and no experiment has yet shown it beating global cortisol (E3, E4 in
-docs/ROADMAP.md test where it should). Launch-question accuracy is about 2 points below LLM only
-under this setting.
+**The cortisol field (the local, per-region part) is experimental.** It is on the trade-off
+curve at one point only (TF-IDF, alpha_intent 0.05: 63% calls, launch +0.4 pts) and no experiment
+has yet shown it beating the static gate with retraining (E3, E4 in docs/ROADMAP.md test where it
+should).
 
 ## Real teachers
 

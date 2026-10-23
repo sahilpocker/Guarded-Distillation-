@@ -172,7 +172,7 @@ def operating_points_section(svg: str, caption: str) -> str:
         '<section class="panel" aria-labelledby="h-op">\n'
         '    <h2 id="h-op">Pick your operating point</h2>\n'
         '    <p class="sub">Every point is one setting of the system, run on the same live stream. Further left means fewer '
-        'LLM calls; higher means more accurate than LLM-only. Bars show the lowest and highest result over seeds. '
+        'LLM calls; higher means better launch-question accuracy than LLM-only. Bars show the lowest and highest result over seeds. '
         'Hover a point for its numbers.</p>\n'
         f'    <div class="chart" style="overflow-x:auto">{svg}</div>\n'
         f'    <p class="sub">{caption}</p>\n'

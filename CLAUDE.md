@@ -18,12 +18,15 @@ Sister project: `../vaers` (same idea on VAERS pharmacovigilance; its week-1 les
   Haiku is only ~80.5% accurate vs human labels on this task; compiled methods match it and cut
   LLM calls ~27-31%. alpha_intent 0.05 chosen on seed 0 (field: 63% calls). E2 (MiniLM student) is done and
   mixed: more answered but more leaks; the field shows no advantage. Results: docs/RESULTS.md.
-- **Recommended setting** (picked on seeds 0-2 from the grid, confirmed on 3-5): global cortisol +
-  retraining, MiniLM student, alpha_intent 0.08 (`cortisol replay --preset recommended`, report with
-  `--focus global`; constants in `engine.RECOMMENDED`). ~60% LLM calls, +0.34 pts vs Haiku, ~55
-  cheap-path errors / 1k. **The cortisol field is experimental**: it was not on the trade-off curve.
-  Do not present it as the product default or claim a local advantage until E3/E4 show one.
-  Next: E3/E4 in docs/ROADMAP.md, Llama via OpenRouter.
+- **Recommended setting** (picked on seeds 0-2: fewest LLM calls with overall accuracy >= -0.3 pts and
+  launch accuracy >= -2 pts on every seed): static gate + retraining, MiniLM student, alpha_intent 0.03
+  (`cortisol replay --preset recommended`, report with `--focus retrain`; constants in
+  `engine.RECOMMENDED`). Seeds 3-5: ~51% LLM calls, +0.45 pts overall, ~43 cheap-path errors / 1k, but
+  **launch accuracy -3.4 pts vs Haiku (two of three seeds miss the -2 bar)**: the pick did not hold on
+  the drift criterion and has not been re-picked on held-out seeds. **The cortisol field is
+  experimental**: on the trade-off curve at one point only, never beats the static gate at the same
+  student and alpha. Do not present it as the product default or claim a local advantage until E3/E4
+  show one. Next: E3/E4 in docs/ROADMAP.md, Llama via OpenRouter, TF-IDF settings on seeds 3-5.
 - **No Claude API calls without Sahil's explicit go-ahead for that specific run.** His key lives in
   `.env` (gitignored, loaded by the CLI); do not read it, print it, or touch `../vaers/.env`.
   Paid calls need `--cap-usd`; spend is in `labels/spend.json`.
