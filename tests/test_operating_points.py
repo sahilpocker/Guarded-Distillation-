@@ -5,10 +5,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 import operating_points as op  # noqa: E402
 
 
-def row(method, calls, delta, lo=None):
+def row(method, calls, delta, lo=None, launch=None, launch_lo=None):
     d = {"mean": delta, "min": lo if lo is not None else delta, "max": delta}
+    launch = delta if launch is None else launch
+    ln = {"mean": launch, "min": launch if launch_lo is None else launch_lo, "max": launch}
     return {"method": method, "student": "tfidf", "alpha": 0.05, "calls": {"mean": calls, "min": calls, "max": calls},
-            "delta": d, "errors": {"mean": 20.0, "min": 20.0, "max": 20.0}, "passes": d["min"] >= op.BAR, "seeds": {}}
+            "delta": d, "launch": ln, "errors": {"mean": 20.0, "min": 20.0, "max": 20.0},
+            "passes": d["min"] >= op.BAR and ln["min"] >= op.LAUNCH_BAR, "seeds": {}}
 
 
 def test_pareto_and_selection():
@@ -18,6 +21,13 @@ def test_pareto_and_selection():
     assert op.select(rows)["calls"]["mean"] == 50                        # the 40% setting fails the bar on a seed
     assert op.select(rows, {"global"})["calls"]["mean"] == 60
     assert op.select([row("global", 40, -0.5, lo=-0.6)]) is None
+
+
+def test_launch_bar_binds_even_when_overall_accuracy_passes():
+    rows = [row("retrain", 40, 0.5, launch=-1.0, launch_lo=-3.0), row("global", 60, 0.3, launch=0.0)]
+    op.pareto(rows)
+    assert op.select(rows)["calls"]["mean"] == 60                        # the 40% setting misses the launch bar on a seed
+    assert all(r["frontier"] for r in rows)
 
 
 def test_svg_has_one_title_per_setting_and_the_default_ring():
