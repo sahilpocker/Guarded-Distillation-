@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from cortisol import gate
+from guarded_distillation import gate
 
 
 def aci_ready() -> bool:
@@ -13,13 +13,13 @@ def aci_ready() -> bool:
         return False
 
 
-needs_aci = pytest.mark.skipif(not aci_ready(), reason="cortisol.gate.aci_update not implemented")
+needs_aci = pytest.mark.skipif(not aci_ready(), reason="guarded_distillation.gate.aci_update not implemented")
 
 
 @pytest.fixture
 def tiny_pools():
     """A small synthetic stand-in for Banking77: 6 intents (2 of them 'launch') + out-of-scope."""
-    from cortisol.data import Pools
+    from guarded_distillation.data import Pools
     rng = np.random.default_rng(0)
     vocab = {
         "card_arrival": ["card", "arrive", "post", "delivery", "waiting"],

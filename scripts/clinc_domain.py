@@ -18,9 +18,9 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from cortisol import data as D  # noqa: E402
-from cortisol.cli import _load_env  # noqa: E402
-from cortisol.teacher import PRICES, CapExceeded, Ledger, LLMTeacher, approx_prompt_tokens, build_system_prompt  # noqa: E402
+from guarded_distillation import data as D  # noqa: E402
+from guarded_distillation.cli import _load_env  # noqa: E402
+from guarded_distillation.teacher import PRICES, CapExceeded, Ledger, LLMTeacher, approx_prompt_tokens, build_system_prompt  # noqa: E402
 
 MODEL = "claude-haiku-5-5"
 BASE_LABELS = "labels/claude-haiku-5-5.jsonl"

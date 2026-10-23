@@ -52,7 +52,7 @@ class Method:
     directed_audits: bool = False
     retrain: bool = True
     hot_cell_retrain: bool = False
-    semantic: bool = False        # per-intent stress on the intent graph (cortisol/semantic.py)
+    semantic: bool = False        # per-intent stress on the intent graph (guarded_distillation/semantic.py)
     sensor: bool = False          # ... plus the LLM sensor on clusters outside every intent's radius
 
 
@@ -72,7 +72,7 @@ METHODS: dict[str, Method] = {m.name: m for m in [
 # pts and launch-question accuracy >= -2 pts vs LLM only on every seed) and reported on seeds 3-5
 # (docs/RESULTS.md): static gate + retraining, MiniLM student, alpha_intent 0.03, TF-IDF map. It needs
 # the [sbert] extra, so EngineConfig's own defaults stay light (TF-IDF, 0.03) for tests and the free
-# demo; `cortisol replay --preset recommended` applies the student.
+# demo; `gdistill replay --preset recommended` applies the student.
 # Class-balanced retraining was added afterwards (docs/RESULTS.md, semantic cortisol): same calls, launch Δ -3.4 -> -0.3 on seeds 3-5.
 RECOMMENDED = {"method": "retrain", "student_backend": "sbert", "alpha_intent": 0.03, "map_backend": "tfidf", "balance": True}
 
@@ -106,7 +106,7 @@ class EngineConfig:
     # size of its nearest old neighbour until it has `balance_to` teacher labels
     balance: bool = False
     balance_to: int = 50
-    # semantic cortisol (see cortisol/semantic.py)
+    # semantic cortisol (see guarded_distillation/semantic.py)
     sem_gain: float = 1.0         # level added to an intent's predictions per unit of stress
     sem_top: int = 3              # stress spreads to this many graph neighbours
     sem_spread: float = 0.5       # ... scaled by this and the edge weight

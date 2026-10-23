@@ -1,11 +1,11 @@
-"""Spec for cortisol.gate.aci_update.
+"""Spec for guarded_distillation.gate.aci_update.
 
 Run:  python -m pytest -q tests/test_aci.py
 """
 import numpy as np
 import pytest
 
-from cortisol.gate import aci_update
+from guarded_distillation.gate import aci_update
 
 
 def test_miss_raises_by_gamma_times_one_minus_alpha():

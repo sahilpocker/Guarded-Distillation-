@@ -1,6 +1,6 @@
 import pandas as pd
 
-from cortisol.teacher import SimulatedTeacher, build_system_prompt, parse_label
+from guarded_distillation.teacher import SimulatedTeacher, build_system_prompt, parse_label
 
 
 def test_parse_label():

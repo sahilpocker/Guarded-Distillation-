@@ -8,7 +8,7 @@ labels; the system only sees teacher labels.
    mechanism, not a real LLM.
 2. **Claude Haiku 5.5** (E1, real LLM, 1-shot-per-intent prompt). Section below.
 
-Reproduce the simulated runs: `cortisol demo --seed K --run runs/simulated-sK` for K = 0, 1, 2.
+Reproduce the simulated runs: `gdistill demo --seed K --run runs/simulated-sK` for K = 0, 1, 2.
 
 ## Headline, simulated teacher (3 seeds)
 
@@ -112,7 +112,7 @@ Caveats on the tuning:
 
 ## E2: frozen MiniLM embeddings + logistic regression (Haiku, `alpha_intent` 0.05, 3 seeds)
 
-`cortisol replay --map sbert` runs both the map space and the students on `all-MiniLM-L6-v2`
+`gdistill replay --map sbert` runs both the map space and the students on `all-MiniLM-L6-v2`
 embeddings (frozen), with a logistic-regression head instead of TF-IDF + linear SVM. Same labels,
 streams and settings as the TF-IDF table, so the two are directly comparable.
 
@@ -230,7 +230,7 @@ above 0 on seeds 0-2 are the TF-IDF ones (for example static gate + retraining, 
 
 Caveats: one real LLM, one prompt, one domain; seeds share most of the pool and are not
 independent; the default needs the `[sbert]` extra (torch and a 90 MB encoder), so it is applied
-with `cortisol replay --preset recommended` and `EngineConfig`'s own defaults stay light.
+with `gdistill replay --preset recommended` and `EngineConfig`'s own defaults stay light.
 Reproduce: `python scripts/grid.py`, `python scripts/operating_points.py`, then
 `python scripts/grid.py --seeds 3 4 5 --students minilm --alphas 0.03 --methods llm_only,retrain`
 and `python scripts/operating_points.py --confirm retrain minilm 0.03 --seeds 3 4 5`.
@@ -241,7 +241,7 @@ and `python scripts/operating_points.py --confirm retrain minilm 0.03 --seeds 3 
 learned intent has a handful of labels and loses to its old neighbour, and neither doubt nor
 embedding-space novelty sees it. The cortisol field's k-means cells know *where* a query is, not
 *which intent* it is about. Semantic cortisol keeps one stress value per intent
-(`cortisol/semantic.py`, method `semantic`, engine settings `sem_*`).
+(`guarded_distillation/semantic.py`, method `semantic`, engine settings `sem_*`).
 
 **What was built.**
 1. *Baseline fix for every method:* class-balanced retraining. An intent the go-live student did not
@@ -259,7 +259,7 @@ embedding-space novelty sees it. The cortisol field's k-means cells know *where*
    at 50%. Probation ends after 30 consecutive teacher-seen answers agree. "Escalate its predictions"
    is implemented as this raised level, not as escalate-all, because escalate-all would leave nothing
    to audit.
-4. *LLM sensor* (`cortisol/sensor.py`, `semantic_llm`): see below.
+4. *LLM sensor* (`guarded_distillation/sensor.py`, `semantic_llm`): see below.
 
 Semantic cortisol sits on the static gate (no tonic, no guard), so the comparison with "plain gate +
 balanced retraining" isolates the per-intent stress. Settings otherwise as the recommended point
@@ -499,7 +499,7 @@ noise for any single seed. `EngineConfig.sem_qfit` defaults to 0 so the earlier 
 - Banking77's 77 intents overlap, so human labels themselves are debatable on the confusable
   pairs; "accuracy against human labels" is partly a measure of agreement with that labelling.
 - The three seeds share most of the pool, so they are not independent samples.
-- Haiku 5.5 prices are the figures in `cortisol.teacher.PRICES`, matching Anthropic's published
+- Haiku 5.5 prices are the figures in `guarded_distillation.teacher.PRICES`, matching Anthropic's published
   table as cached on 2026-10-06; re-check before quoting dollars.
 - Leaks are controlled relative to the teacher, so the student inherits the teacher's mistakes on
   accepted queries; accuracy is reported against human labels to keep that visible.

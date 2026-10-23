@@ -1,7 +1,7 @@
 """Teachers: the LLM that answers anything, labels data for the students and audits them.
 
 Teacher labels do not depend on the replay state, so they are computed once per stream
-(`cortisol label`) and every replay reads them from disk. The ledger then charges each method
+(`gdistill label`) and every replay reads them from disk. The ledger then charges each method
 only for the calls it actually made. That is why a full set of baselines costs the same as one
 LLM-only pass.
 
@@ -331,7 +331,7 @@ class LLMTeacher:
         todo = [t for t in dict.fromkeys(texts) if self._key(t) not in cache]
         if todo and self.readonly:
             raise RuntimeError(f"{len(todo):,} of {len(set(texts)):,} texts are not in {self.cache_path}; "
-                               "run `cortisol label-pool` for this teacher first")
+                               "run `gdistill label-pool` for this teacher first")
         if todo:
             self.cache_path.parent.mkdir(parents=True, exist_ok=True)
             done = 0

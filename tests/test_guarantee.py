@@ -7,7 +7,7 @@ between regimes and the tonic is badly wrong (always 0).
 """
 import numpy as np
 
-from cortisol.gate import CortisolField, FieldConfig
+from guarded_distillation.gate import CortisolField, FieldConfig
 from conftest import needs_aci
 
 

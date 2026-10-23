@@ -44,7 +44,7 @@ Summing the updates: q_end − q_start = step × Σ(miss − α), so the average
 The price: it is a long-run average. A bad month can hide inside a good year. The step size
 trades reaction speed against jitter.
 
-`cortisol.gate.aci_update` is this rule, in one line; the spec is tests/test_aci.py.
+`guarded_distillation.gate.aci_update` is this rule, in one line; the spec is tests/test_aci.py.
 
 ## 3. What the gate controls here: leaks
 

@@ -1,4 +1,4 @@
-# cortisol-mvp
+# guarded-distillation
 
 An agent pipeline that compiles its own repeated LLM decisions into small CPU models, and keeps
 them honest without anyone watching.
@@ -17,7 +17,7 @@ customer queries from Banking77 and CLINC150, through a product launch and an of
 python3.11 -m venv .venv && source .venv/bin/activate   # Homebrew Python 3.11, same as ../vaers
 pip install -e ".[dev]"
 python -m pytest -q
-cortisol demo                # downloads data, simulated teacher, 5 methods, report (~3 min, free)
+gdistill demo                # downloads data, simulated teacher, 5 methods, report (~3 min, free)
 open runs/simulated-s0/replay.html
 ```
 
@@ -59,8 +59,8 @@ of the preset.
 
 ```bash
 pip install -e ".[llm,sbert]"
-cortisol replay --run runs/<run> --preset recommended
-cortisol report --run runs/<run> --focus retrain
+gdistill replay --run runs/<run> --preset recommended
+gdistill report --run runs/<run> --focus retrain
 ```
 
 **The cortisol field (the local, per-region part) is experimental.** It is on the trade-off
@@ -81,14 +81,14 @@ balanced gate on the adjacent `credit_cards` domain (launch -2.1 vs -3.2 pts), n
 ```bash
 pip install -e ".[llm]"
 # local model behind any OpenAI-compatible server (vLLM, Ollama), free
-cortisol label --teacher openai --model <name> --base-url http://host:8000/v1 --price free --run runs/local-s0 --yes
-cortisol replay --run runs/local-s0
-cortisol report --run runs/local-s0
+gdistill label --teacher openai --model <name> --base-url http://host:8000/v1 --price free --run runs/local-s0 --yes
+gdistill replay --run runs/local-s0
+gdistill report --run runs/local-s0
 ```
 
 Claude works too (`--teacher anthropic --model claude-haiku-5-5`, key in `.env`); without `--yes` it
 only prints the cost estimate. To label a whole dataset once with a spend cap, then replay any seed
-for free: `cortisol label-pool ... --cap-usd 5 --yes`, then `cortisol label --labels labels/<model>.jsonl`.
+for free: `gdistill label-pool ... --cap-usd 5 --yes`, then `gdistill label --labels labels/<model>.jsonl`.
 
 Teacher labels do not depend on the method, so each stream is labelled once and every method
 replays from the cache. Each method is charged only for the calls it makes.
@@ -97,12 +97,12 @@ replays from the cache. Each method is charged only for the calls it makes.
 
 | path | what |
 |---|---|
-| `cortisol/engine.py` | the replay loop: gates, escalation, audits, cortisol, retraining |
-| `cortisol/gate.py` | doubt, leak bound, the cortisol field, `aci_update` |
-| `cortisol/student.py`, `space.py`, `embed.py` | compiled models (TF-IDF or MiniLM); the map space and its cells |
-| `cortisol/teacher.py` | simulated, Anthropic and OpenAI-compatible teachers |
-| `cortisol/data.py`, `taxonomy.py` | datasets, the drift stream, routing tables |
-| `cortisol/report.py`, `templates/replay.html` | REPORT.md, results.json, the replay dashboard |
+| `guarded_distillation/engine.py` | the replay loop: gates, escalation, audits, cortisol, retraining |
+| `guarded_distillation/gate.py` | doubt, leak bound, the cortisol field, `aci_update` |
+| `guarded_distillation/student.py`, `space.py`, `embed.py` | compiled models (TF-IDF or MiniLM); the map space and its cells |
+| `guarded_distillation/teacher.py` | simulated, Anthropic and OpenAI-compatible teachers |
+| `guarded_distillation/data.py`, `taxonomy.py` | datasets, the drift stream, routing tables |
+| `guarded_distillation/report.py`, `templates/replay.html` | REPORT.md, results.json, the replay dashboard |
 | `docs/THEORY.md` | lessons, the leak guarantee and its proof sketch, the research question |
 | `docs/DESIGN.md` | why each piece is built the way it is |
 | `docs/RESULTS.md`, `docs/ROADMAP.md` | numbers so far; what to run next |

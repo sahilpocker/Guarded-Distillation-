@@ -3,8 +3,8 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from cortisol import embed
-from cortisol.semantic import IntentGraph, OutsideClusters, SemanticField
+from guarded_distillation import embed
+from guarded_distillation.semantic import IntentGraph, OutsideClusters, SemanticField
 
 CFG = SimpleNamespace(sem_gain=1.0, sem_top=3, sem_spread=0.5, sem_hot=0.25, sem_decay=0.002, sem_release=30)
 

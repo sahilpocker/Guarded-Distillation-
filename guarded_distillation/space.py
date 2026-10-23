@@ -36,7 +36,7 @@ class MapSpace:
             X = self.vec.fit_transform(texts)
             self.svd = TruncatedSVD(n_components=min(self.dim, X.shape[1] - 1), random_state=self.seed).fit(X)
         elif self.backend == "sbert":
-            pass   # the shared frozen encoder (cortisol.embed) is loaded on first use
+            pass   # the shared frozen encoder (guarded_distillation.embed) is loaded on first use
         else:
             raise ValueError(f"unknown map backend {self.backend}")
 

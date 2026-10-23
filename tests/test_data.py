@@ -1,7 +1,7 @@
 import pandas as pd
 
-from cortisol.data import Phase, StreamConfig, build_stream
-from cortisol.taxonomy import LAUNCH_INTENTS, OOS, ROUTE_OF, route, urgency
+from guarded_distillation.data import Phase, StreamConfig, build_stream
+from guarded_distillation.taxonomy import LAUNCH_INTENTS, OOS, ROUTE_OF, route, urgency
 
 
 def small_cfg(**kw):

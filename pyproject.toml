@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cortisol-mvp"
+name = "guarded-distillation"
 version = "0.1.0"
-description = "Self-maintaining LLM-to-classical distillation for agent pipelines, steered by a cortisol field"
+description = "Compile repeated LLM decisions into cheap CPU models, with a risk-controlled gate that decides when each may answer"
 requires-python = ">=3.10"
 dependencies = [
   "numpy>=1.26",
@@ -20,13 +20,14 @@ sbert = ["sentence-transformers>=3.0"]
 dev = ["pytest>=8"]
 
 [project.scripts]
-cortisol = "cortisol.cli:main"
+gdistill = "guarded_distillation.cli:main"
+cortisol = "guarded_distillation.cli:main"   # old command name
 
 [tool.setuptools]
-packages = ["cortisol"]
+packages = ["guarded_distillation"]
 
 [tool.setuptools.package-data]
-cortisol = ["templates/*.html"]
+guarded_distillation = ["templates/*.html"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

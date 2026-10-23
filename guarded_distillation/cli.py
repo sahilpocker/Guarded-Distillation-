@@ -1,9 +1,9 @@
-"""Command line: cortisol data | label | label-pool | replay | report | demo
+"""Command line: gdistill data | label | label-pool | replay | report | demo
 
-    cortisol demo                                   # everything, simulated teacher, free
-    cortisol label --teacher anthropic --model claude-haiku-5-5 --run runs/haiku-s0 --yes
-    cortisol replay --run runs/haiku-s0
-    cortisol report --run runs/haiku-s0
+    gdistill demo                                   # everything, simulated teacher, free
+    gdistill label --teacher anthropic --model claude-haiku-5-5 --run runs/haiku-s0 --yes
+    gdistill replay --run runs/haiku-s0
+    gdistill report --run runs/haiku-s0
 """
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ import numpy as np
 import pandas as pd
 
 from . import data as D
+from .compat import load_pickle
 from .engine import METHODS, RECOMMENDED, EngineConfig, config_dict, run_method
 from .report import write_all
 from .teacher import (PRICES, CallCost, CapExceeded, Ledger, LLMTeacher, SimulatedTeacher, approx_prompt_tokens,
@@ -58,7 +59,7 @@ def cmd_label(args) -> None:
         teacher = SimulatedTeacher(pd.concat([pools.banking, pools.oos]), acc=args.acc, seed=args.seed)
         name = f"simulated (acc {args.acc:.0%})"
     elif args.labels:
-        # Shared pool labels (cortisol label-pool): read-only, never calls the API, costs nothing.
+        # Shared pool labels (gdistill label-pool): read-only, never calls the API, costs nothing.
         teacher = LLMTeacher(args.teacher, args.model, system_prompt, list(pools.intents) + [D.OOS],
                              cache_path=args.labels, readonly=True)
         name = f"{args.teacher}:{args.model}"
@@ -197,9 +198,9 @@ def cmd_report(args) -> None:
         p = run / "results" / f"{name}.pkl"
         if p.exists():
             with open(p, "rb") as f:
-                results[name] = pickle.load(f)
+                results[name] = load_pickle(f)
     if not any(m in results for m in ("static", "retrain", "global", "cortisol")):
-        sys.exit("run `cortisol replay` first (the report needs at least one gated method)")
+        sys.exit("run `gdistill replay` first (the report needs at least one gated method)")
     op = ""
     if getattr(args, "operating_points", None):
         from .report import operating_points_section
@@ -235,7 +236,7 @@ def cmd_demo(args) -> None:
 
 
 def main(argv=None) -> None:
-    p = argparse.ArgumentParser(prog="cortisol", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p = argparse.ArgumentParser(prog="gdistill", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--raw", default="data/raw", help="where the datasets live")
     sub = p.add_subparsers(dest="cmd", required=True)
 

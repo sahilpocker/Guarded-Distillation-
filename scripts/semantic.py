@@ -17,11 +17,11 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from cortisol import data as D, embed  # noqa: E402
-from cortisol.cli import _load_env, _load_run  # noqa: E402
-from cortisol.engine import METHODS, EngineConfig, run_method  # noqa: E402
-from cortisol.sensor import HaikuSensor  # noqa: E402
-from cortisol.teacher import PRICES, CallCost  # noqa: E402
+from guarded_distillation import data as D, embed  # noqa: E402
+from guarded_distillation.cli import _load_env, _load_run  # noqa: E402
+from guarded_distillation.engine import METHODS, EngineConfig, run_method  # noqa: E402
+from guarded_distillation.sensor import HaikuSensor  # noqa: E402
+from guarded_distillation.teacher import PRICES, CallCost  # noqa: E402
 
 FIRST = 600     # "first 600 launch-phase queries"
 

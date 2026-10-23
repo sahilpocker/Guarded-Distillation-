@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from cortisol.data import Phase, StreamConfig, build_stream
-from cortisol.engine import METHODS, EngineConfig, run_method
-from cortisol.report import summarise
-from cortisol.teacher import SimulatedTeacher, build_system_prompt, precompute
+from guarded_distillation.data import Phase, StreamConfig, build_stream
+from guarded_distillation.engine import METHODS, EngineConfig, run_method
+from guarded_distillation.report import summarise
+from guarded_distillation.teacher import SimulatedTeacher, build_system_prompt, precompute
 from conftest import needs_aci
 
 

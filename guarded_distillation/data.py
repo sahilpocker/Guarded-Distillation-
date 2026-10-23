@@ -77,7 +77,7 @@ def load_pools(raw_dir: str | Path) -> Pools:
     raw = Path(raw_dir)
     missing = [n for n in SOURCES if not (raw / n).exists()]
     if missing:
-        raise FileNotFoundError(f"missing {missing} in {raw}; run `cortisol data` first")
+        raise FileNotFoundError(f"missing {missing} in {raw}; run `gdistill data` first")
     b = pd.concat([pd.read_csv(raw / "banking77_train.csv"), pd.read_csv(raw / "banking77_test.csv")])
     b = b.rename(columns={"category": "label"})[["text", "label"]]
     b["text"] = b["text"].astype(str).str.strip()

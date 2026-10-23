@@ -3,8 +3,8 @@ import json
 import pandas as pd
 import pytest
 
-from cortisol.data import load_fewshot
-from cortisol.teacher import CapExceeded, Ledger, LLMTeacher, PRICES
+from guarded_distillation.data import load_fewshot
+from guarded_distillation.teacher import CapExceeded, Ledger, LLMTeacher, PRICES
 
 
 def test_ledger_cap_reserves_in_flight_cost(tmp_path):
@@ -49,8 +49,8 @@ def test_sbert_student_runs_without_downloading_the_encoder(monkeypatch):
 
     import numpy as np
 
-    from cortisol import embed
-    from cortisol.student import Student
+    from guarded_distillation import embed
+    from guarded_distillation.student import Student
 
     def fake_encode(texts, model=embed.MODEL):
         out = []

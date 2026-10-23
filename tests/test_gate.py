@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from cortisol.gate import (CortisolField, DoubtScale, FieldConfig, accepts, choose_level, expected_wrong,
+from guarded_distillation.gate import (CortisolField, DoubtScale, FieldConfig, accepts, choose_level, expected_wrong,
                            leak_curve, runner_up, wilson_upper)
 from conftest import needs_aci
 
