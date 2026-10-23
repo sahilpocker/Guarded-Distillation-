@@ -52,12 +52,13 @@ def maybe_rollback(tri) -> dict | None:
         return None
     tri.checked = True
     cur = monitor.audit_stats(tri.store.last(WINDOW, version=tri.b.version))
+    has_baseline = tri.prev["rate"] is not None and tri.prev["audited"] >= MIN_AUDITED   # the old version served enough audited traffic
     base = tri.prev["rate"] if tri.prev["rate"] is not None else 0.0
     limit = RISE * max(base, FLOOR)
-    worse = cur["audited"] >= MIN_AUDITED and cur["rate"] is not None and cur["rate"] >= limit
+    worse = has_baseline and cur["audited"] >= MIN_AUDITED and cur["rate"] is not None and cur["rate"] >= limit
     detail = {"version": tri.b.version, "previous": tri.prev["bundle"].version, "audit_rate": cur["rate"], "audited": cur["audited"],
               "previous_rate": tri.prev["rate"], "limit": limit}
-    tri.store.add_event("audit_check", {**detail, "worse": worse})
+    tri.store.add_event("audit_check", {**detail, "worse": worse, "baseline": has_baseline})
     if not worse:
         return None
     bad = tri.b.version

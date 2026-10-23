@@ -78,6 +78,16 @@ def test_no_decision_before_500_queries_or_with_too_few_audits(tri):
     assert tri.b.version == "v2"
 
 
+def test_no_rollback_without_a_baseline_from_the_old_version(tri):
+    rollout.swap(tri, bundle("v2"))                          # v1 served no audited traffic: nothing to compare with
+    assert tri.prev["audited"] == 0
+    fill(tri, "v2", audited=40, disagree=20)
+    tri.n_cur = 500
+    assert rollout.maybe_rollback(tri) is None and tri.b.version == "v2"
+    ev = [e for e in tri.store.events("audit_check")]
+    assert ev and ev[0]["baseline"] is False and ev[0]["worse"] is False
+
+
 def test_blocked_versions_are_never_promoted_again(tri, monkeypatch, tmp_path):
     tri.blocked.add("v2")
     calls = []
