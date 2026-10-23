@@ -1,0 +1,10 @@
+{
+  "seed": 0,
+  "preset": "recommended",
+  "calls_pct": 47.59,
+  "overall_delta": 0.51,
+  "launch_delta": -1.11,
+  "accuracy_pct": 81.21,
+  "llm_only_accuracy_pct": 80.7,
+  "errors_per_1k": 42.4
+}

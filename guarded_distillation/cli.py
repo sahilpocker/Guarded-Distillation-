@@ -294,12 +294,19 @@ def main(argv=None) -> None:
     q.add_argument("--operating-points", default=None, help="SVG from scripts/operating_points.py to add to the page")
     q.add_argument("--grid", default="docs/grid.json", help="grid summary used for the operating-point caption")
 
+    q = sub.add_parser("eval", help="CI regression eval: seed 0, recommended preset, cached Haiku labels, no API calls")
+    q.add_argument("--run", default="runs/ci-s0")
+    q.add_argument("--write-baseline", action="store_true", help="record the numbers in docs/eval_baseline.json")
+
     q = sub.add_parser("demo", help="data + simulated labels + replay + report")
     stream_args(q)
     replay_args(q)
 
     args = p.parse_args(argv)
     _load_env()
+    if args.cmd == "eval":
+        from .evalgate import cmd_eval
+        return cmd_eval(args)
     {"data": cmd_data, "label": cmd_label, "label-pool": cmd_label_pool, "replay": cmd_replay, "report": cmd_report, "demo": cmd_demo}[args.cmd](args)
 
 
