@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guarded Distillation</title>
+<meta name="description" content="A support bot that learns from an expensive AI, answers the repeat questions itself, and knows when to hand a question back. Half the AI calls, about the same accuracy.">
+<meta property="og:title" content="Guarded Distillation">
+<meta property="og:description" content="Half the AI calls, about the same accuracy, and a gate that knows when to hand a question back.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top">Guarded Distillation</a>
+    <nav aria-label="Sections">
+      <a href="#story">How it works</a>
+      <a href="#numbers">Results</a>
+      <a href="#dial">Try the dial</a>
+      <a href="#honest">What failed</a>
+      <a href="https://github.com/sahilpocker/Guarded-Distillation-">Code</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <h1>Most of what customers ask has been asked before.</h1>
+      <p class="lede">A support bot that asks a large AI model every time pays for the same answer over and over. This project teaches a small, cheap model to handle the repeats, and checks that it can be trusted before it answers.</p>
+      <div class="actions">
+        <a class="btn" href="#story">See how it works</a>
+        <a class="btn ghost" href="replay.html">Open the live replay</a>
+      </div>
+    </div>
+    <aside class="receipt" aria-label="Cost of 1,000 support questions, with and without this system">
+      <h3>1,000 support questions</h3>
+      <p class="sub">Real questions, answered by Claude Haiku 5.5</p>
+      <div class="row"><span>Ask the big AI every time<small>1,000 calls</small></span><b data-count="0.041" data-prefix="$" data-dec="3">$0.041</b></div>
+      <div class="row win"><span>Guarded Distillation<small id="r-calls">504 calls</small></span><b data-count="0.021" data-prefix="$" data-dec="3">$0.021</b></div>
+      <div class="row"><span>Accuracy vs human labels<small>big AI alone: 80.8%</small></span><b>81.4%</b></div>
+      <div class="foot">Measured on three held-out runs of an 8,000-question inbox.</div>
+    </aside>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section class="story" id="story" aria-label="How it works">
+  <div class="wrap">
+    <div class="steps">
+      <div class="step" data-step="0">
+        <h3>Today, every question goes to the big AI.</h3>
+        <p>A bank's support bot reads each message and decides what it is about: a lost card, a failed transfer, a question about fees. A large language model does that reading, and it charges for every message, even the thousandth "where is my card?"</p>
+      </div>
+      <div class="step" data-step="1">
+        <h3>Its answers become lessons.</h3>
+        <p>Every answer the big AI gives is a free example. A small model, cheap enough to run on an ordinary computer, studies those examples: this wording means "card arrival", that wording means "transfer failed".</p>
+      </div>
+      <div class="step" data-step="2">
+        <h3>Then the small model takes the easy ones.</h3>
+        <p>A gate sits in front of it. When the small model is sure, it answers. When it isn't, the question goes to the big AI. About half of all questions now never reach the big AI.</p>
+      </div>
+      <div class="step" data-step="3">
+        <h3>Then something new happens.</h3>
+        <p>The bank launches virtual cards. Customers ask things the small model has never seen, and it answers them with confidence, wrongly, because it only knows older topics that sound similar.</p>
+      </div>
+      <div class="step" data-step="4">
+        <h3>The gate gets cautious, and the model gets lessons.</h3>
+        <p>Wrong answers on a topic make the gate more careful there, so those questions go back to the big AI. The big AI's answers retrain the small model, with extra weight on the new topic so its older look-alikes don't drown it out.</p>
+      </div>
+      <div class="step" data-step="5">
+        <h3>Half the calls. About the same accuracy.</h3>
+        <p>That is the whole idea: copy what the big AI does when it is routine, hand questions back when something is new, and keep learning without anyone watching.</p>
+      </div>
+    </div>
+    <div class="stage-col">
+      <div class="stage" id="stage">
+        <div class="board" id="board" aria-hidden="true">
+          <div class="inbox">customer questions</div>
+          <div class="gate" id="gate">gate</div>
+          <div class="node ai" id="node-ai"><b>Big AI</b><small>accurate, charges per question</small></div>
+          <div class="node small-model" id="node-small"><b>Small model</b><small id="small-note">hasn't learned anything yet</small><div class="bar"><i id="bar-old"></i></div><div class="bar" id="bar-new-wrap" style="margin-top:4px;opacity:0"><i id="bar-new" class="new"></i></div></div>
+        </div>
+        <div class="caption" id="caption" aria-live="polite">Every question is sent to the big AI.</div>
+        <div class="meters">
+          <div class="meter"><b id="m-ai">100%</b><span>of recent questions sent to the big AI</span></div>
+          <div class="meter bad" id="m-wrong-wrap"><b id="m-wrong">0</b><span>wrong answers per 100 questions</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section id="numbers">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>What it does on questions it has never been tuned on.</h2>
+      <p class="lede">I chose the main settings on three runs and measured on three others. Same real questions, same big AI, and accuracy is always scored against the human-written answer, not the AI's.</p>
+    </div>
+    <div class="pairs">
+      <div class="pair"><h3>Calls to the big AI</h3>
+        <div class="line"><span>Ask every time</span><div class="track"><div class="fill llm" data-w="100">100%</div></div></div>
+        <div class="line"><span>This system</span><div class="track"><div class="fill mine" data-w="50.4">50%</div></div></div>
+        <p>The other half are answered by the small model.</p></div>
+      <div class="pair"><h3>Cost per 1,000 questions</h3>
+        <div class="line"><span>Ask every time</span><div class="track"><div class="fill llm" data-w="100">$0.041</div></div></div>
+        <div class="line"><span>This system</span><div class="track"><div class="fill mine" data-w="51.2">$0.021</div></div></div>
+        <p>Claude Haiku 5.5 prices. A cheaper AI saves less in dollars; a bigger one saves more.</p></div>
+      <div class="pair"><h3>Accuracy on all questions</h3>
+        <div class="line"><span>Ask every time</span><div class="track"><div class="fill llm" data-w="80.8">80.8%</div></div></div>
+        <div class="line"><span>This system</span><div class="track"><div class="fill mine" data-w="81.4">81.4%</div></div></div>
+        <p>About the same. The big AI is itself only about 81% right on this task.</p></div>
+      <div class="pair"><h3>Accuracy on new-product questions</h3>
+        <div class="line"><span>Ask every time</span><div class="track"><div class="fill llm" data-w="84.8">84.8%</div></div></div>
+        <div class="line"><span>This system</span><div class="track"><div class="fill mine" data-w="84.5">84.5%</div></div></div>
+        <p>The hardest part. A new product is where a small model usually fails.</p></div>
+    </div>
+    <p class="small" style="margin-top:28px">Six independent replays of an 8,000-question support inbox, including a product launch and an off-topic surge. Numbers above are the three held-out runs. <a href="replay.html">Watch one replay</a>.</p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section id="dial">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Saving more means checking less.</h2>
+      <p class="lede">The gate has a dial. Turn it toward saving and the small model answers more, so more of its wrong answers slip through unchecked. Each square below is ten questions.</p>
+    </div>
+    <div class="dial">
+      <div class="dial-top"><span>Save more</span><span>Check more</span></div>
+      <input id="dial-range" type="range" min="0" max="6" step="1" value="0" aria-label="How cautious the gate is">
+      <div class="squares" id="squares" role="img" aria-label="One hundred squares, each ten questions, coloured by who answered"></div>
+      <div class="legend">
+        <span><i style="background:var(--ai)"></i>big AI answered</span>
+        <span><i style="background:var(--cheap)"></i>small model answered</span>
+        <span><i style="background:var(--bad)"></i>small model answered wrongly</span>
+      </div>
+      <div class="facts" aria-live="polite">
+        <div class="fact"><b id="d-calls">52%</b><span>of questions go to the big AI</span></div>
+        <div class="fact"><b id="d-cost">$0.021</b><span>cost per 1,000 questions (all-AI: $0.041)</span></div>
+        <div class="fact"><b id="d-err">40</b><span>wrong small-model answers per 1,000 questions</span></div>
+        <div class="fact"><b id="d-acc">+0.6</b><span>points of accuracy vs asking the big AI every time</span></div>
+      </div>
+    </div>
+    <p class="small" style="margin-top:16px">Seven gate settings, each averaged over all six runs. The recommended setting is the leftmost.</p>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section id="honest">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>What didn't work.</h2>
+      <p class="lede">The project started with a different idea. These are the parts that did not hold up, because the results are only worth trusting if the misses are on the page too.</p>
+    </div>
+    <div class="tried">
+      <article><h3>The original idea didn't beat a simpler one.</h3><p>I first built a "stress field" (the code calls it cortisol): a worry level that rises in the topics where mistakes happen. Against a plain gate with retraining, it showed no advantage. It is still in the code, labelled experimental.</p></article>
+      <article><h3>My first pick failed on fresh data.</h3><p>The first recommended setting looked fine on the runs I tuned on, then lost 3.4 points on new-product questions on the held-out runs. The cause was imbalance after retraining; weighting the new topic fixed most of it. That fix came after I had seen the held-out result, so the numbers above are not a fully clean test.</p></article>
+      <article><h3>A per-topic version helps only close to home.</h3><p>Spreading worry between related topics beat the plain gate when a whole new set of intents resembled old ones (credit cards after banking). It did not when the new topics were far away (travel). A whole new domain is still hard for every setting.</p></article>
+      <article><h3>An AI "sensor" never fired.</h3><p>I added a check that asks the big AI which known topics an unfamiliar cluster might be confused with. As designed, the trigger never fired. Loosened, it fired a handful of times and changed nothing measurable.</p></article>
+    </div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section id="checks">
+  <div class="wrap">
+    <div class="section-head"><h2>How I checked it.</h2></div>
+    <div class="checks">
+      <div><b>14,194</b><p>real customer questions, labelled by a human and by Claude, from the public Banking77 and CLINC150 datasets.</p></div>
+      <div><b>3 + 3</b><p>runs to choose settings and different runs to report. The first picks were judged on the second set.</p></div>
+      <div><b>$0.79</b><p>total spent on the big AI for all real labels, under a hard spending cap.</p></div>
+      <div><b>43</b><p>automated tests, including one for the guarantee that caps how often the small model may be wrong unchecked.</p></div>
+    </div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section id="build">
+  <div class="wrap">
+    <div class="section-head"><h2>Under the hood.</h2></div>
+    <p class="lede">A Python package with a command-line tool, a replay engine that simulates a support inbox, and the experiments behind every number above.</p>
+    <ul class="tech" aria-label="Technology">
+      <li>Python</li><li>scikit-learn</li><li>MiniLM sentence embeddings</li><li>Claude Haiku 5.5 as the teacher</li><li>Conformal risk control</li><li>pytest</li>
+    </ul>
+    <div class="actions">
+      <a class="btn" href="https://github.com/sahilpocker/Guarded-Distillation-">Read the code</a>
+      <a class="btn ghost" href="https://github.com/sahilpocker/Guarded-Distillation-/blob/main/docs/RESULTS.md">Full results</a>
+      <a class="btn ghost" href="replay.html">Live replay</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap"><span>Guarded Distillation, built by Sahil Pocker</span><span>Questions come from public datasets; no customer data.</span></div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="main.js"></script>
+</body>
+</html>

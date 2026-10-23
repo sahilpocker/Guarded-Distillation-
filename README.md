@@ -1,15 +1,35 @@
-# guarded-distillation
+# Guarded Distillation
 
-An agent pipeline that compiles its own repeated LLM decisions into small CPU models, and keeps
-them honest without anyone watching.
+**Half the LLM calls, about the same accuracy, and a gate that knows when to hand a question back.**
 
-The LLM answers anything new. Steps that keep repeating get distilled into cheap models trained on
-the LLM's own answers. A **cortisol field** (a global level plus a local level for each region of
-query space) decides, query by query, whether a cheap model may answer or the LLM must; where to
-spend audits; and when to retrain. Misses and surprises raise it; calm periods let it fall.
+A support bot that asks a large LLM about every message pays for the same answer over and over.
+This project compiles the LLM's repeated decisions into small CPU models trained on its own
+answers, puts a risk-controlled gate in front of them, and keeps them honest as the world changes
+(a product launch, an off-topic surge) without anyone watching.
 
-Demo: a bank's support triage (scope, 77 intents, routing team, urgency), replayed on 8,000 real
-customer queries from Banking77 and CLINC150, through a product launch and an off-topic surge.
+On 8,000 real customer questions with Claude Haiku 5.5 as the teacher (three held-out runs): about
+50% of the LLM calls, $0.021 instead of $0.041 per 1,000 questions, accuracy 81.4% against 80.8%
+for the LLM alone, and 84.5% against 84.8% on questions about a newly launched product. The misses
+are documented as carefully as the wins (see "What didn't work" below and docs/RESULTS.md).
+
+- **Story for non-specialists:** `site/` (static page, scroll-driven; deploys to Vercel as is)
+- **Live replay of one run:** `site/replay.html`
+- **Full results, with every caveat:** `docs/RESULTS.md`; theory and guarantee in `docs/THEORY.md`
+
+What is in the repo: a Python package (`guarded_distillation`) with a `gdistill` CLI; a replay
+engine that simulates a support inbox; students (TF-IDF and frozen MiniLM embeddings); a conformal
+risk-control gate; a spend-capped Claude labelling pipeline; and the experiment scripts behind every
+number. 43 tests.
+
+## What didn't work
+
+- The original idea, a "cortisol field" of local stress, did not beat a plain gate with retraining.
+  It stays in the code, labelled experimental.
+- The first recommended setting lost 3.4 points on new-product questions on held-out runs; class-balanced
+  retraining fixed most of it (found after seeing the held-out result, so those numbers are not a fully
+  clean test).
+- A per-topic stress variant ("semantic cortisol") helps when new intents resemble old ones, not when
+  they are far away; a whole new domain remains hard for every setting.
 
 ## Quick start
 
