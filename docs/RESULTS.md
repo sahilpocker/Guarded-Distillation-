@@ -433,6 +433,42 @@ calls), `python scripts/clinc_domain.py streams --domain credit_cards`, then
 `python scripts/semantic.py --runs clinc-credit_cards-s --seeds 3 4 5 --tag CH-credit_cards-sem
 --methods llm_only,semantic --config '{"sem_gain":0.7,"sem_hot":0.4}'`.
 
+### Follow-up: a per-query fit check on the gate level (`sem_qfit`)
+
+**Hypothesis.** For a distant domain the new intents' queries are predicted as many different
+banking intents, so per-intent stress builds slowly. The fit check (b) is label-free and
+available on every query, so use it directly: a query whose nearest training example of its
+predicted intent is beyond the 95th percentile of history gets `sem_qfit` added to its own gate level,
+instead of only feeding the intent's stress. Rule fixed before the run: try 0.1, 0.2, 0.35, 0.5, 0.8,
+1.0 on seeds 0-2 of all three streams; take the value with the best first-600 launch Δ summed over
+the streams without raising LLM calls by more than 0.5 pts.
+
+Selection seeds: the effect saturates at 0.5 (0.8 and 1.0 are identical, since a level of 0.5 already
+escalates nearly everything that fails the check). Against no query check, first-600 Δ moved
+−0.53 → −0.02 (Banking77), −4.97 → −3.71 (credit_cards), −3.46 → −2.94 (travel), at +0.2 to +0.4
+pts of LLM calls. Chosen: 0.5 (`{"sem_gain":0.7,"sem_hot":0.4,"sem_qfit":0.5}`).
+
+Seeds 3-5:
+
+| Setting | LLM calls, % | Overall Δ, pts | Launch Δ, pts | Launch Δ, first 600 launch-phase queries, pts | Cheap-path errors / 1k | Extra LLM calls on probation, % of queries |
+|---|---|---|---|---|---|---|
+| Banking77 launch: semantic | 57.0 [53.5 to 62.8] | 0.63 [0.56 to 0.70] | 0.44 [0.18 to 0.95] | 0.00 [0.00 to 0.00] | 27.0 [24.0 to 30.9] | 2.2 [1.6 to 2.6] |
+| Banking77 launch: semantic + query fit check | 57.4 [54.1 to 63.3] | 0.62 [0.56 to 0.66] | 0.69 [0.18 to 1.71] | 0.00 [0.00 to 0.00] | 25.9 [23.2 to 28.8] | 2.2 [1.8 to 2.5] |
+| credit_cards: balanced gate, calls-matched | 56.0 [46.3 to 64.3] | 0.32 [0.24 to 0.46] | -3.22 [-6.51 to -0.95] | -8.35 [-16.80 to -3.25] | 34.2 [21.5 to 49.9] | 0.0 [0.0 to 0.0] |
+| credit_cards: semantic | 55.9 [50.0 to 60.0] | 0.51 [0.39 to 0.73] | -2.09 [-2.87 to -0.73] | -3.78 [-4.88 to -1.67] | 32.2 [27.2 to 40.2] | 1.9 [1.7 to 2.1] |
+| credit_cards: semantic + query fit check | 56.3 [50.2 to 59.9] | 0.52 [0.45 to 0.68] | -2.04 [-3.83 to 0.00] | -2.96 [-4.80 to -0.83] | 31.3 [26.9 to 39.5] | 2.0 [1.7 to 2.4] |
+| travel: balanced gate, calls-matched | 56.7 [47.4 to 65.8] | 0.25 [0.09 to 0.46] | -3.76 [-5.56 to -0.95] | -8.71 [-11.67 to -3.25] | 31.2 [17.6 to 45.4] | 0.0 [0.0 to 0.0] |
+| travel: semantic | 55.8 [49.5 to 61.7] | 0.46 [0.40 to 0.56] | -3.16 [-6.51 to -1.33] | -9.21 [-14.40 to -4.07] | 30.0 [22.1 to 39.0] | 1.5 [1.3 to 1.7] |
+| travel: semantic + query fit check | 56.2 [50.1 to 61.6] | 0.50 [0.39 to 0.69] | -3.01 [-4.41 to -1.52] | -7.06 [-8.80 to -4.88] | 28.9 [22.5 to 35.8] | 1.6 [1.5 to 1.8] |
+
+**Result.** A small, consistent improvement from a cheap label-free signal: first-600 Δ is better by
+0.8 (credit_cards) to 2.1 (travel) pts than semantic cortisol without it at the same calls, and
+Banking77 launch Δ goes from +0.44 to +0.69. On `travel` it now edges the matched balanced gate (launch
+−3.0 vs −3.8, first-600 −7.1 vs −8.7; better on two of three seeds on each measure), which it did not
+before. It does not fix the distant-domain case: launch Δ is still around −3 pts and below the −2 bar.
+Three seeds; the improvements are 1-2 pts on about 125 launch-intent queries per seed, within sampling
+noise for any single seed. `EngineConfig.sem_qfit` defaults to 0 so the earlier results reproduce.
+
 ## Seed 0 by phase, simulated teacher (accuracy / LLM calls)
 
 | Method | steady | launch | off-topic surge | settle |

@@ -119,6 +119,7 @@ class EngineConfig:
     sem_resid: float = 0.15       # (c) gain on (wrong - expected wrong)
     sem_sensor: float = 0.6       # (d) stress on the intents the LLM sensor names
     sem_cluster: int = 20         # (d) queries in a cluster before the LLM sensor is asked
+    sem_qfit: float = 0.0         # level added to a query that fails the fit check (label-free, immediate)
     sem_sim: float = 0.6          # (d) cosine similarity to join a cluster
 
 
@@ -493,10 +494,14 @@ class Replay:
             intent_ran = scope_ok and scope_top == IN
             sem = self.sem if m.semantic else None
             ki = self.I.index[intent_top]
-            li_base, on = li, False
+            li_base, on, fit_fail = li, False, False
             if sem is not None:
                 on = intent_ran and sem.probation(ki)
                 li = li + sem.level(ki)
+                if intent_ran and ki in self.ex_emb:         # fit check: far from every training example of its predicted intent
+                    fit_fail = 1.0 - float((self.E[i] @ self.ex_emb[ki].T).max()) > self.fit_thr
+                    if fit_fail:
+                        li += cfg.sem_qfit
             intent_ok = intent_ran and bool(accepts(ui, li))
 
             if scope_ok and scope_top == OOS:
@@ -542,9 +547,8 @@ class Replay:
                 self.I.log(i, ui, wrong_i, w if truth_i is not None else 0.0)
 
             if sem is not None:
-                if intent_ran and ki in self.ex_emb:                  # (b) fit check, label-free
-                    if 1.0 - float((self.E[i] @ self.ex_emb[ki].T).max()) > self.fit_thr:
-                        sem.inject(ki, cfg.sem_fit)
+                if fit_fail:                                          # (b) fit check, label-free
+                    sem.inject(ki, cfg.sem_fit)
                 if truth_i is not None:
                     if escalate:
                         self.esc_log.append((ki, self.I.index[y]))

@@ -36,6 +36,7 @@ Sister project: `../vaers` (same idea on VAERS pharmacovigilance; its week-1 les
   `labels/sensor-spend.json`). CLINC150 domain holdout done (scripts/clinc_domain.py, labels/claude-haiku-5-5-{credit_cards,travel}.jsonl, ~$0.21): semantic
   cortisol beats the matched balanced gate on adjacent `credit_cards` (launch -2.1 vs -3.2), not on distant `travel`; nothing meets
   the -2 pt launch bar on a whole new domain. Ledger total $0.79.
+  Follow-up `sem_qfit` 0.5 (per-query fit check on the gate level): small consistent gain, travel still ~-3 launch.
 - **No Claude API calls without Sahil's explicit go-ahead for that specific run.** His key lives in
   `.env` (gitignored, loaded by the CLI); do not read it, print it, or touch `../vaers/.env`.
   Paid calls need `--cap-usd`; spend is in `labels/spend.json`.
