@@ -17,5 +17,7 @@ services:
         value: sahilpocker/Guarded-Distillation-   # releases tagged model-vN hold the bundles the service promotes
       - key: REGISTRY_POLL_S
         value: "600"
+      - key: DATABASE_URL
+        sync: false          # a free Postgres (Neon or Supabase) connection string; keeps the log, spend and model version across restarts
       - key: ADMIN_TOKEN
         generateValue: true  # protects /admin/export and /admin/reload

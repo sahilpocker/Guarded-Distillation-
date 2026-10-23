@@ -48,3 +48,17 @@ jobs:
           publish=""
           if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.publish }}" = "true" ]; then publish="--publish"; fi
           gdistill retrain --export-url "$SERVICE_URL" --repo "${{ github.repository }}" $publish
+
+      - name: Point the image at the newest model (changing models/LATEST makes Render rebuild with it baked in)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh release list --limit 20 --json tagName -q '[.[] | select(.tagName | test("^model-v[0-9]+$"))] | sort_by(.tagName | ltrimstr("model-v") | tonumber) | last | .tagName')
+          if [ -n "$tag" ] && [ "$tag" != "$(cat models/LATEST 2>/dev/null)" ]; then
+            echo "$tag" > models/LATEST
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add models/LATEST
+            git commit -m "Image: bake $tag"
+            git push
+          fi

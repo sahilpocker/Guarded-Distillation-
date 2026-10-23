@@ -39,7 +39,7 @@ def compute(triage, window: int = 500) -> dict:
                     "blocked": sorted(triage.blocked)},
         "rollbacks": len(st.events("rollback", 20)),
         "spend": {"today_usd": round(triage.teacher.spent_today(), 5), "cap_usd": triage.teacher.cap,
-                  "total_usd": round(triage.teacher.ledger.total(), 5),
+                  "total_usd": round(triage.teacher.ledger.total(), 5), "persistent": triage.store.pg,
                   "cache_hits": triage.teacher.cache_hits, "api_calls": triage.teacher.api_calls},
         "uptime_s": int(__import__("time").time() - triage.started),
     }

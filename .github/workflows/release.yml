@@ -1,0 +1,21 @@
+name: bake-release
+# A model-vN release made by hand (the retrain job updates models/LATEST itself) points the image at it.
+on:
+  release:
+    types: [published]
+permissions:
+  contents: write
+jobs:
+  bake:
+    if: startsWith(github.event.release.tag_name, 'model-v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - run: |
+          echo "${{ github.event.release.tag_name }}" > models/LATEST
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add models/LATEST
+          git diff --cached --quiet || (git commit -m "Image: bake ${{ github.event.release.tag_name }}" && git push)

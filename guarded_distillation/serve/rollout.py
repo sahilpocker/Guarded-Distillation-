@@ -43,6 +43,7 @@ def swap(tri, bundle: Bundle | str | Path, reason: str = "manual") -> dict:
     info = {"from": old.version, "to": new.version, "reason": reason, "previous_audit_rate": prev_stats["rate"],
             "previous_audited": prev_stats["audited"]}
     tri.store.add_event("promoted", info)
+    tri.store.set_state("model_version", new.version)
     return info
 
 
@@ -67,6 +68,8 @@ def maybe_rollback(tri) -> dict | None:
         tri.blocked.add(bad)
         tri.prev, tri.n_cur = None, 0
     tri.store.add_event("rollback", {**detail, "restored": tri.b.version})
+    tri.store.set_state("model_version", tri.b.version)
+    tri.store.set_state("blocked", json.dumps(sorted(tri.blocked)))
     return detail
 
 

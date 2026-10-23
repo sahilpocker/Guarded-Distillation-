@@ -9,3 +9,5 @@ docs
 .github
 *.egg-info
 labels/claude-haiku-5-5-*.jsonl
+models/candidates
+models/current

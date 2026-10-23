@@ -1,6 +1,7 @@
 """FastAPI app: POST /triage, GET /metrics, GET /healthz. Admin routes (reload, export) need ADMIN_TOKEN."""
 from __future__ import annotations
 
+import json
 import os
 from pathlib import Path
 
@@ -12,7 +13,7 @@ from pydantic import BaseModel, Field
 from . import monitor
 from .bundle import Bundle
 from .store import Store
-from .teacher_access import TeacherAccess
+from .teacher_access import DbLedger, TeacherAccess
 from .triage import Triage
 
 
@@ -40,7 +41,7 @@ class Query(BaseModel):
 
 
 def make_app(bundle_dir: str | Path | None = None, db: str | None = None, cap_usd: float | None = None, live: bool | None = None) -> FastAPI:
-    bundle_dir = bundle_dir or os.environ.get("GD_BUNDLE", "models/v1")
+    bundle_dir = bundle_dir or os.environ.get("GD_BUNDLE") or ("models/current" if Path("models/current/bundle.pkl").exists() else "models/v1")
     bundle = Bundle.load(bundle_dir)
     key = os.environ.get("ANTHROPIC_API_KEY", "")
     clean = key.strip().strip("\"'").strip()
@@ -49,9 +50,21 @@ def make_app(bundle_dir: str | Path | None = None, db: str | None = None, cap_us
         os.environ["ANTHROPIC_API_KEY"] = clean
     cap = float(os.environ.get("DAILY_CAP_USD", 1.0)) if cap_usd is None else cap_usd
     live = (bool(os.environ.get("ANTHROPIC_API_KEY")) if live is None else live)
-    teacher = TeacherAccess(bundle.intents, cap_usd=cap, live=live, ledger=os.environ.get("GD_LEDGER", "data/service_spend.json"))
-    store = Store(db or os.environ.get("GD_DB", "data/service.db"))
+    store = Store(db or os.environ.get("GD_DB", "data/service.db"), url=os.environ.get("DATABASE_URL"))
+    teacher = TeacherAccess(bundle.intents, cap_usd=cap, live=live, ledger=DbLedger(store, cap))
     tri = Triage(bundle, teacher, store)
+    tri.blocked = set(json.loads(store.get_state("blocked") or "[]"))        # rolled-back versions stay rolled back after a restart
+    want = store.get_state("model_version")
+    if want and want != bundle.version and os.environ.get("MODEL_REGISTRY"):     # the version the last run was serving
+        try:
+            from .rollout import Registry, version_number
+            reg = Registry(os.environ["MODEL_REGISTRY"])
+            rel = next((r for r in reg.releases() if r["n"] == version_number(want)), None)
+            if rel and want not in tri.blocked:
+                tri.set_bundle(reg.fetch(rel))
+        except Exception as e:
+            store.add_event("registry_error", {"error": f"restoring {want}: {str(e)[:150]}"})
+    store.set_state("model_version", tri.b.version)
     app = FastAPI(title="Guarded Distillation triage", version=bundle.version)
     if os.environ.get("MODEL_REGISTRY"):          # owner/repo whose releases hold model-vN bundles
         from .rollout import start_poller

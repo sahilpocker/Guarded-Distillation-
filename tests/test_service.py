@@ -105,3 +105,35 @@ def test_key_with_trailing_whitespace_is_cleaned(monkeypatch, tmp_path, client):
     import os
     assert os.environ["ANTHROPIC_API_KEY"] == "sk-ant-x"
     assert TestClient(app).get("/healthz").json()["key_sanitized"] is True
+
+
+def test_store_spend_state_and_db_ledger(tmp_path):
+    from guarded_distillation.serve.store import Store
+    from guarded_distillation.serve.teacher_access import DbLedger
+    st = Store(tmp_path / "x.db")
+    led = DbLedger(st, cap_usd=0.01)
+    assert led.reserve("m", 0.004) and led.reserve("m", 0.004) and not led.reserve("m", 0.004)    # reserved amounts count against the cap
+    led.settle("m", 0.004, 0.003)
+    led.settle("m", 0.004, 0.003)
+    assert led.spent("m") == pytest.approx(0.006) and led.reserve("m", 0.004) and not led.reserve("m", 0.001)
+    st2 = Store(tmp_path / "x.db")                              # a "restart": same file, new process state
+    assert DbLedger(st2, 0.01).spent("m") == pytest.approx(0.006)
+    st.set_state("model_version", "v2")
+    assert Store(tmp_path / "x.db").get_state("model_version") == "v2"
+
+
+@pytest.mark.skipif(not __import__("os").environ.get("TEST_DATABASE_URL"), reason="set TEST_DATABASE_URL to run against Postgres")
+def test_postgres_store_matches_sqlite_behaviour():
+    import os
+    from guarded_distillation.serve.store import Store
+    st = Store(url=os.environ["TEST_DATABASE_URL"])
+    n0 = st.count()
+    st.add_decision("pgtest", {"text": "hello", "teacher_label": "card_arrival", "source": "cache", "decision": "escalate"})
+    st.add_event("promoted", {"to": "pgtest"})
+    st.spend_add("2000-01-01", "m", 0.5)
+    st.spend_add("2000-01-01", "m", 0.25)
+    st.set_state("k", "a")
+    st.set_state("k", "b")
+    assert st.count() == n0 + 1 and st.last(1)[0]["text"] == "hello" and st.last(1, "pgtest")[0]["version"] == "pgtest"
+    assert st.events("promoted", 1)[0]["to"] == "pgtest" and st.spend_today("2000-01-01") == pytest.approx(0.75)
+    assert st.get_state("k") == "b" and {"text": "hello", "label": "card_arrival"} in st.labels()
