@@ -137,3 +137,52 @@ def test_postgres_store_matches_sqlite_behaviour():
     assert st.count() == n0 + 1 and st.last(1)[0]["text"] == "hello" and st.last(1, "pgtest")[0]["version"] == "pgtest"
     assert st.events("promoted", 1)[0]["to"] == "pgtest" and st.spend_today("2000-01-01") == pytest.approx(0.75)
     assert st.get_state("k") == "b" and {"text": "hello", "label": "card_arrival"} in st.labels()
+
+
+def test_sliding_window_and_live_limits(monkeypatch):
+    from guarded_distillation.serve.limits import Limits, SlidingWindow
+    w = SlidingWindow(3, 10)
+    assert [w.allow("a", now=t) for t in (0, 1, 2, 3)] == [True, True, True, False] and w.allow("b", now=3)
+    assert w.allow("a", now=10.5) and w.retry_after("a", now=11) >= 1
+    monkeypatch.setenv("LIVE_PER_IP_PER_HOUR", "2")
+    monkeypatch.setenv("LIVE_GLOBAL_PER_HOUR", "3")
+    lim = Limits()
+    assert [lim.allow_live("x") for _ in range(3)] == [True, True, False]       # per visitor
+    assert lim.allow_live("y") and not lim.allow_live("z")                      # global ceiling reached
+
+
+def test_oversized_text_is_rejected(client):
+    assert client.post("/triage", json={"text": "x" * 401}).status_code == 422
+
+
+def test_webdav_replica_round_trip(tmp_path):
+    import httpx
+    from guarded_distillation.serve.replicate import WebDavReplica
+    from guarded_distillation.serve.store import Store
+    remote = {}
+
+    def handler(req):
+        if req.method == "PUT":
+            if "/dir" not in remote:
+                remote["/dir"] = True            # first PUT before the folder exists: 409, then MKCOL, then retry
+                return httpx.Response(409)
+            remote[req.url.path] = req.content
+            return httpx.Response(201)
+        if req.method == "MKCOL":
+            return httpx.Response(201)
+        if req.method == "GET":
+            return httpx.Response(200, content=remote[req.url.path]) if req.url.path in remote else httpx.Response(404)
+        return httpx.Response(405)
+
+    rep = WebDavReplica("http://dav.test/dav", "u", "p", "d", interval=999)
+    rep._client = lambda: httpx.Client(transport=httpx.MockTransport(handler), auth=rep.auth)
+    st = Store(tmp_path / "a.db")
+    rep.start(st)
+    st.add_decision("v1", {"text": "hi", "decision": "accept"})
+    st.spend_add("2026-10-23", "m", 0.5)             # critical: uploaded immediately
+    assert rep.pushes >= 1 and rep.last_error is None
+    out = tmp_path / "restored.db"
+    assert WebDavReplica("http://dav.test/dav", "u", "p", "d").restore(out) is False      # a fresh instance has no transport: fails soft
+    rep2 = WebDavReplica("http://dav.test/dav", "u", "p", "d")
+    rep2._client = lambda: httpx.Client(transport=httpx.MockTransport(handler))
+    assert rep2.restore(out) and Store(out).spend_today("2026-10-23") == pytest.approx(0.5) and Store(out).count() == 1

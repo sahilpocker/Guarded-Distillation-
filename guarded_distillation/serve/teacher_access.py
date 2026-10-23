@@ -102,14 +102,17 @@ class TeacherAccess:
     def spent_today(self) -> float:
         return self.ledger.spent(f"anthropic:{MODEL}")
 
-    def label(self, text: str) -> tuple[str, str, float]:
-        """(label, source, usd): source is 'cache' or 'api'. Raises TeacherUnavailable."""
+    def label(self, text: str, allow_live=None) -> tuple[str, str, float]:
+        """(label, source, usd): source is 'cache' or 'api'. Raises TeacherUnavailable.
+        `allow_live()` is asked before a live call (per-visitor and global rate limits); False means no call."""
         r = self.by_text.get(text)
         if r and r.get("label") != "unparseable":
             self.cache_hits += 1
             return r["label"], "cache", 0.0
         if not self.live:
             raise TeacherUnavailable("not in the label cache and live calls are off")
+        if allow_live is not None and not allow_live():
+            raise TeacherUnavailable("rate limit on live Claude calls; try again later")
         with self._lock:
             try:
                 rec = self._teacher().label_all([text], progress=False)[0]

@@ -18,6 +18,8 @@ class Store:
         self.url = url if url and url.startswith(("postgres://", "postgresql://")) else None
         self.lock = threading.RLock()
         self.pg = bool(self.url)
+        self.on_change = None          # replication hooks (serve/replicate.py)
+        self.on_critical = None
         self._connect(path)
         self._schema()
 
@@ -75,11 +77,34 @@ class Store:
         return v if isinstance(v, dict) else json.loads(v)
 
     # ------------------------------------------------------------------ log
+    def _changed(self, critical: bool = False) -> None:
+        if self.on_change:
+            self.on_change()
+        if critical and self.on_critical:
+            try:
+                self.on_critical()
+            except Exception:
+                pass
+
+    def snapshot(self, dest: str | Path, keep: int = 20000) -> None:
+        """A consistent copy of the SQLite file with the decision log pruned to the newest `keep` rows."""
+        if self.pg:
+            raise RuntimeError("snapshots are for the SQLite store")
+        with self.lock:
+            out = sqlite3.connect(str(dest))
+            self.db.backup(out)
+            out.execute("delete from decisions where id <= (select coalesce(max(id), 0) - ? from decisions)", (keep,))
+            out.commit()
+            out.execute("vacuum")
+            out.close()
+
     def add_decision(self, version: str, rec: dict) -> None:
         self._x("insert into decisions(ts, version, data) values (?,?,?)", (time.time(), version, json.dumps(rec)))
+        self._changed()
 
     def add_event(self, kind: str, data: dict) -> None:
         self._x("insert into events(ts, kind, data) values (?,?,?)", (time.time(), kind, json.dumps(data)))
+        self._changed(critical=kind in ("promoted", "rollback"))
 
     def last(self, n: int, version: str | None = None) -> list[dict]:
         q, args = "select id, ts, version, data from decisions", ()
@@ -111,6 +136,7 @@ class Store:
     def spend_add(self, day: str, model: str, usd: float) -> None:
         self._x("insert into spend(day, model, usd) values (?,?,?) on conflict (day, model) do update set usd = spend.usd + excluded.usd",
                 (day, model, usd))
+        self._changed(critical=True)
 
     def spend_today(self, day: str) -> float:
         r = self._x("select coalesce(sum(usd), 0) from spend where day=?", (day,), "one")
@@ -125,3 +151,4 @@ class Store:
 
     def set_state(self, k: str, v: str) -> None:
         self._x("insert into state(k, v) values (?,?) on conflict (k) do update set v = excluded.v", (k, v))
+        self._changed(critical=True)

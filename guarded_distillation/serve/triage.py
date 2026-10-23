@@ -40,7 +40,7 @@ class Triage:
         g.rebuild({}, [])
         self.stress = SemanticField(g, cfg)        # observed stress: monitors the intents, does not change decisions
 
-    def decide(self, text: str) -> dict:
+    def decide(self, text: str, allow_live=None) -> dict:
         t0 = time.time()
         b = self.b
         P_s = b.scope.proba([text])
@@ -70,7 +70,7 @@ class Triage:
         audited, teacher_label, source = False, None, "student"
         if decision == "escalate":
             try:
-                teacher_label, source, usd = self.teacher.label(text)
+                teacher_label, source, usd = self.teacher.label(text, allow_live)
                 answer = teacher_label
             except TeacherUnavailable as e:
                 degraded = str(e)
@@ -79,7 +79,7 @@ class Triage:
         elif self.rng.random() < self.audit_p:
             audited = True
             try:
-                teacher_label, source, usd = self.teacher.label(text)
+                teacher_label, source, usd = self.teacher.label(text, allow_live)
             except TeacherUnavailable:
                 audited = False
         disagree = bool(audited and teacher_label is not None and teacher_label != answer)

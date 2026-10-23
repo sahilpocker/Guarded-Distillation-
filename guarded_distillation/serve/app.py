@@ -5,12 +5,13 @@ import json
 import os
 from pathlib import Path
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
 from . import monitor
+from .limits import Limits
 from .bundle import Bundle
 from .store import Store
 from .teacher_access import DbLedger, TeacherAccess
@@ -37,7 +38,7 @@ o.textContent=JSON.stringify(await r.json(),null,2)}catch(e){o.textContent="requ
 
 
 class Query(BaseModel):
-    text: str = Field(min_length=1, max_length=1000)
+    text: str = Field(min_length=1, max_length=400)
 
 
 def make_app(bundle_dir: str | Path | None = None, db: str | None = None, cap_usd: float | None = None, live: bool | None = None) -> FastAPI:
@@ -50,9 +51,23 @@ def make_app(bundle_dir: str | Path | None = None, db: str | None = None, cap_us
         os.environ["ANTHROPIC_API_KEY"] = clean
     cap = float(os.environ.get("DAILY_CAP_USD", 1.0)) if cap_usd is None else cap_usd
     live = (bool(os.environ.get("ANTHROPIC_API_KEY")) if live is None else live)
-    store = Store(db or os.environ.get("GD_DB", "data/service.db"), url=os.environ.get("DATABASE_URL"))
+    db_path = db or os.environ.get("GD_DB", "data/service.db")
+    replica = None
+    if not os.environ.get("DATABASE_URL"):
+        from .replicate import WebDavReplica
+        replica = WebDavReplica.from_env()
+        if replica is not None:
+            replica.restore(db_path)               # the newest snapshot, if any, before the store opens
+    store = Store(db_path, url=os.environ.get("DATABASE_URL"))
+    if replica is not None:
+        replica.start(store)
     teacher = TeacherAccess(bundle.intents, cap_usd=cap, live=live, ledger=DbLedger(store, cap))
     tri = Triage(bundle, teacher, store)
+    limits = Limits()
+
+    def client_ip(req: Request) -> str:
+        fwd = req.headers.get("x-forwarded-for", "")          # behind Render's proxy the visitor is the first hop
+        return (fwd.split(",")[0].strip() if fwd else (req.client.host if req.client else "?")) or "?"
     tri.blocked = set(json.loads(store.get_state("blocked") or "[]"))        # rolled-back versions stay rolled back after a restart
     want = store.get_state("model_version")
     if want and want != bundle.version and os.environ.get("MODEL_REGISTRY"):     # the version the last run was serving
@@ -71,6 +86,8 @@ def make_app(bundle_dir: str | Path | None = None, db: str | None = None, cap_us
         start_poller(tri, os.environ["MODEL_REGISTRY"], int(os.environ.get("REGISTRY_POLL_S", 900)))
     app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST"], allow_headers=["*"])
     app.state.triage = tri
+    app.state.replica = replica
+    tri.replica = replica
 
     def admin(token: str | None):
         want = os.environ.get("ADMIN_TOKEN")
@@ -86,8 +103,11 @@ def make_app(bundle_dir: str | Path | None = None, db: str | None = None, cap_us
         return {"ok": True, "model_version": tri.b.version, "live_api": teacher.live, "key_sanitized": sanitized}
 
     @app.post("/triage")
-    def triage(q: Query):
-        return tri.decide(q.text.strip())
+    def triage(q: Query, req: Request):
+        ip = client_ip(req)
+        if not limits.requests.allow(ip):
+            raise HTTPException(429, "too many requests", headers={"Retry-After": str(limits.requests.retry_after(ip))})
+        return tri.decide(q.text.strip(), allow_live=lambda: limits.allow_live(ip))
 
     @app.get("/metrics")
     def metrics(window: int = 500):

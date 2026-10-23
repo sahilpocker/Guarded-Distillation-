@@ -39,8 +39,11 @@ def compute(triage, window: int = 500) -> dict:
                     "blocked": sorted(triage.blocked)},
         "rollbacks": len(st.events("rollback", 20)),
         "spend": {"today_usd": round(triage.teacher.spent_today(), 5), "cap_usd": triage.teacher.cap,
-                  "total_usd": round(triage.teacher.ledger.total(), 5), "persistent": triage.store.pg,
+                  "total_usd": round(triage.teacher.ledger.total(), 5), "persistent": triage.store.pg or getattr(triage, "replica", None) is not None,
                   "cache_hits": triage.teacher.cache_hits, "api_calls": triage.teacher.api_calls},
+        "replica": (None if getattr(triage, "replica", None) is None else
+                    {"pushes": triage.replica.pushes, "last_push_age_s": (int(__import__("time").time() - triage.replica.last_push) if triage.replica.last_push else None),
+                     "last_error": triage.replica.last_error}),
         "uptime_s": int(__import__("time").time() - triage.started),
     }
 
