@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Guarded Distillation</title>
-<meta name="description" content="A support bot that learns from an expensive AI, answers the repeat questions itself, and knows when to hand a question back. Half the AI calls, about the same accuracy.">
+<meta name="description" content="A support bot that learns from an expensive AI, answers the repeat questions itself, and knows when to hand a question back. About half the AI calls, the same accuracy, a live service, and the misses on the page too.">
 <meta property="og:title" content="Guarded Distillation">
-<meta property="og:description" content="Half the AI calls, about the same accuracy, and a gate that knows when to hand a question back.">
+<meta property="og:description" content="About half the AI calls, the same accuracy, and a gate that knows when to hand a question back.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -19,9 +19,10 @@
     <a class="brand" href="#top">Guarded Distillation</a>
     <nav aria-label="Sections">
       <a href="#story">How it works</a>
-      <a href="#numbers">Results</a>
-      <a href="#dial">Try the dial</a>
-      <a href="#honest">What failed</a>
+      <a href="#results">Results</a>
+      <a href="#routing">Routing</a>
+      <a href="#explore">See it run</a>
+      <a href="#ops">Built to run</a>
       <a href="https://github.com/sahilpocker/Guarded-Distillation-">Code</a>
     </nav>
   </div>
@@ -35,21 +36,23 @@
       <p class="lede">A support bot that asks a large AI model every time pays for the same answer over and over. This project teaches a small, cheap model to handle the repeats, and checks that it can be trusted before it answers.</p>
       <div class="actions">
         <a class="btn" href="#story">See how it works</a>
-        <a class="btn ghost" href="replay">Open the live replay</a>
+        <a class="btn ghost" href="#explore">Watch it run, live</a>
       </div>
     </div>
-    <aside class="receipt" aria-label="Cost of 1,000 support questions, with and without this system">
-      <h3>1,000 support questions</h3>
-      <p class="sub">Real questions, answered by Claude Haiku 5.5</p>
-      <div class="row"><span>Ask the big AI every time<small>1,000 calls</small></span><b data-count="0.041" data-prefix="$" data-dec="3">$0.041</b></div>
-      <div class="row win"><span>Guarded Distillation<small id="r-calls">504 calls</small></span><b data-count="0.021" data-prefix="$" data-dec="3">$0.021</b></div>
-      <div class="row"><span>Accuracy vs human labels<small>big AI alone: 80.8%</small></span><b>81.4%</b></div>
-      <div class="foot">Measured on three held-out runs of an 8,000-question inbox.</div>
-    </aside>
+    <div class="hero-art">
+      <div id="hero-wings" role="presentation"></div>
+      <aside class="receipt" aria-label="Cost of 1,000 support questions, with and without this system">
+        <h3>1,000 questions</h3>
+        <p class="sub">Claude Haiku 5.5, real questions</p>
+        <div class="row"><span>Big AI every time<small>1,000 calls</small></span><b data-count="0.041" data-prefix="$" data-dec="3">$0.041</b></div>
+        <div class="row win"><span>Both wings<small id="r-calls">504 calls</small></span><b data-count="0.021" data-prefix="$" data-dec="3">$0.021</b></div>
+        <div class="foot">Accuracy 81.4% against 80.8%.</div>
+      </aside>
+    </div>
   </div>
 </section>
 
-<hr class="rule">
+<hr class="veinline">
 
 <section class="story" id="story" aria-label="How it works">
   <div class="wrap">
@@ -97,13 +100,13 @@
   </div>
 </section>
 
-<hr class="rule">
+<hr class="veinline">
 
-<section id="numbers">
+<section id="results">
   <div class="wrap">
     <div class="section-head">
-      <h2>What it does on questions it has never been tuned on.</h2>
-      <p class="lede">I chose the main settings on three runs and measured on three others. Same real questions, same big AI, and accuracy is always scored against the human-written answer, not the AI's.</p>
+      <h2>What it does on questions it was never tuned on.</h2>
+      <p class="lede">I chose the main settings on three runs and measured on others. Same real questions, same big AI, and accuracy is always scored against the human-written answer, not the AI's.</p>
     </div>
     <div class="pairs">
       <div class="pair"><h3>Calls to the big AI</h3>
@@ -113,7 +116,7 @@
       <div class="pair"><h3>Cost per 1,000 questions</h3>
         <div class="line"><span>Ask every time</span><div class="track"><div class="fill llm" data-w="100">$0.041</div></div></div>
         <div class="line"><span>This system</span><div class="track"><div class="fill mine" data-w="51.2">$0.021</div></div></div>
-        <p>Claude Haiku 5.5 prices. A cheaper AI saves less in dollars; a bigger one saves more.</p></div>
+        <p>Claude Haiku 5.5 prices. A bigger AI saves more dollars.</p></div>
       <div class="pair"><h3>Accuracy on all questions</h3>
         <div class="line"><span>Ask every time</span><div class="track"><div class="fill llm" data-w="80.8">80.8%</div></div></div>
         <div class="line"><span>This system</span><div class="track"><div class="fill mine" data-w="81.4">81.4%</div></div></div>
@@ -123,19 +126,14 @@
         <div class="line"><span>This system</span><div class="track"><div class="fill mine" data-w="84.5">84.5%</div></div></div>
         <p>The hardest part. A new product is where a small model usually fails.</p></div>
     </div>
-    <p class="small" style="margin-top:28px">Six independent replays of an 8,000-question support inbox, including a product launch and an off-topic surge. Numbers above are the three held-out runs. <a href="replay">Watch one replay</a>.</p>
-  </div>
-</section>
+    <p class="small" style="margin-top:26px">Eight-thousand-question support inbox replays, including a product launch and an off-topic surge. These are the three held-out runs; balancing the new topic was added after I saw them, so they are not a fully clean test.</p>
 
-<hr class="rule">
-
-<section id="dial">
-  <div class="wrap">
-    <div class="section-head">
+    <div class="section-head" id="dial" style="margin-top:clamp(48px,8vh,90px)">
       <h2>Saving more means checking less.</h2>
-      <p class="lede">The gate has a dial. Turn it toward saving and the small model answers more, so more of its wrong answers slip through unchecked. Each square below is ten questions.</p>
+      <p class="lede">The gate has a dial. Turn it toward saving and the small model answers more, so more of its wrong answers slip through unchecked. The butterfly's wings are who answers: orange the big AI, blue the small model. Each square is ten questions.</p>
     </div>
     <div class="dial">
+      <div id="dial-wings" class="dial-art" role="presentation"></div>
       <div class="dial-top"><span>Save more</span><span>Check more</span></div>
       <input id="dial-range" type="range" min="0" max="6" step="1" value="0" aria-label="How cautious the gate is">
       <div class="squares" id="squares" role="img" aria-label="One hundred squares, each ten questions, coloured by who answered"></div>
@@ -151,11 +149,71 @@
         <div class="fact"><b id="d-acc">+0.6</b><span>points of accuracy vs asking the big AI every time</span></div>
       </div>
     </div>
-    <p class="small" style="margin-top:16px">Seven gate settings, each averaged over all six runs. The recommended setting is the leftmost.</p>
+    <p class="small" style="margin-top:14px">Seven gate settings, each averaged over six runs. The recommended setting is the leftmost.</p>
   </div>
 </section>
 
-<hr class="rule">
+<hr class="veinline">
+
+<section id="routing">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Which question goes to the big AI? A learned rule beats the old one.</h2>
+      <p class="lede">The gate used one number to decide: how close the small model's second guess was to its first. I tested six other rules, including one that learns, on three launches and 990 runs. At the same share of calls, the learned rule is more accurate, most of all on new-product questions.</p>
+    </div>
+    <div>
+      <div class="seg" id="route-fam" role="group" aria-label="Stream"></div>
+      <div class="seg" id="route-metric" role="group" aria-label="Measure"></div>
+    </div>
+    <div id="route-box" class="panel" style="padding:14px 16px 10px"></div>
+    <div class="route-facts">
+      <div class="fact"><b>+9.6 pts</b><span>on new-product questions at 40% calls, Banking77 launch (learned rule vs the old score)</span></div>
+      <div class="fact"><b>+17 pts</b><span>on the harder credit-card domain launch at 40% calls</span></div>
+      <div class="fact"><b>Not clear</b><span>on the distant travel domain: the gain is inside the seed-to-seed spread</span></div>
+    </div>
+    <p class="small" style="margin-top:14px">Held-out seeds 3 to 5. Another published method I could run, Online Cascade Learning, jumps from deferring nearly everything to deferring almost nothing and never reaches the 40-60% range on two of the three streams. Tables and caveats are in the repo's results file.</p>
+  </div>
+</section>
+
+<hr class="veinline">
+
+<section id="explore" class="explore">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>See it run.</h2>
+      <p class="lede">Replay one run question by question, look at the hard case where a whole product line arrives at once, or watch the real service, running now on a free server.</p>
+    </div>
+    <div class="tablist" role="tablist" aria-label="Views">
+      <button role="tab" id="t-replay" aria-controls="p-replay" aria-selected="true">Banking launch replay</button>
+      <button role="tab" id="t-clinc" aria-controls="p-clinc" aria-selected="false" tabindex="-1">The hard case: a new domain</button>
+      <button role="tab" id="t-live" aria-controls="p-live" aria-selected="false" tabindex="-1">Live service</button>
+    </div>
+    <div id="p-replay" role="tabpanel" aria-labelledby="t-replay">
+      <iframe id="f-replay" data-src="replay-banking.html" title="Banking launch replay" loading="lazy"></iframe>
+    </div>
+    <div id="p-clinc" role="tabpanel" aria-labelledby="t-clinc" hidden>
+      <p class="lede" style="margin-top:0">The same system on a harder drift: instead of five new intents, a whole credit-card domain with fifteen arrives at once. It copes less well, and the page says by how much.</p>
+      <iframe id="f-clinc" data-src="replay-clinc.html" title="Credit-card domain launch replay" loading="lazy"></iframe>
+    </div>
+    <div id="p-live" role="tabpanel" aria-labelledby="t-live" hidden>
+      <div id="live-banner" class="banner" role="status">Connecting. A free server sleeps when idle and can take up to a minute to wake.</div>
+      <div class="live-grid" id="live-grid" aria-live="polite"></div>
+      <div class="live-two">
+        <div class="panel"><h3>Intents under stress</h3><div id="live-stress"><p class="small">Nothing yet.</p></div></div>
+        <div class="panel">
+          <h3>Try a question</h3>
+          <p class="small">Cached questions cost nothing. A new one may call Claude, under a $1 daily cap and a per-visitor limit.</p>
+          <input id="try-q" maxlength="300" value="I have not received my card yet, where is it?" aria-label="Support question">
+          <button class="btn" id="try-go" type="button">Route it</button>
+          <pre id="try-out" class="try-out">The answer appears here.</pre>
+        </div>
+      </div>
+      <p class="small" id="live-foot" style="margin-top:12px"></p>
+    </div>
+  </div>
+</section>
+
+<hr class="veinline">
 
 <section id="honest">
   <div class="wrap">
@@ -164,42 +222,78 @@
       <p class="lede">The project started with a different idea. These are the parts that did not hold up, because the results are only worth trusting if the misses are on the page too.</p>
     </div>
     <div class="tried">
-      <article><h3>The original idea didn't beat a simpler one.</h3><p>I first built a "stress field" (the code calls it cortisol): a worry level that rises in the topics where mistakes happen. Against a plain gate with retraining, it showed no advantage. It is still in the code, labelled experimental.</p></article>
-      <article><h3>My first pick failed on fresh data.</h3><p>The first recommended setting looked fine on the runs I tuned on, then lost 3.4 points on new-product questions on the held-out runs. The cause was imbalance after retraining; weighting the new topic fixed most of it. That fix came after I had seen the held-out result, so the numbers above are not a fully clean test.</p></article>
-      <article><h3>A per-topic version helps only close to home.</h3><p>Spreading worry between related topics beat the plain gate when a whole new set of intents resembled old ones (credit cards after banking). It did not when the new topics were far away (travel). A whole new domain is still hard for every setting.</p></article>
+      <article><h3>The original idea didn't beat a simpler one.</h3><p>I first built a "stress field": a worry level that rises in the topics where mistakes happen. Against a plain gate with retraining it showed no advantage. It is still in the code, labelled experimental, and it sits in an appendix of the results.</p></article>
+      <article><h3>My first pick failed on fresh data.</h3><p>The first recommended setting looked fine on the runs I tuned on, then lost 3.4 points on new-product questions on the held-out runs. The cause was imbalance after retraining; weighting the new topic fixed most of it.</p></article>
+      <article><h3>A whole new domain is still hard.</h3><p>When fifteen new topics arrive at once, every setting I tried ends 2 to 3 points behind the big AI on those questions. Spreading worry between related topics helps when the new topics resemble old ones, and not when they are far away.</p></article>
       <article><h3>An AI "sensor" never fired.</h3><p>I added a check that asks the big AI which known topics an unfamiliar cluster might be confused with. As designed, the trigger never fired. Loosened, it fired a handful of times and changed nothing measurable.</p></article>
     </div>
   </div>
 </section>
 
-<hr class="rule">
+<hr class="veinline">
+
+<section id="fresh">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Fresh data, made on purpose.</h2>
+      <p class="lede">Every real run draws from one pool of 14,194 questions. To test new wording, a Nemotron model wrote 290 new customer messages in four styles, and Claude checked each one blind, keeping the 222 it agreed on.</p>
+    </div>
+    <table class="tbl">
+      <thead><tr><th>Style</th><th>Claude agrees with the intended topic</th><th>Model before the launch, accuracy</th><th>Model after, accuracy</th></tr></thead>
+      <tbody>
+        <tr><td>Plain</td><td>84%</td><td>54%</td><td>88%</td></tr>
+        <tr><td>Casual, with typos</td><td>83%</td><td>51%</td><td>85%</td></tr>
+        <tr><td>Long, with background</td><td>77%</td><td>50%</td><td>78%</td></tr>
+        <tr><td>Terse</td><td>69%</td><td>59%</td><td>89%</td></tr>
+      </tbody>
+    </table>
+    <p class="small">A pilot: 15 topics, 44 to 61 items per style, so style gaps are hints. Keeping only items Claude agreed on removes the ambiguous ones, so these are optimistic. Next: seeding brand-new topics with a few synthetic examples at launch.</p>
+  </div>
+</section>
+
+<hr class="veinline">
+
+<section id="ops">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Built to run, not just to measure.</h2>
+      <p class="lede">The research sits inside a small production setup that costs nothing to host.</p>
+    </div>
+    <div class="flow" aria-label="Pipeline">
+      <span class="node">Questions</span><span class="arrow">→</span><span class="node">Gate</span><span class="arrow">→</span>
+      <span class="node cheap">Small model</span><span class="arrow">or</span><span class="node ai">Claude</span><span class="arrow">→</span>
+      <span class="node">Decision log</span><span class="arrow">→</span><span class="node">Retrain, gated</span><span class="arrow">→</span><span class="node">Model release</span><span class="arrow">→</span><span class="node">Hot swap, or roll back</span>
+    </div>
+    <div class="ops">
+      <div class="card"><b>Tests and a quality gate</b><span>Every change runs 64 tests and replays a real run from cached answers. It fails if accuracy, new-topic accuracy or call savings regress.</span></div>
+      <div class="card"><b>A live service</b><span>A small API on a free host: small model first, cached answers next, a live Claude call only on a miss, under a daily spend cap and per-visitor limits.</span></div>
+      <div class="card"><b>Monitoring that raises its hand</b><span>Rolling escalation rate, an estimate of leaked wrong answers against a budget, per-topic stress and spend. A schedule opens a GitHub issue if something is off.</span></div>
+      <div class="card"><b>Safe model updates</b><span>A weekly retrain must pass the same thresholds before it is published. The service swaps to it, and rolls back on its own if audited disagreement rises 50% in its first 500 questions.</span></div>
+      <div class="card"><b>State that survives restarts</b><span>The log, the spend and the model version are stored off the host, so a restart on a free tier loses nothing.</span></div>
+      <div class="card"><b>Traffic without a person</b><span>A scheduled job replays the question stream into the service every ten minutes, so it always has something to watch and learn from.</span></div>
+    </div>
+  </div>
+</section>
+
+<hr class="veinline">
 
 <section id="checks">
   <div class="wrap">
     <div class="section-head"><h2>How I checked it.</h2></div>
     <div class="checks">
       <div><b>14,194</b><p>real customer questions, labelled by a human and by Claude, from the public Banking77 and CLINC150 datasets.</p></div>
-      <div><b>3 + 3</b><p>runs to choose settings and different runs to report. The first picks were judged on the second set.</p></div>
-      <div><b>$0.79</b><p>total spent on the big AI for all real labels, under a hard spending cap.</p></div>
-      <div><b>43</b><p>automated tests, including one for the guarantee that caps how often the small model may be wrong unchecked.</p></div>
+      <div><b>990</b><p>runs compared six ways of choosing which questions to escalate, with settings chosen on some seeds and judged on others.</p></div>
+      <div><b>$0.80</b><p>total spent on the big AI for all real labels, under a hard spending cap.</p></div>
+      <div><b>64</b><p>automated tests, including one for the guarantee that caps how often the small model may be wrong unchecked.</p></div>
     </div>
-  </div>
-</section>
-
-<hr class="rule">
-
-<section id="build">
-  <div class="wrap">
-    <div class="section-head"><h2>Under the hood.</h2></div>
-    <p class="lede">A Python package with a command-line tool, a replay engine that simulates a support inbox, and the experiments behind every number above.</p>
-    <ul class="tech" aria-label="Technology">
-      <li>Python</li><li>scikit-learn</li><li>MiniLM sentence embeddings</li><li>Claude Haiku 5.5 as the teacher</li><li>Conformal risk control</li><li>pytest</li>
-    </ul>
-    <div class="actions">
+    <div class="actions" style="margin-top:34px">
       <a class="btn" href="https://github.com/sahilpocker/Guarded-Distillation-">Read the code</a>
       <a class="btn ghost" href="https://github.com/sahilpocker/Guarded-Distillation-/blob/main/docs/RESULTS.md">Full results</a>
-      <a class="btn ghost" href="replay">Live replay</a>
+      <a class="btn ghost" href="https://github.com/sahilpocker/Guarded-Distillation-/blob/main/docs/THEORY.md">The theory</a>
     </div>
+    <ul class="tech" aria-label="Technology" style="margin-top:24px">
+      <li>Python</li><li>scikit-learn</li><li>MiniLM embeddings</li><li>Claude Haiku 5.5 as the teacher</li><li>Conformal risk control</li><li>FastAPI</li><li>Docker</li><li>GitHub Actions</li><li>Render</li>
+    </ul>
   </div>
 </section>
 </main>

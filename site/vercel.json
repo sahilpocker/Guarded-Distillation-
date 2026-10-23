@@ -1,1 +1,10 @@
-{ "framework": null, "cleanUrls": true, "buildCommand": "", "outputDirectory": "." }
+{
+  "framework": null,
+  "cleanUrls": true,
+  "buildCommand": "",
+  "outputDirectory": ".",
+  "redirects": [
+    { "source": "/replay", "destination": "/#explore", "permanent": false },
+    { "source": "/replay.html", "destination": "/#explore", "permanent": false }
+  ]
+}

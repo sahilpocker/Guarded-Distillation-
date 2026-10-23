@@ -155,13 +155,16 @@ def pool_texts(pools: Pools, fewshot: pd.DataFrame) -> pd.DataFrame:
 
 
 def build_stream(pools: Pools, cfg: StreamConfig, fewshot: pd.DataFrame | None = None,
-                 launch_pool: pd.DataFrame | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
+                 launch_pool: pd.DataFrame | None = None, launch_intents: tuple[str, ...] | None = None,
+                 launch_kinds: dict[str, str] | None = None) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Return (stream, fewshot).
 
     stream columns: t, text, gold, phase, is_launch. The first cfg.history rows have
     phase == "history" (drawn like the steady phase); t counts from 0 at go-live, so history
     rows have negative t.
     fewshot: cfg.shots examples per label (77 intents + out_of_scope) for the teacher prompt.
+    launch_intents / launch_kinds: choose which Banking77 intents form the launch (default LAUNCH_INTENTS) and tag each
+    launch intent "near" or "far" in an extra `kind` column.
     launch_pool: optional (text, label) frame; when given, the launch event is a whole new domain
     drawn from it (all 77 Banking77 intents then stay in the base traffic) instead of LAUNCH_INTENTS.
     """
@@ -180,7 +183,7 @@ def build_stream(pools: Pools, cfg: StreamConfig, fewshot: pd.DataFrame | None =
         lp = lp[~lp.text.isin(used)]
         launch_mask = pd.Series(False, index=b.index)
     else:
-        launch_mask = b.label.isin(LAUNCH_INTENTS)
+        launch_mask = b.label.isin(launch_intents or LAUNCH_INTENTS)
         lp = b[launch_mask]
     queues = {
         "base": list(b[~launch_mask].itertuples(index=False)),
@@ -204,6 +207,8 @@ def build_stream(pools: Pools, cfg: StreamConfig, fewshot: pd.DataFrame | None =
         r = queues[src].pop()
         rows.append((t, r.text, r.label, p.name, src == "launch"))
     stream = pd.DataFrame(rows, columns=["t", "text", "gold", "phase", "is_launch"])
+    if launch_kinds:
+        stream["kind"] = stream.gold.map(launch_kinds).fillna("")      # near / far, for the held-out-intent test
     return stream, fewshot
 
 

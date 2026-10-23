@@ -32,9 +32,13 @@ def path(fam, router, alpha, seed):
     return OUT / f"{fam}-{router}-a{a}-s{seed}.json"
 
 
-def run_one(fam, router, alpha, seed):
+def npz_path(fam, router, alpha, seed):
+    return path(fam, router, alpha, seed).with_suffix(".npz")
+
+
+def run_one(fam, router, alpha, seed, need_npz=False):
     p = path(fam, router, alpha, seed)
-    if p.exists():
+    if p.exists() and (not need_npz or npz_path(fam, router, alpha, seed).exists()):
         return json.loads(p.read_text())
     import semantic as S
     from guarded_distillation import data as D, embed
@@ -66,6 +70,12 @@ def run_one(fam, router, alpha, seed):
     m["launch600"] = m["launch600"]
     out = {"family": fam, "router": router, "alpha": alpha, "seed": seed, **m}
     OUT.mkdir(parents=True, exist_ok=True)
+    cc = res.calls[res.calls.phase != "history"].reset_index(drop=True)
+    rr = ref.calls[ref.calls.phase != "history"].reset_index(drop=True)
+    first = np.zeros(len(cc), bool)
+    first[np.flatnonzero((cc.phase == "launch").to_numpy())[:600]] = True
+    np.savez_compressed(npz_path(fam, router, alpha, seed), correct=cc.correct.to_numpy(), llm_correct=rr.correct.to_numpy(),
+                        is_launch=cc.is_launch.to_numpy(), first=first, llm_call=cc.llm_call.to_numpy())
     p.write_text(json.dumps(out))
     return out
 

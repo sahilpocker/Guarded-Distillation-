@@ -120,6 +120,8 @@ class EngineConfig:
     sem_fit: float = 0.05         # (b) stress per fit-check failure
     sem_resid: float = 0.15       # (c) gain on (wrong - expected wrong)
     sem_sensor: float = 0.6       # (d) stress on the intents the LLM sensor names
+    seed_examples: dict | None = None   # {intent: [synthetic examples]}: declared at the first query of the launch phase (an empty
+                                        # list declares the intent with probation only); None = no seeding
     router: str = "margin"        # intent-gate score: margin | entropy | maxprob | disagree | learned | oracle
     router_refit: int = 100
     sem_cluster: int = 20         # (d) queries in a cluster before the LLM sensor is asked
@@ -208,6 +210,10 @@ class Replay:
         if cfg.router in ("entropy", "maxprob"):
             self.I.kind = cfg.router
         self.prev_I = None
+        self.extra: list[tuple[str, str]] = []          # synthetic seed examples (text, intent) that join training
+        self.extra_emb: dict[int, np.ndarray] = {}
+        self.declared = False
+        self.phase_arr = self.s.phase.to_numpy()
         self.router = LearnedRouter(cfg.router_refit) if cfg.router == "learned" else None
         self.rwin: list[float] = []
         self.err_rate = np.full(len(self.intents), 0.15)
@@ -226,6 +232,10 @@ class Replay:
 
     def _fit_pair(self, idx: list[int], hold: list[int] | None, version: int):
         x, y, ys = self._xy(idx)
+        if self.extra:                                  # synthetic seeds are training data only, never held-out data
+            x = x + [t for t, _ in self.extra]
+            y = y + [lab for _, lab in self.extra]
+            ys = ys + [IN] * len(self.extra)
         scope_h = intent_h = None
         if hold is not None:
             hx, hy, hys = self._xy(hold)
@@ -265,6 +275,8 @@ class Replay:
             if lab in self.I.index:
                 ex.setdefault(self.I.index[lab], []).append(k)
         self.ex_emb = {k: self.E[v] for k, v in ex.items()}
+        for k, e in self.extra_emb.items():
+            self.ex_emb[k] = np.vstack([self.ex_emb[k], e]) if k in self.ex_emb else e
         self.graph.rebuild(self.ex_emb, self.esc_log)
         if self.m.semantic:
             self.cen, self.rad, self.have = radii(self.ex_emb, len(self.intents))
@@ -493,6 +505,31 @@ class Replay:
             self.sem.inject(self.I.index[lab], self.cfg.sem_new, mode="max")          # (a) a new intent appears
         self.teacher_seen[lab] += 1
 
+    def _declare(self, i: int) -> None:
+        """A new product is declared at the start of the launch phase. Its synthetic examples (made from the intent's name, a
+        one-line description and the fixed few-shot example only) join training at once, the student is retrained with the
+        balancing weights, and the intents start on probation (stress at its maximum) until 30 teacher-seen answers agree."""
+        self.declared = True
+        for lab, exs in self.cfg.seed_examples.items():
+            if lab not in self.I.index:
+                continue
+            for t in exs:
+                self.extra.append((t, lab))
+        if self.extra:
+            E = embed.encode([t for t, _ in self.extra])
+            by: dict[int, list[int]] = {}
+            for j, (_, lab) in enumerate(self.extra):
+                by.setdefault(self.I.index[lab], []).append(j)
+            self.extra_emb = {k: E[v] for k, v in by.items()}
+        sem = getattr(self, "sem", None)
+        if sem is not None:
+            for lab in self.cfg.seed_examples:
+                if lab in self.I.index:
+                    sem.inject(self.I.index[lab], self.cfg.sem_new, mode="max")
+        self._event(i, "declared", f"{len(self.cfg.seed_examples)} new intents declared with {len(self.extra)} synthetic examples")
+        if self.extra:
+            self._retrain(i, "new intents declared with synthetic seeds")
+
     def _sense(self, i: int) -> None:
         """(d) An escalated query outside every intent's 95th-percentile radius joins a cluster; a
         cluster of `sem_cluster` is shown to the LLM once and the intents it names get stress."""
@@ -539,6 +576,8 @@ class Replay:
                     self._bootstrap(i)
                 continue
 
+            if self.cfg.seed_examples is not None and not self.declared and self.phase_arr[i] == "launch":
+                self._declare(i)
             c = int(self.cell[i])
             nov = float(self.nov[i]) if m.novelty else 0.0
             ls, li = self.Fs.level(c, nov), self.Fi.level(c, nov)

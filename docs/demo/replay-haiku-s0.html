@@ -1,50 +1,50 @@
 <meta charset="utf-8">
-<title>Cortisol Replay</title>
+<title>Replay | Guarded Distillation</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,500..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap">
 <style>
 /* Layout: control-room strip. A sticky replay bar drives every panel below it; summary tiles
    first, then the two time-series charts, the cortisol map, then the event log and live feed. */
 :root {
-  --bg: #f3f5f3;
-  --surface: #fcfdfc;
-  --ink: #14191b;
-  --ink-2: #4d575c;
-  --ink-3: #6f797e;
-  --line: #dde3df;
-  --line-2: #c9d1cc;
-  --accent: #b9481c;            /* cortisol: text-safe step of the orange series */
-  --s-cortisol: #eb6834;        /* categorical slot 2 */
-  --s-global: #2a78d6;          /* slot 1 */
-  --s-static: #1baf7a;          /* slot 3 */
-  --s-retrain: #eda100;         /* slot 4 */
-  --s-llm: #8a9399;             /* reference line, neutral */
-  --band: rgba(20, 25, 27, 0.035);
+  --bg: #f3f7fc;
+  --surface: #ffffff;
+  --ink: #0d1a36;
+  --ink-2: #465774;
+  --ink-3: #667796;
+  --line: #d6e1ef;
+  --line-2: #c3d2e6;
+  --accent: #c4500f;            /* monarch orange, text-safe step */
+  --s-cortisol: #d6409f;        /* categorical slot 4: orchid */
+  --s-global: #12b5d9;          /* slot 3: morpho cyan */
+  --s-static: #f26b1d;          /* slot 2: monarch orange */
+  --s-retrain: #1b57f0;         /* slot 1: blue morpho (the recommended setting) */
+  --s-llm: #8794b8;             /* reference line, neutral */
+  --band: rgba(13, 26, 54, 0.04);
   --good: #0ca30c; --good-ink: #0a6e0a;
-  --bad: #d03b3b; --bad-ink: #a82a2a;
-  --warn: #fab219;
-  --heat-0: #fcfdfc; --heat-1: #eb6834;
-  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
-  --font-body: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
-  --font-data: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --bad: #d12c5a; --bad-ink: #a8214a;
+  --warn: #ffcb2f;
+  --heat-0: #ffffff; --heat-1: #1b57f0;
+  --font-display: "Syne", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Figtree", "Helvetica Neue", Arial, sans-serif;
+  --font-data: "Figtree", "Helvetica Neue", Arial, sans-serif;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #111516; --surface: #181d1f; --ink: #edf1ef; --ink-2: #b4bdb9; --ink-3: #8d9793;
-    --line: #2a3133; --line-2: #3a4245; --accent: #f08a5d;
-    --s-cortisol: #d95926; --s-global: #3987e5; --s-static: #199e70; --s-retrain: #c98500; --s-llm: #7d878c;
-    --band: rgba(237, 241, 239, 0.045); --good-ink: #4ccb4c; --bad-ink: #ef7d7d;
-    --heat-0: #181d1f; --heat-1: #e8743f; color-scheme: dark;
+    --bg: #0a1128; --surface: #121c3d; --ink: #eaf0ff; --ink-2: #a3b3d6; --ink-3: #8393b8;
+    --line: #263663; --line-2: #34467d; --accent: #ff8a3d;
+    --s-cortisol: #ff6fc0; --s-global: #35d6f2; --s-static: #ff8a3d; --s-retrain: #5b8dff; --s-llm: #7d8bb0;
+    --band: rgba(234, 240, 255, 0.05); --good-ink: #4ccb4c; --bad-ink: #ff8aa8;
+    --heat-0: #121c3d; --heat-1: #5b8dff; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #111516; --surface: #181d1f; --ink: #edf1ef; --ink-2: #b4bdb9; --ink-3: #8d9793;
-  --line: #2a3133; --line-2: #3a4245; --accent: #f08a5d;
-  --s-cortisol: #d95926; --s-global: #3987e5; --s-static: #199e70; --s-retrain: #c98500; --s-llm: #7d878c;
-  --band: rgba(237, 241, 239, 0.045); --good-ink: #4ccb4c; --bad-ink: #ef7d7d;
-  --heat-0: #181d1f; --heat-1: #e8743f; color-scheme: dark;
+  --bg: #0a1128; --surface: #121c3d; --ink: #eaf0ff; --ink-2: #a3b3d6; --ink-3: #8393b8;
+  --line: #263663; --line-2: #34467d; --accent: #ff8a3d;
+  --s-cortisol: #ff6fc0; --s-global: #35d6f2; --s-static: #ff8a3d; --s-retrain: #5b8dff; --s-llm: #7d8bb0;
+  --band: rgba(234, 240, 255, 0.05); --good-ink: #4ccb4c; --bad-ink: #ff8aa8;
+  --heat-0: #121c3d; --heat-1: #5b8dff; color-scheme: dark;
 }
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 14px; line-height: 1.5; }
@@ -171,7 +171,7 @@ footer { color: var(--ink-3); font-size: 12px; padding-block: 0 40px; }
 
 <header class="top wrap">
   <div class="eyebrow" id="eyebrow">Replay</div>
-  <h1 id="headline">Cortisol replay</h1>
+  <h1 id="headline">Replay</h1>
   <p class="lede" id="lede"></p>
   <p class="note" id="caveat" hidden></p>
 </header>
@@ -402,17 +402,22 @@ const DATA = {"meta":{"run":"recommended-s0","teacher":"anthropic:claude-haiku-5
   $("eyebrow").textContent = `Replay · ${M.run}`;
   $("lede").textContent = `A banking-support triage agent replayed on ${N.toLocaleString()} real customer queries ` +
     `(Banking77 and CLINC150), after ${M.history.toLocaleString()} queries of shadow mode. Repeated LLM decisions get ` +
-    `compiled into small CPU models; a cortisol field decides, query by query, when those models may answer.`;
+    `compiled into small CPU models; a gate decides, query by query, when those models may answer.`;
   (function headline() {
     const S = DATA.summary, f = S[DATA.focus] || S[ORDER[0]];
     if (!f || f.accuracy_delta_pts == null) return;
     const h = $("headline"); h.textContent = "";
+    if (M.headline) { h.textContent = M.headline; return; }
     const d = f.accuracy_delta_pts;
     const tail = d >= -0.05 ? "with no loss of accuracy" : `within ${Math.abs(d).toFixed(1)} points of its accuracy`;
     const em = document.createElement("span"); em.className = "acc"; em.textContent = fmt(1 - f.llm_share, 0);
     h.append(em, document.createTextNode(` of support queries answered without the LLM, ${tail}`));
   })();
-  if (String(M.teacher).startsWith("simulated")) {
+  if (M.caveat) {
+    const c = $("caveat");
+    c.hidden = false;
+    c.textContent = M.caveat;
+  } else if (String(M.teacher).startsWith("simulated")) {
     const c = $("caveat");
     c.hidden = false;
     c.innerHTML = "<span><b>Simulated teacher.</b> </span>";
@@ -692,7 +697,7 @@ const DATA = {"meta":{"run":"recommended-s0","teacher":"anthropic:claude-haiku-5
 
   // ---------------------------------------------------------------- events + feed
   const KIND = { golive: "Go-live", promoted: "Retrained", novel_label: "New intent", spike: "Cortisol spike", calm: "Calm", global_alarm: "Alarm", global_calm: "Calm", phase: "Traffic" };
-  const PH_TEXT = { launch: "The bank launches virtual cards and wallet pay. New questions start arriving.", oos_surge: "A campaign brings a wave of off-topic questions.", settle: "Traffic settles into a new normal." };
+  const PH_TEXT = { launch: M.launch_text || "The bank launches virtual cards and wallet pay. New questions start arriving.", oos_surge: "A campaign brings a wave of off-topic questions.", settle: "Traffic settles into a new normal." };
   function renderEvents() {
     const fm = DATA.methods.cortisol ? "cortisol" : focus;
     const ev = DATA.methods[fm].events.slice();

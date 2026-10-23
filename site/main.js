@@ -133,6 +133,30 @@
       onEnter: () => gsap.to(f, { width: f.dataset.w + "%", duration: 1.1, ease: "power3.out" }) }));
   }
 
+  /* ---------- butterfly: wings sized by who answers ---------- */
+  function wingsSVG(uid) {
+    const g = (id, c1, c2) => `<linearGradient id="${id}${uid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient>`;
+    const wing = (grad, spots) => `
+      <path d="M300 205C318 110 410 38 520 52C585 62 600 130 560 190C520 245 400 250 300 222Z" fill="url(#${grad})"/>
+      <path d="M300 222C372 244 470 262 492 330C506 384 440 408 392 386C338 360 308 300 300 262Z" fill="url(#${grad})"/>
+      <path class="vein" d="M300 210C350 150 430 100 520 70M300 214C360 170 460 140 560 150M300 218C380 200 470 205 545 215M306 205C330 130 380 80 430 58M302 228C360 262 430 300 462 352M304 236C340 290 380 330 400 378M302 224C380 240 440 262 478 300"/>
+      <path class="edge" d="M300 205C318 110 410 38 520 52C585 62 600 130 560 190C520 245 400 250 300 222Z"/>
+      <path class="edge" d="M300 222C372 244 470 262 492 330C506 384 440 408 392 386C338 360 308 300 300 262Z"/>
+      ${spots}`;
+    const spots = '<circle class="spot" cx="540" cy="86" r="5"/><circle class="spot" cx="563" cy="122" r="6"/><circle class="spot" cx="566" cy="160" r="5"/><circle class="spot" cx="548" cy="196" r="4"/><circle class="spot" cx="470" cy="356" r="5"/><circle class="spot" cx="438" cy="384" r="4"/>';
+    return `<svg class="wings flap" viewBox="0 0 600 430" role="img" aria-label="A butterfly: the orange wing is the big AI, the blue wing is the small model; each wing's size is its share of the questions">
+      <defs>${g("gr", "var(--cheap)", "var(--cheap-2)")}${g("gl", "var(--ai)", "var(--swallow)")}</defs>
+      <g class="wl"><g transform="translate(600 0) scale(-1 1)">${wing("gl" + uid, spots)}</g></g>
+      <g class="wr">${wing("gr" + uid, spots)}</g>
+      <ellipse class="body" cx="300" cy="232" rx="6" ry="46"/><circle class="body" cx="300" cy="180" r="8"/>
+      <path class="vein" d="M297 174C284 144 270 130 256 124M303 174C316 144 330 130 344 124"/></svg>`;
+  }
+  function setWings(el, aiShare) {
+    const svg = el.querySelector("svg");
+    svg.style.setProperty("--sl", (0.42 + 1.25 * aiShare).toFixed(3));
+    svg.style.setProperty("--sr", (0.42 + 1.25 * (1 - aiShare)).toFixed(3));
+  }
+
   /* ---------- dial ---------- */
   // Static gate + retraining + class balancing, MiniLM student; mean of six replays (seeds 0-5); a = the gate's leak budget.
   const DIAL = [
@@ -142,13 +166,15 @@
     { a: 0.01,   calls: 67.4, acc: 0.32, errors: 15.7 },
   ];
   function dial() {
-    const wrap = $("#squares"), range = $("#dial-range");
+    const wrap = $("#squares"), range = $("#dial-range"), art = $("#dial-wings");
+    art.innerHTML = wingsSVG("d");
     for (let i = 0; i < 100; i++) wrap.appendChild(document.createElement("i"));
     const cells = [...wrap.children];
     function draw() {
       const d = DIAL[+range.value];
       const ai = Math.round(d.calls), err = Math.max(1, Math.round(d.errors / 10));
       cells.forEach((c, i) => { c.className = i < ai ? "" : i >= 100 - err ? "err" : "cheap"; });
+      setWings(art, d.calls / 100);
       $("#d-calls").textContent = Math.round(d.calls) + "%";
       $("#d-cost").textContent = "$" + (d.calls / 100 * 0.041).toFixed(3);
       $("#d-err").textContent = Math.round(d.errors);
@@ -158,8 +184,132 @@
     draw();
   }
 
+  /* ---------- hero butterfly ---------- */
+  function hero() {
+    const el = $("#hero-wings");
+    el.innerHTML = wingsSVG("h");
+    setWings(el, 0.504);
+  }
+
+  /* ---------- routing chart (from routing-data.json) ---------- */
+  const ROUTE_COLORS = { margin: "var(--ink-3)", maxprob: "var(--swallow)", learned: "var(--cheap)", learned_sem: "var(--cheap-2)" };
+  const ROUTE_LABEL = { margin: "Margin (the old score)", maxprob: "Max probability", learned: "Learned router", learned_sem: "Learned router + stress" };
+  const FAM_NAME = { banking: "Banking77 launch", credit_cards: "New domain: credit cards", travel: "New domain: travel" };
+  async function routing() {
+    const box = $("#route-box");
+    let data;
+    try { data = await fetch("routing-data.json").then((r) => r.json()); } catch (e) { box.textContent = "Chart data did not load."; return; }
+    let fam = "banking", metric = "acc";
+    const W = 760, H = 380, L = 50, T = 14, B = 44, R = 14;
+    function draw() {
+      const key = metric === "acc" ? "acc" : "l600";
+      const lines = Object.keys(ROUTE_COLORS).map((r) => [r, data.curves[fam + "|" + r]]);
+      const all = lines.flatMap(([, p]) => p.map((q) => q[key]));
+      const ref = metric === "acc" ? data.llm[fam].acc : data.llm[fam].l600;
+      all.push(ref);
+      const x0 = 20, x1 = 100, y0 = Math.floor(Math.min(...all) - 0.4), y1 = Math.ceil(Math.max(...all) + 0.4);
+      const X = (v) => L + (v - x0) / (x1 - x0) * (W - L - R), Y = (v) => T + (1 - (v - y0) / (y1 - y0)) * (H - T - B);
+      let o = `<svg id="route-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="LLM calls against ${metric === "acc" ? "overall accuracy" : "accuracy on new-product questions"} for four routing scores">`;
+      for (let v = 20; v <= 100; v += 10) o += `<line class="grid" x1="${X(v)}" x2="${X(v)}" y1="${T}" y2="${H - B}"/><text x="${X(v)}" y="${H - B + 16}" text-anchor="middle">${v}%</text>`;
+      const step = (y1 - y0) > 12 ? 2 : (y1 - y0) > 5 ? 1 : 0.5;
+      for (let v = Math.ceil(y0 / step) * step; v <= y1; v += step) o += `<line class="grid" x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`;
+      o += `<text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle">share of questions sent to the big AI</text>`;
+      o += `<line x1="${L}" x2="${W - R}" y1="${Y(ref)}" y2="${Y(ref)}" stroke="var(--vein)" stroke-dasharray="5 4"/><text x="${W - R - 4}" y="${Y(ref) - 6}" text-anchor="end">big AI on every question</text>`;
+      lines.forEach(([r, pts]) => {
+        const sorted = pts.slice().sort((a, b) => a.calls - b.calls);
+        o += `<path d="M${sorted.map((p) => `${X(p.calls).toFixed(1)} ${Y(p[key]).toFixed(1)}`).join("L")}" fill="none" stroke="${ROUTE_COLORS[r]}" stroke-width="${r === "learned" ? 3.2 : 2.2}" stroke-linejoin="round"/>`;
+        sorted.forEach((p) => { o += `<circle cx="${X(p.calls)}" cy="${Y(p[key])}" r="3.4" fill="${ROUTE_COLORS[r]}"><title>${ROUTE_LABEL[r]}: ${p.calls.toFixed(0)}% calls, ${p[key].toFixed(2)}%</title></circle>`; });
+      });
+      o += "</svg>";
+      box.innerHTML = o + `<div class="route-legend">${Object.keys(ROUTE_COLORS).map((r) => `<span><i style="background:${ROUTE_COLORS[r]}"></i>${ROUTE_LABEL[r]}</span>`).join("")}</div>`;
+    }
+    const seg = (name, opts, get, set) => {
+      const el = $(name);
+      el.innerHTML = opts.map(([k, t]) => `<button type="button" data-k="${k}" aria-pressed="${get() === k}">${t}</button>`).join("");
+      el.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; set(b.dataset.k); [...el.children].forEach((c) => c.setAttribute("aria-pressed", c.dataset.k === get())); draw(); });
+    };
+    seg("#route-fam", Object.entries(FAM_NAME), () => fam, (k) => (fam = k));
+    seg("#route-metric", [["acc", "All questions"], ["l600", "New-product questions, first 600 of the launch"]], () => metric, (k) => (metric = k));
+    draw();
+  }
+
+  /* ---------- see it run: tabs + live service ---------- */
+  const SERVICE = "https://guarded-distillation-triage.onrender.com";
+  const pct = (x, d = 0) => (x == null ? "n/a" : (x * 100).toFixed(d) + "%");
+  function explore() {
+    const tabs = [["#t-replay", "#p-replay", "#f-replay"], ["#t-clinc", "#p-clinc", "#f-clinc"], ["#t-live", "#p-live", null]];
+    let timer = null;
+    function select(i, push) {
+      tabs.forEach(([t, p], k) => { $(t).setAttribute("aria-selected", k === i); $(t).tabIndex = k === i ? 0 : -1; $(p).hidden = k !== i; });
+      const f = tabs[i][2] && $(tabs[i][2]);
+      if (f && !f.getAttribute("src")) f.setAttribute("src", f.dataset.src);
+      clearInterval(timer);
+      if (i === 2) { poll(); timer = setInterval(poll, 10000); }
+    }
+    tabs.forEach(([t], i) => {
+      $(t).addEventListener("click", () => select(i));
+      $(t).addEventListener("keydown", (e) => { if (e.key === "ArrowRight" || e.key === "ArrowLeft") { const n = (i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length; select(n); $(tabs[n][0]).focus(); } });
+    });
+    ["#f-replay", "#f-clinc"].forEach((id) => {
+      const frame = $(id);
+      frame.addEventListener("load", () => { const fit = () => { try { frame.style.height = frame.contentDocument.documentElement.scrollHeight + 8 + "px"; } catch (e) {} }; fit(); setInterval(fit, 1500); });
+    });
+    const card = (v, label, cls = "", extra = "") => `<div class="card ${cls}"><b>${v}</b><span>${label}</span>${extra}</div>`;
+    async function poll() {
+      const banner = $("#live-banner");
+      try {
+        const [m, a] = await Promise.all([fetch(SERVICE + "/metrics").then((r) => r.json()), fetch(SERVICE + "/alerts").then((r) => r.json())]);
+        const over = m.leak_over_budget, leak = m.estimated_leak_rate, bud = m.leak_budget, alerts = a.alerts || [];
+        banner.className = "banner " + (alerts.length ? "bad" : "ok");
+        banner.textContent = alerts.length ? "Needs a look: " + alerts.map((x) => x.detail).join("; ") : "Healthy. No stress spike, leaks within budget, spend under the cap.";
+        $("#live-grid").innerHTML =
+          card(m.model_version, "model version in use") + card(m.decisions_total.toLocaleString(), "questions routed so far") +
+          card(pct(m.escalation_rate), `sent to Claude, last ${m.window} questions`) +
+          card(pct(leak, 1), `estimated wrong answers that slipped through, against a budget of ${pct(bud, 1)}`, over ? "bad" : "",
+               `<div class="meter-bar"><i class="${over ? "over" : ""}" style="width:${Math.min(100, ((leak || 0) / bud) * 100)}%"></i></div>`) +
+          card(pct(m.audit.rate, 1), `of ${m.audit.audited} audited answers disagreed with Claude`) +
+          card("$" + m.spend.today_usd.toFixed(3), `spent today of a $${m.spend.cap_usd.toFixed(2)} cap (${m.spend.cache_hits} cached, ${m.spend.api_calls} live calls)`) +
+          card(m.promotions + " / " + m.rollbacks, "model promotions / automatic rollbacks");
+        const top = m.stress.top || [];
+        $("#live-stress").innerHTML = top.length
+          ? top.map((t) => `<div class="stress-row"><span>${t.intent}</span><div class="tr"><i class="${t.stress >= m.stress.spike_threshold ? "hot" : ""}" style="width:${Math.min(100, t.stress * 100)}%"></i></div><span>${t.stress.toFixed(2)}</span></div>`).join("")
+          : '<p class="small">No intent is under stress.</p>';
+        $("#live-foot").textContent = `Uptime ${Math.round(m.uptime_s / 60)} min. ${m.spend.persistent ? "The log survives restarts." : "The free server's log resets when it restarts."} Updated ${new Date().toLocaleTimeString()}.`;
+      } catch (e) {
+        banner.className = "banner warn";
+        banner.textContent = "Waiting for the server. A free instance sleeps when idle; the first request can take up to a minute. Retrying every 10 seconds.";
+      }
+    }
+    $("#try-go").addEventListener("click", async () => {
+      const out = $("#try-out"); out.textContent = "working...";
+      try {
+        const r = await fetch(SERVICE + "/triage", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: $("#try-q").value }) });
+        const j = await r.json();
+        out.textContent = j.intent ? `${j.intent}  (${j.decision === "accept" ? "answered by the small model" : "sent to Claude"}, team: ${j.team}, urgency: ${j.urgency})` : JSON.stringify(j);
+      } catch (e) { out.textContent = "The server did not answer. It may be waking up; try again in a minute."; }
+      poll();
+    });
+    select(0);
+  }
+
+  /* ---------- nav highlight ---------- */
+  function spy() {
+    const links = [...document.querySelectorAll(".top nav a[href^='#']")];
+    links.forEach((a) => {
+      const sec = document.getElementById(a.getAttribute("href").slice(1));
+      if (!sec) return;
+      new IntersectionObserver((es) => es.forEach((e) => {
+        if (e.isIntersecting) { links.forEach((l) => l.classList.remove("on")); a.classList.add("on"); }
+      }), { rootMargin: "-45% 0px -50% 0px" }).observe(sec);
+    });
+  }
+
+  hero();
   receipt();
   story();
   bars();
   dial();
+  routing();
+  explore();
+  spy();
 })();
