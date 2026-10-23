@@ -1,0 +1,17 @@
+{
+  "version": "v1",
+  "built": "2026-10-23T06:22:44Z",
+  "n_labels": 3994,
+  "n_intents": 77,
+  "intent_holdout_acc": 0.8452012383900929,
+  "scope_holdout_acc": 0.9879759519038076,
+  "label_counts": {
+    "out_of_scope": 126,
+    "transfer_timing": 111,
+    "card_payment_not_recognised": 102,
+    "extra_charge_on_statement": 87,
+    "card_arrival": 86
+  },
+  "source": "history of seed 0 stream, Haiku labels",
+  "n_history": 4000
+}

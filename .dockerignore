@@ -1,0 +1,11 @@
+.venv
+runs
+data/raw
+data/*.npz*
+data/*.db
+site
+docs
+.git
+.github
+*.egg-info
+labels/claude-haiku-5-5-*.jsonl

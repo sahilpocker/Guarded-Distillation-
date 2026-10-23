@@ -8,8 +8,8 @@
 from __future__ import annotations
 
 import argparse
-import json
 import os
+import json
 import pickle
 import sys
 import time
@@ -298,6 +298,23 @@ def main(argv=None) -> None:
     q.add_argument("--run", default="runs/ci-s0")
     q.add_argument("--write-baseline", action="store_true", help="record the numbers in docs/eval_baseline.json")
 
+    q = sub.add_parser("bundle", help="build a model bundle for the service from the cached Haiku labels")
+    q.add_argument("--seed", type=int, default=0)
+    q.add_argument("--out", default="models/v1")
+    q.add_argument("--version", default=None)
+
+    q = sub.add_parser("serve", help="run the triage service (FastAPI)")
+    q.add_argument("--bundle", default=None)
+    q.add_argument("--host", default="0.0.0.0")
+    q.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8000)))
+
+    q = sub.add_parser("traffic", help="replay a stream against a running service")
+    q.add_argument("--stream", required=True, help="run folder with stream.csv")
+    q.add_argument("--url", default="http://localhost:8000")
+    q.add_argument("--rate", type=float, default=5.0, help="requests per second")
+    q.add_argument("--limit", type=int, default=0, help="stop after N queries (0 = the whole live stream)")
+    q.add_argument("--skip-history", action="store_true", default=True)
+
     q = sub.add_parser("demo", help="data + simulated labels + replay + report")
     stream_args(q)
     replay_args(q)
@@ -307,6 +324,9 @@ def main(argv=None) -> None:
     if args.cmd == "eval":
         from .evalgate import cmd_eval
         return cmd_eval(args)
+    if args.cmd in ("bundle", "serve", "traffic"):
+        from .serve import cli as scli
+        return getattr(scli, "cmd_" + args.cmd)(args)
     {"data": cmd_data, "label": cmd_label, "label-pool": cmd_label_pool, "replay": cmd_replay, "report": cmd_report, "demo": cmd_demo}[args.cmd](args)
 
 

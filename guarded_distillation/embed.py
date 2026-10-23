@@ -5,6 +5,7 @@ encoder never changes. Vectors are L2-normalised.
 """
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 import numpy as np
@@ -42,9 +43,14 @@ def encode(texts: list[str], model: str = MODEL) -> np.ndarray:
     todo = [t for t in dict.fromkeys(texts) if (model, t) not in _cache]
     if todo:
         if model not in _encoders:
-            from sentence_transformers import SentenceTransformer
-            _encoders[model] = SentenceTransformer(model)
-        V = _encoders[model].encode(todo, batch_size=128, show_progress_bar=False, normalize_embeddings=True)
+            if os.environ.get("GD_EMBED") == "onnx":      # the service: ONNX Runtime, no torch
+                from .onnx_embed import OnnxEncoder
+                _encoders[model] = OnnxEncoder(model)
+            else:
+                from sentence_transformers import SentenceTransformer
+                _encoders[model] = SentenceTransformer(model)
+        enc = _encoders[model]
+        V = enc.encode(todo) if hasattr(enc, "tok") else enc.encode(todo, batch_size=128, show_progress_bar=False, normalize_embeddings=True)
         for t, v in zip(todo, V):
             _cache[(model, t)] = np.asarray(v, dtype=np.float32)
     if not len(texts):
