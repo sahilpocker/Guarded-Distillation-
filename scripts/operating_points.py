@@ -170,7 +170,7 @@ def main() -> None:
                                                    **{k: best[k] for k in ("method", "student", "alpha")},
                                                    "calls": best["calls"]["mean"], "errors": best["errors"]["mean"]},
                                                "settings": rows}, indent=1))
-    (out / "operating-points.svg").write_text(svg(rows, default))
+    (out / "operating-points.svg").write_text(svg(rows, default), encoding="utf-8")
     print(f"wrote {out / 'grid.json'} and {out / 'operating-points.svg'}")
 
 

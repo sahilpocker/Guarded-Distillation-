@@ -216,7 +216,7 @@ def cmd_report(args) -> None:
                     f"{b['errors']:.0f} cheap-path errors per 1,000 queries through; the accuracy axis does not show that. ")
         if not g["field_on_curve"]:
             cap += "The cortisol field is not on the trade-off curve, so it is experimental."
-        op = operating_points_section(Path(args.operating_points).read_text(), cap)
+        op = operating_points_section(Path(args.operating_points).read_text(encoding="utf-8"), cap)
     write_all(results, meta, run, focus=getattr(args, "focus", "cortisol"), operating_points=op)
     print((run / "REPORT.md").read_text())
     print(f"dashboard: {run / 'replay.html'}")
