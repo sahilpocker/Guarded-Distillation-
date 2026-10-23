@@ -39,7 +39,12 @@ def cmd_serve(args) -> None:
 
 def cmd_traffic(args) -> None:
     import httpx
-    stream = pd.read_csv(Path(args.stream) / "stream.csv", keep_default_na=False)
+    if args.stream:
+        stream = pd.read_csv(Path(args.stream) / "stream.csv", keep_default_na=False)
+    else:                                   # no run folder (CI): build the seed's stream from the datasets
+        from .. import data as D
+        pools = D.load_pools(args.raw)
+        stream, _ = D.build_stream(pools, D.StreamConfig(seed=args.seed), D.load_fewshot(pools, 1))
     stream = stream[stream.phase != "history"]
     if getattr(args, "start", 0):
         stream = stream.iloc[args.start:]

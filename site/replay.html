@@ -21,12 +21,18 @@
   <h1 class="tabs-title">Replay and live service</h1>
   <div class="tablist" role="tablist" aria-label="Views">
     <button role="tab" id="t-replay" aria-controls="p-replay" aria-selected="true">Banking launch replay</button>
+    <button role="tab" id="t-clinc" aria-controls="p-clinc" aria-selected="false" tabindex="-1">Hard case: a new domain</button>
     <button role="tab" id="t-live" aria-controls="p-live" aria-selected="false" tabindex="-1">Live service</button>
   </div>
 
   <section id="p-replay" role="tabpanel" aria-labelledby="t-replay">
     <p class="lede">One 8,000-question run through a product launch and an off-topic surge. Scrub the timeline to see which questions the small model answered and which went to the big AI.</p>
     <iframe id="f-replay" data-src="replay-banking.html" title="Banking launch replay" loading="lazy"></iframe>
+  </section>
+
+  <section id="p-clinc" role="tabpanel" aria-labelledby="t-clinc" hidden>
+    <p class="lede">The same system on a harder drift: instead of five new intents, a whole credit-card domain with fifteen arrives at once. It does not cope as well, and the page says by how much.</p>
+    <iframe id="f-clinc" data-src="replay-clinc.html" title="Credit-card domain launch replay" loading="lazy"></iframe>
   </section>
 
   <section id="p-live" role="tabpanel" aria-labelledby="t-live" hidden>

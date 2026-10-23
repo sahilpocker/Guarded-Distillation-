@@ -4,7 +4,7 @@
 .tablist button { font-family: var(--display); font-weight: 600; font-size: 1rem; background: none; border: 0; padding: 10px 16px; cursor: pointer; color: var(--ink-2); border-bottom: 3px solid transparent; margin-bottom: -1px; }
 .tablist button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--cheap); }
 .tablist button:focus-visible { outline: 3px solid var(--cheap); outline-offset: -3px; border-radius: 4px 4px 0 0; }
-#p-replay iframe { width: 100%; border: 1px solid var(--line); border-radius: 12px; min-height: 900px; background: var(--surface); }
+#p-replay iframe, #p-clinc iframe { width: 100%; border: 1px solid var(--line); border-radius: 12px; min-height: 900px; background: var(--surface); }
 .banner { font-family: var(--display); padding: 12px 16px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); margin-bottom: 18px; }
 .banner.ok { border-color: var(--cheap); background: var(--cheap-soft); }
 .banner.warn { border-color: var(--ai); background: var(--ai-soft); }

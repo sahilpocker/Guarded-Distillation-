@@ -1,0 +1,40 @@
+name: traffic
+# Sends a slice of the replay stream to the live service every 10 minutes, so the service has something to monitor, audit and learn
+# from without anyone typing questions, and the free instance does not sleep (which would reset its log). Cached questions cost nothing.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      count:
+        description: "Queries to send"
+        default: "60"
+
+env:
+  SERVICE_URL: ${{ vars.SERVICE_URL || 'https://guarded-distillation-triage.onrender.com' }}
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: |
+          pip install numpy pandas scipy scikit-learn httpx
+          pip install --no-deps -e .
+      - uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: data-raw-${{ hashFiles('guarded_distillation/data.py') }}
+      - run: gdistill data
+      - name: Wake the service, then replay a slice of the stream (the position advances with every run)
+        run: |
+          curl -sS --retry 6 --retry-delay 15 --retry-all-errors -m 90 "$SERVICE_URL/healthz" > /dev/null
+          count="${{ inputs.count || 60 }}"
+          start=$(( (${{ github.run_number }} * count) % 7900 ))
+          gdistill traffic --seed 0 --url "$SERVICE_URL" --rate 4 --start "$start" --limit "$count"

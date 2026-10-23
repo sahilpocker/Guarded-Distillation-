@@ -297,12 +297,17 @@ const DATA = /*__DATA__*/null;
     const S = DATA.summary, f = S[DATA.focus] || S[ORDER[0]];
     if (!f || f.accuracy_delta_pts == null) return;
     const h = $("headline"); h.textContent = "";
+    if (M.headline) { h.textContent = M.headline; return; }
     const d = f.accuracy_delta_pts;
     const tail = d >= -0.05 ? "with no loss of accuracy" : `within ${Math.abs(d).toFixed(1)} points of its accuracy`;
     const em = document.createElement("span"); em.className = "acc"; em.textContent = fmt(1 - f.llm_share, 0);
     h.append(em, document.createTextNode(` of support queries answered without the LLM, ${tail}`));
   })();
-  if (String(M.teacher).startsWith("simulated")) {
+  if (M.caveat) {
+    const c = $("caveat");
+    c.hidden = false;
+    c.textContent = M.caveat;
+  } else if (String(M.teacher).startsWith("simulated")) {
     const c = $("caveat");
     c.hidden = false;
     c.innerHTML = "<span><b>Simulated teacher.</b> </span>";
@@ -582,7 +587,7 @@ const DATA = /*__DATA__*/null;
 
   // ---------------------------------------------------------------- events + feed
   const KIND = { golive: "Go-live", promoted: "Retrained", novel_label: "New intent", spike: "Cortisol spike", calm: "Calm", global_alarm: "Alarm", global_calm: "Calm", phase: "Traffic" };
-  const PH_TEXT = { launch: "The bank launches virtual cards and wallet pay. New questions start arriving.", oos_surge: "A campaign brings a wave of off-topic questions.", settle: "Traffic settles into a new normal." };
+  const PH_TEXT = { launch: M.launch_text || "The bank launches virtual cards and wallet pay. New questions start arriving.", oos_surge: "A campaign brings a wave of off-topic questions.", settle: "Traffic settles into a new normal." };
   function renderEvents() {
     const fm = DATA.methods.cortisol ? "cortisol" : focus;
     const ev = DATA.methods[fm].events.slice();

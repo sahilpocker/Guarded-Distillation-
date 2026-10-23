@@ -4,7 +4,7 @@
   const pct = (x, d = 0) => (x == null ? "n/a" : (x * 100).toFixed(d) + "%");
 
   /* tabs */
-  const tabs = [["#t-replay", "#p-replay"], ["#t-live", "#p-live"]];
+  const tabs = [["#t-replay", "#p-replay"], ["#t-clinc", "#p-clinc"], ["#t-live", "#p-live"]];
   let timer = null;
   function select(i) {
     tabs.forEach(([t, p], k) => {
@@ -12,11 +12,11 @@
       $(t).tabIndex = k === i ? 0 : -1;
       $(p).hidden = k !== i;
     });
-    history.replaceState(null, "", "#" + (i === 1 ? "live" : "replay"));
-    const f = $("#f-replay");
-    if (i === 0 && !f.src) f.src = f.dataset.src;
+    history.replaceState(null, "", "#" + ["replay", "clinc", "live"][i]);
+    const f = [$("#f-replay"), $("#f-clinc")][i];
+    if (f && !f.src) f.src = f.dataset.src;
     clearInterval(timer);
-    if (i === 1) { poll(); timer = setInterval(poll, 10000); }
+    if (i === 2) { poll(); timer = setInterval(poll, 10000); }
   }
   tabs.forEach(([t], i) => {
     $(t).addEventListener("click", () => select(i));
@@ -24,10 +24,11 @@
       if (e.key === "ArrowRight" || e.key === "ArrowLeft") { const n = (i + 1) % tabs.length; select(n); $(tabs[n][0]).focus(); }
     });
   });
-  const frame = $("#f-replay");
-  frame.addEventListener("load", () => {
-    const fit = () => { try { frame.style.height = frame.contentDocument.documentElement.scrollHeight + 8 + "px"; } catch (e) {} };
-    fit(); setInterval(fit, 1500);
+  [$("#f-replay"), $("#f-clinc")].forEach((frame) => {
+    frame.addEventListener("load", () => {
+      const fit = () => { try { frame.style.height = frame.contentDocument.documentElement.scrollHeight + 8 + "px"; } catch (e) {} };
+      fit(); setInterval(fit, 1500);
+    });
   });
 
   /* live view */
@@ -71,5 +72,5 @@
     poll();
   });
 
-  select(location.hash === "#live" ? 1 : 0);
+  select({ "#clinc": 1, "#live": 2 }[location.hash] || 0);
 })();

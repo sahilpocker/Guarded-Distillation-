@@ -178,7 +178,7 @@ def cmd_replay(args) -> None:
     out.mkdir(exist_ok=True)
     for name in args.methods.split(","):
         t0 = time.time()
-        res = run_method(stream, tdf, pools.intents, METHODS[name], cfg, cost)
+        res = run_method(stream, tdf, tuple(meta.get("intents") or pools.intents), METHODS[name], cfg, cost)
         with open(out / f"{name}.pkl", "wb") as f:
             pickle.dump(res, f)
         c = res.calls[res.calls.phase != "history"]
@@ -319,7 +319,8 @@ def main(argv=None) -> None:
     q.add_argument("--publish", action="store_true", help="create the GitHub release when the gate passes")
 
     q = sub.add_parser("traffic", help="replay a stream against a running service")
-    q.add_argument("--stream", required=True, help="run folder with stream.csv")
+    q.add_argument("--stream", default=None, help="run folder with stream.csv (default: build the --seed stream from the datasets)")
+    q.add_argument("--seed", type=int, default=0)
     q.add_argument("--url", default="http://localhost:8000")
     q.add_argument("--rate", type=float, default=5.0, help="requests per second")
     q.add_argument("--limit", type=int, default=0, help="stop after N queries (0 = the whole live stream)")
