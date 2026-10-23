@@ -66,3 +66,25 @@ style differences are inside sampling error (a 10-point gap on n = 58 is about t
 *new* intents at set distances from existing ones, to test the adjacent-versus-distant finding directly. (3) A synthetic
 stream with a controlled launch and style shift, replayed through the gate and the learned router. (4) A 100-item human
 spot-check of the kept set before quoting any accuracy from it.
+
+## Decided split for the full set (all 77 intents x 4 styles, about 15 messages each, about 3,500 kept)
+
+Split by *group* (a generator call plus MiniLM clusters at cosine 0.85), never by item, so paraphrases of one seed cannot
+sit on both sides of a boundary.
+
+1. **10 held-out intents (13%)**: five *near* (an existing intent with intent-vector cosine above about 0.8) and five *far*
+   (nearest neighbour below about 0.6). Their items never touch history, training or dev. They arrive only as the launch
+   of the controlled new-intent test.
+2. **The other 67 intents, by group**: **pipeline 50%**, **dev 15%**, **eval 35%**.
+   - *Pipeline* (shadow-mode history, a synthetic live stream, and optional training augmentation) uses only the **plain and
+     casual** styles.
+   - *Dev* (thresholds, generator checks) uses all four styles.
+   - *Eval* (never trained on, never tuned on) uses all four styles. Because the pipeline never saw **terse** or **context**,
+     one eval set gives both the in-style score and the unseen-style score, which is the wording-shift test.
+3. **Sizes**: eval has about 16 messages per intent, about 260 per style, so a per-style accuracy has a standard error near
+   3 points. That is enough for style gaps of 8 points or more; smaller gaps need a bigger set.
+4. **What the pipeline split is for**: (a) a synthetic stream through the whole system (gate, learned router, retrain,
+   rollback), and (b) the question that matters for the product: does adding synthetic examples to *real* training data raise
+   accuracy on *real* held-out questions? That is evaluated on real data only, with and without augmentation.
+5. **Rules**: every item passes the Haiku agreement check; a 100-item stratified human spot-check of the eval set comes before
+   any number is quoted; synthetic and real results are always reported separately.
