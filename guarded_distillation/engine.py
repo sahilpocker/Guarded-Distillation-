@@ -29,8 +29,9 @@ import numpy as np
 import pandas as pd
 
 from . import embed
-from .gate import (CortisolField, DoubtScale, FieldConfig, accepts, choose_level, expected_wrong,
+from .gate import (CortisolField, DoubtScale, FieldConfig, accepts, choose_level, doubt, expected_wrong,
                    runner_up)
+from .router import LearnedRouter, features
 from .semantic import IntentGraph, OutsideClusters, SemanticField, radii
 from .space import MapSpace
 from .student import Student
@@ -118,6 +119,8 @@ class EngineConfig:
     sem_fit: float = 0.05         # (b) stress per fit-check failure
     sem_resid: float = 0.15       # (c) gain on (wrong - expected wrong)
     sem_sensor: float = 0.6       # (d) stress on the intents the LLM sensor names
+    router: str = "margin"        # intent-gate score: margin | entropy | maxprob | disagree | learned | oracle
+    router_refit: int = 100
     sem_cluster: int = 20         # (d) queries in a cluster before the LLM sensor is asked
     sem_qfit: float = 0.0         # level added to a query that fails the fit check (label-free, immediate)
     sem_sim: float = 0.6          # (d) cosine similarity to join a cluster
@@ -146,6 +149,7 @@ class SkillGate:
         self.log_wrong: list[float] = []
         self.log_w: list[float] = []
         self.expected = lambda x: np.full(np.shape(x), 0.1)
+        self.kind = "margin"
 
     def refresh_predictions(self, texts: list[str], t0: int) -> None:
         """Probabilities and doubt percentiles from t0 on, under the current student.
@@ -155,9 +159,9 @@ class SkillGate:
         a = max(0, t0 - 2000)
         P = self.student.proba(texts[a:])
         self.P[a:] = P
-        ref = runner_up(P[: t0 - a]) if t0 - a >= 200 else runner_up(P)
+        ref = doubt(P[: t0 - a], self.kind) if t0 - a >= 200 else doubt(P, self.kind)
         self.scale = DoubtScale(ref)
-        self.u[t0:] = self.scale(runner_up(self.P[t0:]))
+        self.u[t0:] = self.scale(doubt(self.P[t0:], self.kind))
 
     def top(self, i: int) -> str:
         return self.universe[int(np.argmax(self.P[i]))]
@@ -200,6 +204,12 @@ class Replay:
         self.alarm = {"scope": False, "intent": False}
         self.S = SkillGate("scope", SCOPE_UNIVERSE, cfg.alpha_scope, self.n)
         self.I = SkillGate("intent", self.intents, cfg.alpha_intent, self.n)
+        if cfg.router in ("entropy", "maxprob"):
+            self.I.kind = cfg.router
+        self.prev_I = None
+        self.router = LearnedRouter(cfg.router_refit) if cfg.router == "learned" else None
+        self.rwin: list[float] = []
+        self.err_rate = np.full(len(self.intents), 0.15)
         self.esc_log: list[tuple[int, int]] = []     # (student's intent, teacher's intent) of escalations
         self.sensor_calls = 0
         self.sensor_stop = False
@@ -264,6 +274,9 @@ class Replay:
         rest = self.texts[i0:]
         if not rest:
             return
+        if self.cfg.router == "disagree" and self.prev_I is not None:
+            same = self.I.P[i0:].argmax(1) == self.prev_I.proba(rest).argmax(1)
+            self.I.u[i0:] = self.I.u[i0:] + (~same)        # a version disagreement outranks any margin
         # Label-free novelty in [0, 1], the larger of:
         #  (a) unseen words: share of the query's words the intent student never trained on
         #      (0 below 10% unseen, 1 at 50% or more)
@@ -304,7 +317,7 @@ class Replay:
         cal, tr = sorted(perm[:n_cal].tolist()), sorted(perm[n_cal:].tolist())
         self.S.student, self.I.student = self._fit_pair(tr, cal, version=1)
         self.base_known = set(self.I.student.known)
-        if cfg.balance or m.semantic:
+        if cfg.balance or m.semantic or cfg.router == "learned":
             self.E = embed.encode(self.texts)
             self.graph = IntentGraph(self.intents)
             self.clusters = OutsideClusters(sim=cfg.sem_sim, size=cfg.sem_cluster)
@@ -335,6 +348,9 @@ class Replay:
                 G.log(k, float(uu), float(ww), 1.0)
             G.expected = expected_wrong(u, wrong, np.ones(len(idx)))
 
+        if cfg.router == "learned":
+            q0["intent"] = self._init_router(cal, tr)
+
         def fc(alpha):
             return FieldConfig(alpha=alpha, tonic=m.tonic, guard=m.guard, local=m.local,
                                gamma_guard=cfg.gamma_guard, gamma_local=cfg.gamma_local, decay=cfg.decay,
@@ -346,6 +362,42 @@ class Replay:
                     f"(intent accuracy {self.I.student.holdout_acc:.0%} on held-out); starting cortisol "
                     f"scope {q0['scope']:.2f}, intent {q0['intent']:.2f}",
                     q0_scope=q0["scope"], q0_intent=q0["intent"])
+
+    def _feat(self, i: int, P_row: np.ndarray, ex: dict, k: int, nov: float | None = None) -> np.ndarray:
+        E = ex.get(k)
+        dist = 1.0 - float((self.E[i] @ E.T).max()) if E is not None and len(E) else 1.0
+        return features(P_row, dist, float(self.err_rate[k]), len(self.texts[i].split()),
+                        float(self.nov[i]) if nov is None else nov)
+
+    def _init_router(self, cal: list[int], tr: list[int]) -> float:
+        """Train the learned router on the calibration split (two-fold, so the scores that set the
+        starting level are out of sample), and return the starting intent level."""
+        cfg = self.cfg
+        ex: dict[int, list[int]] = {}
+        for k in tr:
+            if self.y_teacher[k] in self.I.index:
+                ex.setdefault(self.I.index[self.y_teacher[k]], []).append(k)
+        ex = {k: self.E[v] for k, v in ex.items()}
+        ci = [k for k in cal if self.y_teacher[k] in self.I.index]
+        P = self.I.student.proba([self.texts[k] for k in ci])
+        top = P.argmax(1)
+        X = np.array([self._feat(k, P[j], ex, int(top[j]), nov=0.0) for j, k in enumerate(ci)])
+        wrong = np.array([float(self.intents[top[j]] != self.y_teacher[k]) for j, k in enumerate(ci)])
+        half = np.random.default_rng(cfg.seed).permutation(len(ci)) % 2
+        s = np.zeros(len(ci))
+        for f in (0, 1):
+            r = LearnedRouter(min_samples=30)
+            r.fit(X[half != f], wrong[half != f], np.ones((half != f).sum()))
+            s[half == f] = r.score_many(X[half == f])
+        self.router.fit(X, wrong, np.ones(len(ci)))
+        for x, yy in zip(X, wrong):                              # the router keeps learning from these
+            self.router.X.append(x)
+            self.router.y.append(float(yy))
+            self.router.w.append(1.0)
+        self.rwin = list(s[-2000:])
+        order = np.sort(s)
+        u = np.searchsorted(order, s, side="right") / len(order)
+        return choose_level(u, wrong, np.ones(len(ci)), cfg.alpha_intent)
 
     def _retrain(self, i: int, reason: str) -> None:
         cfg = self.cfg
@@ -375,6 +427,7 @@ class Replay:
         fs, fi = self._fit_pair(pool, None, version)
         fs.T, fi.T = new_s.T, new_i.T
         fs.holdout_acc, fi.holdout_acc = new_sa, new_ia
+        self.prev_I = self.I.student
         self.S.student, self.I.student = fs, fi
         self._refresh(i + 1)
         msg = f"Student v{version} promoted ({reason}); intent accuracy on recent labels {cur_i:.0%} -> {new_ia:.0%}"
@@ -488,8 +541,19 @@ class Replay:
             c = int(self.cell[i])
             nov = float(self.nov[i]) if m.novelty else 0.0
             ls, li = self.Fs.level(c, nov), self.Fi.level(c, nov)
+            if cfg.router == "oracle":
+                li = 0.0
             us, ui = float(self.S.u[i]), float(self.I.u[i])
             scope_top, intent_top = self.S.top(i), self.I.top(i)
+            feat = None
+            if cfg.router == "learned":
+                feat = self._feat(i, self.I.P[i], self.ex_emb, self.I.index[intent_top])
+                sc = self.router.score(feat)
+                win = np.asarray(self.rwin[-2000:])
+                ui = float((win < sc).mean()) if len(win) else 0.5
+                self.rwin.append(sc)
+            elif cfg.router == "oracle":
+                ui = 0.0 if intent_top == y else 1.5       # escalate exactly the queries the student gets wrong
             scope_ok = bool(accepts(us, ls))
             intent_ran = scope_ok and scope_top == IN
             sem = self.sem if m.semantic else None
@@ -546,6 +610,9 @@ class Replay:
             if intent_ran or truth_i is not None:
                 self.I.log(i, ui, wrong_i, w if truth_i is not None else 0.0)
 
+            if feat is not None and truth_i is not None:       # learned router: train on teacher-seen queries
+                self.router.add(feat, wrong_i, w)
+                self.err_rate[ki] = 0.9 * self.err_rate[ki] + 0.1 * wrong_i
             if sem is not None:
                 if fit_fail:                                          # (b) fit check, label-free
                     sem.inject(ki, cfg.sem_fit)

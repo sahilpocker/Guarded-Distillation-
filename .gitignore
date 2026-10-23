@@ -11,3 +11,7 @@ runs/*/
 data/embeddings.npz*
 .vercel/
 .vercel
+third_party/
+data/service.db*
+data/service_spend.json
+runs/ocl/

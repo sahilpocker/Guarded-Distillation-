@@ -1,0 +1,274 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 464" role="img" font-family="Familjen Grotesk, Helvetica, Arial, sans-serif" aria-label="LLM calls against accuracy for each routing score, three streams">
+<text x="4" y="20" font-size="13" font-weight="600" fill="#13202b">Banking77 launch (5 new intents)</text>
+<line x1="52.0" x2="52.0" y1="34" y2="334" stroke="#d3dce2"/><text x="52.0" y="349" text-anchor="middle" font-size="11" fill="#455765">20%</text>
+<line x1="91.8" x2="91.8" y1="34" y2="334" stroke="#d3dce2"/><text x="91.8" y="349" text-anchor="middle" font-size="11" fill="#455765">30%</text>
+<line x1="131.5" x2="131.5" y1="34" y2="334" stroke="#d3dce2"/><text x="131.5" y="349" text-anchor="middle" font-size="11" fill="#455765">40%</text>
+<line x1="171.2" x2="171.2" y1="34" y2="334" stroke="#d3dce2"/><text x="171.2" y="349" text-anchor="middle" font-size="11" fill="#455765">50%</text>
+<line x1="211.0" x2="211.0" y1="34" y2="334" stroke="#d3dce2"/><text x="211.0" y="349" text-anchor="middle" font-size="11" fill="#455765">60%</text>
+<line x1="250.8" x2="250.8" y1="34" y2="334" stroke="#d3dce2"/><text x="250.8" y="349" text-anchor="middle" font-size="11" fill="#455765">70%</text>
+<line x1="290.5" x2="290.5" y1="34" y2="334" stroke="#d3dce2"/><text x="290.5" y="349" text-anchor="middle" font-size="11" fill="#455765">80%</text>
+<line x1="330.2" x2="330.2" y1="34" y2="334" stroke="#d3dce2"/><text x="330.2" y="349" text-anchor="middle" font-size="11" fill="#455765">90%</text>
+<line x1="370.0" x2="370.0" y1="34" y2="334" stroke="#d3dce2"/><text x="370.0" y="349" text-anchor="middle" font-size="11" fill="#455765">100%</text>
+<line x1="52" x2="370" y1="300.7" y2="300.7" stroke="#d3dce2"/><text x="46" y="304.7" text-anchor="end" font-size="11" fill="#455765">79</text>
+<line x1="52" x2="370" y1="234.0" y2="234.0" stroke="#d3dce2"/><text x="46" y="238.0" text-anchor="end" font-size="11" fill="#455765">80</text>
+<line x1="52" x2="370" y1="167.3" y2="167.3" stroke="#d3dce2"/><text x="46" y="171.3" text-anchor="end" font-size="11" fill="#455765">81</text>
+<line x1="52" x2="370" y1="100.7" y2="100.7" stroke="#d3dce2"/><text x="46" y="104.7" text-anchor="end" font-size="11" fill="#455765">82</text>
+<line x1="52" x2="370" y1="34.0" y2="34.0" stroke="#d3dce2"/><text x="46" y="38.0" text-anchor="end" font-size="11" fill="#455765">83</text>
+<text x="211" y="370" text-anchor="middle" font-size="12" fill="#455765">LLM calls (share of queries)</text>
+<text transform="translate(12 184) rotate(-90)" text-anchor="middle" font-size="12" fill="#455765">accuracy vs human labels (%)</text>
+<circle cx="273.1" cy="171.5" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 76% calls, 80.94%</title></circle>
+<circle cx="296.5" cy="156.5" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 82% calls, 81.16%</title></circle>
+<circle cx="332.3" cy="173.2" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 91% calls, 80.91%</title></circle>
+<circle cx="258.4" cy="231.5" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 72% calls, 80.04%</title></circle>
+<circle cx="283.2" cy="211.9" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 78% calls, 80.33%</title></circle>
+<circle cx="194.1" cy="319.0" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 56% calls, 78.72%</title></circle>
+<circle cx="251.4" cy="243.2" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 70% calls, 79.86%</title></circle>
+<circle cx="317.3" cy="209.0" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 87% calls, 80.38%</title></circle>
+<line x1="52" x2="370" y1="178.7" y2="178.7" stroke="#13202b" stroke-dasharray="4 4"/><text x="56" y="173.7" text-anchor="start" font-size="10" fill="#13202b">LLM on every query</text>
+<path d="M68.3 218.4 L68.3 218.4 L105.0 142.6 L124.4 139.0 L148.8 138.2 L173.0 140.7 L193.9 148.2 L234.5 155.9 L286.5 170.7" fill="none" stroke="#455765" stroke-width="2"/>
+<circle cx="68.3" cy="218.4" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.2): 24% calls, 80.23%</title></circle>
+<circle cx="68.3" cy="218.4" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.3): 24% calls, 80.23%</title></circle>
+<circle cx="105.0" cy="142.6" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.12): 33% calls, 81.37%</title></circle>
+<circle cx="124.4" cy="139.0" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.08): 38% calls, 81.42%</title></circle>
+<circle cx="148.8" cy="138.2" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.05): 44% calls, 81.44%</title></circle>
+<circle cx="173.0" cy="140.7" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.03): 50% calls, 81.40%</title></circle>
+<circle cx="193.9" cy="148.2" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.02): 56% calls, 81.29%</title></circle>
+<circle cx="234.5" cy="155.9" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.01): 66% calls, 81.17%</title></circle>
+<circle cx="286.5" cy="170.7" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.005): 79% calls, 80.95%</title></circle>
+<path d="M69.3 242.9 L69.3 242.9 L153.1 131.5 L178.4 146.5 L211.4 156.2 L248.0 166.5 L277.6 171.8 L320.1 174.6 L354.7 178.2" fill="none" stroke="#9a6fd1" stroke-width="2"/>
+<circle cx="69.3" cy="242.9" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.2): 24% calls, 79.87%</title></circle>
+<circle cx="69.3" cy="242.9" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.3): 24% calls, 79.87%</title></circle>
+<circle cx="153.1" cy="131.5" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.12): 45% calls, 81.54%</title></circle>
+<circle cx="178.4" cy="146.5" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.08): 52% calls, 81.31%</title></circle>
+<circle cx="211.4" cy="156.2" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.05): 60% calls, 81.17%</title></circle>
+<circle cx="248.0" cy="166.5" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.03): 69% calls, 81.01%</title></circle>
+<circle cx="277.6" cy="171.8" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.02): 77% calls, 80.93%</title></circle>
+<circle cx="320.1" cy="174.6" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.01): 87% calls, 80.89%</title></circle>
+<circle cx="354.7" cy="178.2" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.005): 96% calls, 80.84%</title></circle>
+<path d="M69.3 242.9 L69.3 242.9 L116.2 123.2 L133.7 114.8 L150.9 118.7 L178.9 136.8 L206.2 153.4 L249.0 164.8 L304.6 173.4" fill="none" stroke="#c9a227" stroke-width="2"/>
+<circle cx="69.3" cy="242.9" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.2): 24% calls, 79.87%</title></circle>
+<circle cx="69.3" cy="242.9" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.3): 24% calls, 79.87%</title></circle>
+<circle cx="116.2" cy="123.2" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.12): 36% calls, 81.66%</title></circle>
+<circle cx="133.7" cy="114.8" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.08): 41% calls, 81.79%</title></circle>
+<circle cx="150.9" cy="118.7" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.05): 45% calls, 81.73%</title></circle>
+<circle cx="178.9" cy="136.8" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.03): 52% calls, 81.46%</title></circle>
+<circle cx="206.2" cy="153.4" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.02): 59% calls, 81.21%</title></circle>
+<circle cx="249.0" cy="164.8" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.01): 70% calls, 81.04%</title></circle>
+<circle cx="304.6" cy="173.4" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.005): 84% calls, 80.91%</title></circle>
+<path d="M90.1 197.3 L90.1 197.3 L114.1 149.0 L131.3 144.3 L153.8 140.4 L177.5 144.6 L199.4 154.6 L234.3 159.0 L286.5 169.8" fill="none" stroke="#d9822b" stroke-width="2"/>
+<circle cx="90.1" cy="197.3" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.2): 30% calls, 80.55%</title></circle>
+<circle cx="90.1" cy="197.3" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.3): 30% calls, 80.55%</title></circle>
+<circle cx="114.1" cy="149.0" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.12): 36% calls, 81.27%</title></circle>
+<circle cx="131.3" cy="144.3" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.08): 40% calls, 81.35%</title></circle>
+<circle cx="153.8" cy="140.4" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.05): 46% calls, 81.40%</title></circle>
+<circle cx="177.5" cy="144.6" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.03): 52% calls, 81.34%</title></circle>
+<circle cx="199.4" cy="154.6" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.02): 57% calls, 81.19%</title></circle>
+<circle cx="234.3" cy="159.0" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.01): 66% calls, 81.12%</title></circle>
+<circle cx="286.5" cy="169.8" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.005): 79% calls, 80.96%</title></circle>
+<path d="M68.8 270.9 L68.8 270.9 L91.0 135.4 L115.9 91.2 L137.4 89.8 L173.2 124.0 L207.5 135.1 L264.7 161.5 L322.1 170.4" fill="none" stroke="#0b7a75" stroke-width="2"/>
+<circle cx="68.8" cy="270.9" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.2): 24% calls, 79.45%</title></circle>
+<circle cx="68.8" cy="270.9" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.3): 24% calls, 79.45%</title></circle>
+<circle cx="91.0" cy="135.4" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.12): 30% calls, 81.48%</title></circle>
+<circle cx="115.9" cy="91.2" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.08): 36% calls, 82.14%</title></circle>
+<circle cx="137.4" cy="89.8" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.05): 41% calls, 82.16%</title></circle>
+<circle cx="173.2" cy="124.0" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.03): 50% calls, 81.65%</title></circle>
+<circle cx="207.5" cy="135.1" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.02): 59% calls, 81.48%</title></circle>
+<circle cx="264.7" cy="161.5" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.01): 74% calls, 81.09%</title></circle>
+<circle cx="322.1" cy="170.4" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.005): 88% calls, 80.95%</title></circle>
+<path d="M88.8 108.2 L88.8 108.2 L114.9 90.7 L145.1 89.0 L169.0 110.9 L200.1 129.3 L233.6 152.1 L285.6 165.9 L336.6 173.4" fill="none" stroke="#1f5fbf" stroke-width="2"/>
+<circle cx="88.8" cy="108.2" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.2): 29% calls, 81.89%</title></circle>
+<circle cx="88.8" cy="108.2" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.3): 29% calls, 81.89%</title></circle>
+<circle cx="114.9" cy="90.7" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.12): 36% calls, 82.15%</title></circle>
+<circle cx="145.1" cy="89.0" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.08): 43% calls, 82.17%</title></circle>
+<circle cx="169.0" cy="110.9" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.05): 49% calls, 81.85%</title></circle>
+<circle cx="200.1" cy="129.3" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.03): 57% calls, 81.57%</title></circle>
+<circle cx="233.6" cy="152.1" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.02): 66% calls, 81.23%</title></circle>
+<circle cx="285.6" cy="165.9" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.01): 79% calls, 81.02%</title></circle>
+<circle cx="336.6" cy="173.4" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.005): 92% calls, 80.91%</title></circle>
+<path d="M112.5 172.0 l7 12 h-14 Z" fill="#c23b31"><title>Oracle: 35% calls, 80.83%</title></path>
+<text x="398" y="20" font-size="13" font-weight="600" fill="#13202b">CLINC150 domain launch: credit_cards</text>
+<line x1="446.0" x2="446.0" y1="34" y2="334" stroke="#d3dce2"/><text x="446.0" y="349" text-anchor="middle" font-size="11" fill="#455765">20%</text>
+<line x1="485.8" x2="485.8" y1="34" y2="334" stroke="#d3dce2"/><text x="485.8" y="349" text-anchor="middle" font-size="11" fill="#455765">30%</text>
+<line x1="525.5" x2="525.5" y1="34" y2="334" stroke="#d3dce2"/><text x="525.5" y="349" text-anchor="middle" font-size="11" fill="#455765">40%</text>
+<line x1="565.2" x2="565.2" y1="34" y2="334" stroke="#d3dce2"/><text x="565.2" y="349" text-anchor="middle" font-size="11" fill="#455765">50%</text>
+<line x1="605.0" x2="605.0" y1="34" y2="334" stroke="#d3dce2"/><text x="605.0" y="349" text-anchor="middle" font-size="11" fill="#455765">60%</text>
+<line x1="644.8" x2="644.8" y1="34" y2="334" stroke="#d3dce2"/><text x="644.8" y="349" text-anchor="middle" font-size="11" fill="#455765">70%</text>
+<line x1="684.5" x2="684.5" y1="34" y2="334" stroke="#d3dce2"/><text x="684.5" y="349" text-anchor="middle" font-size="11" fill="#455765">80%</text>
+<line x1="724.2" x2="724.2" y1="34" y2="334" stroke="#d3dce2"/><text x="724.2" y="349" text-anchor="middle" font-size="11" fill="#455765">90%</text>
+<line x1="764.0" x2="764.0" y1="34" y2="334" stroke="#d3dce2"/><text x="764.0" y="349" text-anchor="middle" font-size="11" fill="#455765">100%</text>
+<line x1="446" x2="764" y1="304.0" y2="304.0" stroke="#d3dce2"/><text x="440" y="308.0" text-anchor="end" font-size="11" fill="#455765">78</text>
+<line x1="446" x2="764" y1="244.0" y2="244.0" stroke="#d3dce2"/><text x="440" y="248.0" text-anchor="end" font-size="11" fill="#455765">79</text>
+<line x1="446" x2="764" y1="184.0" y2="184.0" stroke="#d3dce2"/><text x="440" y="188.0" text-anchor="end" font-size="11" fill="#455765">80</text>
+<line x1="446" x2="764" y1="124.0" y2="124.0" stroke="#d3dce2"/><text x="440" y="128.0" text-anchor="end" font-size="11" fill="#455765">81</text>
+<line x1="446" x2="764" y1="64.0" y2="64.0" stroke="#d3dce2"/><text x="440" y="68.0" text-anchor="end" font-size="11" fill="#455765">82</text>
+<text x="605" y="370" text-anchor="middle" font-size="12" fill="#455765">LLM calls (share of queries)</text>
+<circle cx="664.9" cy="184.7" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 75% calls, 79.99%</title></circle>
+<circle cx="703.3" cy="156.8" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 85% calls, 80.45%</title></circle>
+<circle cx="725.5" cy="138.3" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 90% calls, 80.76%</title></circle>
+<circle cx="734.9" cy="146.8" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 93% calls, 80.62%</title></circle>
+<circle cx="752.9" cy="131.1" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 97% calls, 80.88%</title></circle>
+<circle cx="716.4" cy="171.6" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 88% calls, 80.21%</title></circle>
+<circle cx="754.4" cy="162.3" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 98% calls, 80.36%</title></circle>
+<circle cx="657.4" cy="221.5" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 73% calls, 79.38%</title></circle>
+<line x1="446" x2="764" y1="142.2" y2="142.2" stroke="#13202b" stroke-dasharray="4 4"/><text x="450" y="137.2" text-anchor="start" font-size="10" fill="#13202b">LLM on every query</text>
+<path d="M459.0 275.8 L459.0 275.8 L488.3 187.8 L509.6 153.5 L536.6 123.5 L562.0 123.3 L576.4 118.3 L623.4 128.0 L682.6 136.0" fill="none" stroke="#455765" stroke-width="2"/>
+<circle cx="459.0" cy="275.8" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.2): 23% calls, 78.47%</title></circle>
+<circle cx="459.0" cy="275.8" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.3): 23% calls, 78.47%</title></circle>
+<circle cx="488.3" cy="187.8" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.12): 31% calls, 79.94%</title></circle>
+<circle cx="509.6" cy="153.5" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.08): 36% calls, 80.51%</title></circle>
+<circle cx="536.6" cy="123.5" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.05): 43% calls, 81.01%</title></circle>
+<circle cx="562.0" cy="123.3" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.03): 49% calls, 81.01%</title></circle>
+<circle cx="576.4" cy="118.3" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.02): 53% calls, 81.10%</title></circle>
+<circle cx="623.4" cy="128.0" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.01): 65% calls, 80.93%</title></circle>
+<circle cx="682.6" cy="136.0" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.005): 80% calls, 80.80%</title></circle>
+<path d="M458.2 270.2 L458.2 270.2 L554.3 102.0 L573.0 116.3 L602.5 121.2 L638.9 129.5 L662.5 134.3 L709.2 140.0 L748.7 141.5" fill="none" stroke="#9a6fd1" stroke-width="2"/>
+<circle cx="458.2" cy="270.2" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.2): 23% calls, 78.56%</title></circle>
+<circle cx="458.2" cy="270.2" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.3): 23% calls, 78.56%</title></circle>
+<circle cx="554.3" cy="102.0" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.12): 47% calls, 81.37%</title></circle>
+<circle cx="573.0" cy="116.3" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.08): 52% calls, 81.13%</title></circle>
+<circle cx="602.5" cy="121.2" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.05): 59% calls, 81.05%</title></circle>
+<circle cx="638.9" cy="129.5" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.03): 69% calls, 80.91%</title></circle>
+<circle cx="662.5" cy="134.3" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.02): 74% calls, 80.83%</title></circle>
+<circle cx="709.2" cy="140.0" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.01): 86% calls, 80.73%</title></circle>
+<circle cx="748.7" cy="141.5" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.005): 96% calls, 80.71%</title></circle>
+<path d="M458.2 270.2 L458.2 270.2 L504.6 112.7 L524.4 93.5 L543.9 106.5 L568.5 115.5 L586.7 123.5 L636.2 128.7 L699.4 138.0" fill="none" stroke="#c9a227" stroke-width="2"/>
+<circle cx="458.2" cy="270.2" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.2): 23% calls, 78.56%</title></circle>
+<circle cx="458.2" cy="270.2" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.3): 23% calls, 78.56%</title></circle>
+<circle cx="504.6" cy="112.7" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.12): 35% calls, 81.19%</title></circle>
+<circle cx="524.4" cy="93.5" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.08): 40% calls, 81.51%</title></circle>
+<circle cx="543.9" cy="106.5" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.05): 45% calls, 81.29%</title></circle>
+<circle cx="568.5" cy="115.5" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.03): 51% calls, 81.14%</title></circle>
+<circle cx="586.7" cy="123.5" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.02): 55% calls, 81.01%</title></circle>
+<circle cx="636.2" cy="128.7" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.01): 68% calls, 80.92%</title></circle>
+<circle cx="699.4" cy="138.0" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.005): 84% calls, 80.77%</title></circle>
+<path d="M468.4 232.5 L468.4 232.5 L495.2 161.5 L517.1 133.3 L540.1 121.0 L564.6 119.8 L580.4 121.7 L623.0 128.3 L682.1 135.0" fill="none" stroke="#d9822b" stroke-width="2"/>
+<circle cx="468.4" cy="232.5" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.2): 26% calls, 79.19%</title></circle>
+<circle cx="468.4" cy="232.5" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.3): 26% calls, 79.19%</title></circle>
+<circle cx="495.2" cy="161.5" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.12): 32% calls, 80.38%</title></circle>
+<circle cx="517.1" cy="133.3" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.08): 38% calls, 80.85%</title></circle>
+<circle cx="540.1" cy="121.0" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.05): 44% calls, 81.05%</title></circle>
+<circle cx="564.6" cy="119.8" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.03): 50% calls, 81.07%</title></circle>
+<circle cx="580.4" cy="121.7" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.02): 54% calls, 81.04%</title></circle>
+<circle cx="623.0" cy="128.3" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.01): 65% calls, 80.93%</title></circle>
+<circle cx="682.1" cy="135.0" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.005): 79% calls, 80.82%</title></circle>
+<path d="M458.2 270.2 L458.2 270.2 L475.6 168.2 L496.2 99.5 L518.8 79.5 L551.9 89.5 L586.5 105.8 L643.7 123.0 L705.7 136.7" fill="none" stroke="#0b7a75" stroke-width="2"/>
+<circle cx="458.2" cy="270.2" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.2): 23% calls, 78.56%</title></circle>
+<circle cx="458.2" cy="270.2" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.3): 23% calls, 78.56%</title></circle>
+<circle cx="475.6" cy="168.2" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.12): 27% calls, 80.26%</title></circle>
+<circle cx="496.2" cy="99.5" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.08): 33% calls, 81.41%</title></circle>
+<circle cx="518.8" cy="79.5" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.05): 38% calls, 81.74%</title></circle>
+<circle cx="551.9" cy="89.5" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.03): 47% calls, 81.58%</title></circle>
+<circle cx="586.5" cy="105.8" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.02): 55% calls, 81.30%</title></circle>
+<circle cx="643.7" cy="123.0" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.01): 70% calls, 81.02%</title></circle>
+<circle cx="705.7" cy="136.7" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.005): 85% calls, 80.79%</title></circle>
+<path d="M481.7 133.5 L481.7 133.5 L501.3 92.5 L528.4 75.0 L552.5 79.0 L580.1 95.0 L614.7 106.0 L665.5 126.0 L718.6 136.0" fill="none" stroke="#1f5fbf" stroke-width="2"/>
+<circle cx="481.7" cy="133.5" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.2): 29% calls, 80.84%</title></circle>
+<circle cx="481.7" cy="133.5" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.3): 29% calls, 80.84%</title></circle>
+<circle cx="501.3" cy="92.5" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.12): 34% calls, 81.53%</title></circle>
+<circle cx="528.4" cy="75.0" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.08): 41% calls, 81.82%</title></circle>
+<circle cx="552.5" cy="79.0" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.05): 47% calls, 81.75%</title></circle>
+<circle cx="580.1" cy="95.0" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.03): 54% calls, 81.48%</title></circle>
+<circle cx="614.7" cy="106.0" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.02): 62% calls, 81.30%</title></circle>
+<circle cx="665.5" cy="126.0" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.01): 75% calls, 80.97%</title></circle>
+<circle cx="718.6" cy="136.0" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.005): 89% calls, 80.80%</title></circle>
+<path d="M506.3 135.2 l7 12 h-14 Z" fill="#c23b31"><title>Oracle: 35% calls, 80.70%</title></path>
+<text x="792" y="20" font-size="13" font-weight="600" fill="#13202b">CLINC150 domain launch: travel</text>
+<line x1="840.0" x2="840.0" y1="34" y2="334" stroke="#d3dce2"/><text x="840.0" y="349" text-anchor="middle" font-size="11" fill="#455765">20%</text>
+<line x1="879.8" x2="879.8" y1="34" y2="334" stroke="#d3dce2"/><text x="879.8" y="349" text-anchor="middle" font-size="11" fill="#455765">30%</text>
+<line x1="919.5" x2="919.5" y1="34" y2="334" stroke="#d3dce2"/><text x="919.5" y="349" text-anchor="middle" font-size="11" fill="#455765">40%</text>
+<line x1="959.2" x2="959.2" y1="34" y2="334" stroke="#d3dce2"/><text x="959.2" y="349" text-anchor="middle" font-size="11" fill="#455765">50%</text>
+<line x1="999.0" x2="999.0" y1="34" y2="334" stroke="#d3dce2"/><text x="999.0" y="349" text-anchor="middle" font-size="11" fill="#455765">60%</text>
+<line x1="1038.8" x2="1038.8" y1="34" y2="334" stroke="#d3dce2"/><text x="1038.8" y="349" text-anchor="middle" font-size="11" fill="#455765">70%</text>
+<line x1="1078.5" x2="1078.5" y1="34" y2="334" stroke="#d3dce2"/><text x="1078.5" y="349" text-anchor="middle" font-size="11" fill="#455765">80%</text>
+<line x1="1118.2" x2="1118.2" y1="34" y2="334" stroke="#d3dce2"/><text x="1118.2" y="349" text-anchor="middle" font-size="11" fill="#455765">90%</text>
+<line x1="1158.0" x2="1158.0" y1="34" y2="334" stroke="#d3dce2"/><text x="1158.0" y="349" text-anchor="middle" font-size="11" fill="#455765">100%</text>
+<line x1="840" x2="1158" y1="284.0" y2="284.0" stroke="#d3dce2"/><text x="834" y="288.0" text-anchor="end" font-size="11" fill="#455765">81</text>
+<line x1="840" x2="1158" y1="184.0" y2="184.0" stroke="#d3dce2"/><text x="834" y="188.0" text-anchor="end" font-size="11" fill="#455765">82</text>
+<line x1="840" x2="1158" y1="84.0" y2="84.0" stroke="#d3dce2"/><text x="834" y="88.0" text-anchor="end" font-size="11" fill="#455765">83</text>
+<text x="999" y="370" text-anchor="middle" font-size="12" fill="#455765">LLM calls (share of queries)</text>
+<circle cx="1050.1" cy="279.6" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 73% calls, 81.04%</title></circle>
+<circle cx="1093.3" cy="246.5" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 84% calls, 81.38%</title></circle>
+<circle cx="1107.5" cy="242.3" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 87% calls, 81.42%</title></circle>
+<circle cx="1119.3" cy="235.3" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 90% calls, 81.49%</title></circle>
+<circle cx="1126.4" cy="236.1" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 92% calls, 81.48%</title></circle>
+<circle cx="1145.8" cy="225.3" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 97% calls, 81.59%</title></circle>
+<circle cx="1088.3" cy="254.0" r="3.4" fill="none" stroke="#7b8791" stroke-width="1.5"><title>Online Cascade Learning: 82% calls, 81.30%</title></circle>
+<line x1="840" x2="1158" y1="230.7" y2="230.7" stroke="#13202b" stroke-dasharray="4 4"/><text x="844" y="225.7" text-anchor="start" font-size="10" fill="#13202b">LLM on every query</text>
+<path d="M860.6 269.0 L860.6 269.0 L890.5 163.6 L910.0 157.7 L932.0 157.3 L957.7 174.0 L971.3 184.4 L1018.5 206.1 L1078.3 237.8" fill="none" stroke="#455765" stroke-width="2"/>
+<circle cx="860.6" cy="269.0" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.2): 25% calls, 81.15%</title></circle>
+<circle cx="860.6" cy="269.0" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.3): 25% calls, 81.15%</title></circle>
+<circle cx="890.5" cy="163.6" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.12): 33% calls, 82.20%</title></circle>
+<circle cx="910.0" cy="157.7" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.08): 38% calls, 82.26%</title></circle>
+<circle cx="932.0" cy="157.3" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.05): 43% calls, 82.27%</title></circle>
+<circle cx="957.7" cy="174.0" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.03): 50% calls, 82.10%</title></circle>
+<circle cx="971.3" cy="184.4" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.02): 53% calls, 82.00%</title></circle>
+<circle cx="1018.5" cy="206.1" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.01): 65% calls, 81.78%</title></circle>
+<circle cx="1078.3" cy="237.8" r="3.2" fill="#455765"><title>Margin (current) (alpha 0.005): 80% calls, 81.46%</title></circle>
+<path d="M860.3 266.9 L860.3 266.9 L946.0 152.3 L966.1 176.1 L996.6 197.3 L1034.7 226.9 L1055.3 227.3 L1103.0 242.3 L1141.8 243.6" fill="none" stroke="#9a6fd1" stroke-width="2"/>
+<circle cx="860.3" cy="266.9" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.2): 25% calls, 81.17%</title></circle>
+<circle cx="860.3" cy="266.9" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.3): 25% calls, 81.17%</title></circle>
+<circle cx="946.0" cy="152.3" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.12): 47% calls, 82.32%</title></circle>
+<circle cx="966.1" cy="176.1" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.08): 52% calls, 82.08%</title></circle>
+<circle cx="996.6" cy="197.3" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.05): 59% calls, 81.87%</title></circle>
+<circle cx="1034.7" cy="226.9" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.03): 69% calls, 81.57%</title></circle>
+<circle cx="1055.3" cy="227.3" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.02): 74% calls, 81.57%</title></circle>
+<circle cx="1103.0" cy="242.3" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.01): 86% calls, 81.42%</title></circle>
+<circle cx="1141.8" cy="243.6" r="3.2" fill="#9a6fd1"><title>Entropy (alpha 0.005): 96% calls, 81.40%</title></circle>
+<path d="M860.3 267.7 L860.3 267.7 L904.3 129.8 L918.0 133.2 L939.5 146.5 L962.8 176.1 L981.9 194.8 L1032.4 212.3 L1094.2 236.9" fill="none" stroke="#c9a227" stroke-width="2"/>
+<circle cx="860.3" cy="267.7" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.2): 25% calls, 81.16%</title></circle>
+<circle cx="860.3" cy="267.7" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.3): 25% calls, 81.16%</title></circle>
+<circle cx="904.3" cy="129.8" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.12): 36% calls, 82.54%</title></circle>
+<circle cx="918.0" cy="133.2" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.08): 40% calls, 82.51%</title></circle>
+<circle cx="939.5" cy="146.5" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.05): 45% calls, 82.38%</title></circle>
+<circle cx="962.8" cy="176.1" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.03): 51% calls, 82.08%</title></circle>
+<circle cx="981.9" cy="194.8" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.02): 56% calls, 81.89%</title></circle>
+<circle cx="1032.4" cy="212.3" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.01): 68% calls, 81.72%</title></circle>
+<circle cx="1094.2" cy="236.9" r="3.2" fill="#c9a227"><title>Max probability (alpha 0.005): 84% calls, 81.47%</title></circle>
+<path d="M866.0 243.2 L866.0 243.2 L893.0 170.2 L911.5 147.8 L934.9 154.4 L955.6 168.6 L972.2 184.0 L1019.0 206.5 L1078.4 237.8" fill="none" stroke="#d9822b" stroke-width="2"/>
+<circle cx="866.0" cy="243.2" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.2): 27% calls, 81.41%</title></circle>
+<circle cx="866.0" cy="243.2" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.3): 27% calls, 81.41%</title></circle>
+<circle cx="893.0" cy="170.2" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.12): 33% calls, 82.14%</title></circle>
+<circle cx="911.5" cy="147.8" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.08): 38% calls, 82.36%</title></circle>
+<circle cx="934.9" cy="154.4" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.05): 44% calls, 82.30%</title></circle>
+<circle cx="955.6" cy="168.6" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.03): 49% calls, 82.15%</title></circle>
+<circle cx="972.2" cy="184.0" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.02): 53% calls, 82.00%</title></circle>
+<circle cx="1019.0" cy="206.5" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.01): 65% calls, 81.78%</title></circle>
+<circle cx="1078.4" cy="237.8" r="3.2" fill="#d9822b"><title>Version disagreement + margin (alpha 0.005): 80% calls, 81.46%</title></circle>
+<path d="M860.2 266.1 L860.2 266.1 L874.0 183.2 L893.6 129.0 L915.0 116.1 L942.8 123.2 L979.1 175.7 L1035.5 205.7 L1094.2 236.1" fill="none" stroke="#0b7a75" stroke-width="2"/>
+<circle cx="860.2" cy="266.1" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.2): 25% calls, 81.18%</title></circle>
+<circle cx="860.2" cy="266.1" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.3): 25% calls, 81.18%</title></circle>
+<circle cx="874.0" cy="183.2" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.12): 29% calls, 82.01%</title></circle>
+<circle cx="893.6" cy="129.0" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.08): 33% calls, 82.55%</title></circle>
+<circle cx="915.0" cy="116.1" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.05): 39% calls, 82.68%</title></circle>
+<circle cx="942.8" cy="123.2" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.03): 46% calls, 82.61%</title></circle>
+<circle cx="979.1" cy="175.7" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.02): 55% calls, 82.08%</title></circle>
+<circle cx="1035.5" cy="205.7" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.01): 69% calls, 81.78%</title></circle>
+<circle cx="1094.2" cy="236.1" r="3.2" fill="#0b7a75"><title>Learned router (alpha 0.005): 84% calls, 81.48%</title></circle>
+<path d="M877.5 172.8 L877.5 172.8 L895.0 119.4 L921.0 109.4 L945.2 128.2 L970.8 143.2 L1005.3 174.0 L1058.3 212.3 L1109.3 234.0" fill="none" stroke="#1f5fbf" stroke-width="2"/>
+<circle cx="877.5" cy="172.8" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.2): 29% calls, 82.11%</title></circle>
+<circle cx="877.5" cy="172.8" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.3): 29% calls, 82.11%</title></circle>
+<circle cx="895.0" cy="119.4" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.12): 34% calls, 82.65%</title></circle>
+<circle cx="921.0" cy="109.4" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.08): 40% calls, 82.75%</title></circle>
+<circle cx="945.2" cy="128.2" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.05): 46% calls, 82.56%</title></circle>
+<circle cx="970.8" cy="143.2" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.03): 53% calls, 82.41%</title></circle>
+<circle cx="1005.3" cy="174.0" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.02): 62% calls, 82.10%</title></circle>
+<circle cx="1058.3" cy="212.3" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.01): 75% calls, 81.72%</title></circle>
+<circle cx="1109.3" cy="234.0" r="3.2" fill="#1f5fbf"><title>Learned router + semantic cortisol (alpha 0.005): 88% calls, 81.50%</title></circle>
+<path d="M902.9 248.2 l7 12 h-14 Z" fill="#c23b31"><title>Oracle: 36% calls, 81.29%</title></path>
+<rect x="6" y="410" width="12" height="12" rx="2" fill="#455765"/>
+<text x="25" y="420" font-size="12" fill="#13202b">Margin (current)</text>
+<rect x="166.0" y="410" width="12" height="12" rx="2" fill="#9a6fd1"/>
+<text x="185.0" y="420" font-size="12" fill="#13202b">Entropy</text>
+<rect x="263.0" y="410" width="12" height="12" rx="2" fill="#c9a227"/>
+<text x="282.0" y="420" font-size="12" fill="#13202b">Max probability</text>
+<rect x="416.0" y="410" width="12" height="12" rx="2" fill="#d9822b"/>
+<text x="435.0" y="420" font-size="12" fill="#13202b">Version disagreement + margin</text>
+<rect x="667.0" y="410" width="12" height="12" rx="2" fill="#0b7a75"/>
+<text x="686.0" y="420" font-size="12" fill="#13202b">Learned router</text>
+<rect x="813.0" y="410" width="12" height="12" rx="2" fill="#1f5fbf"/>
+<text x="832.0" y="420" font-size="12" fill="#13202b">Learned router + semantic cortisol</text>
+<rect x="6" y="432" width="12" height="12" rx="2" fill="#c23b31"/>
+<text x="25" y="442" font-size="12" fill="#13202b">Oracle</text>
+<circle cx="102.0" cy="438" r="3.6" fill="none" stroke="#7b8791" stroke-width="1.5"/>
+<text x="115.0" y="442" font-size="12" fill="#13202b">Online Cascade Learning (their code; points, no line: it has a cliff)</text>
+</svg>

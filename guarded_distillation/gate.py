@@ -69,6 +69,15 @@ def runner_up(P: np.ndarray) -> np.ndarray:
     return np.partition(P, -2, axis=1)[:, -2]
 
 
+def doubt(P: np.ndarray, kind: str = "margin") -> np.ndarray:
+    """Doubt score per row of P: margin (runner-up probability), entropy, or maxprob (1 - top probability)."""
+    if kind == "entropy":
+        return -(P * np.log(P + 1e-12)).sum(1)
+    if kind == "maxprob":
+        return 1.0 - P.max(1)
+    return runner_up(P)
+
+
 class DoubtScale:
     """Maps doubt to its percentile among a reference set of recent (unlabelled) doubts."""
 

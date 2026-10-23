@@ -469,6 +469,200 @@ before. It does not fix the distant-domain case: launch Δ is still around −3 
 Three seeds; the improvements are 1-2 pts on about 125 launch-intent queries per seed, within sampling
 noise for any single seed. `EngineConfig.sem_qfit` defaults to 0 so the earlier results reproduce.
 
+## Routing benchmark: which score should the gate use? (Haiku labels, MiniLM student)
+
+**Question.** The gate escalates the queries the student is most doubtful about, and doubt has been the
+runner-up probability (called "margin" here, as in the active-learning literature). Is that the right score,
+and can a learned one do better? Everything below is on cached Haiku labels (no API calls), on the Banking77
+launch stream and the two CLINC150 domain-launch streams (`credit_cards`, `travel`), with class-balanced
+retraining for every method.
+
+**Scores**, each put through the same risk-controlled gate (percentile of recent traffic, static starting level
+from conformal risk control on the calibration split, leak budget alpha):
+1. *Margin* (current): runner-up probability.
+2. *Entropy* of the probability vector, and 3. *max probability* (1 - top probability).
+4. *Version disagreement + margin*: escalate when the current and previous student versions disagree, else margin.
+5. *Learned router* (`guarded_distillation/router.py`): logistic regression predicting "the student disagrees with
+   the teacher" from margin, entropy, max-probability doubt, distance to the predicted intent's nearest training
+   example, that intent's recent error rate, query length and novelty. It trains online on teacher-seen queries,
+   escalations at weight 1 and audits at weight 1/p (audits are a random sample of what was accepted, so this
+   corrects the selection), starts from the calibration split (two-fold, so the starting level uses out-of-sample
+   scores) and refits every 100 labels. Until trained it falls back to margin.
+6. *Learned router + semantic cortisol*: the same router inside the semantic-cortisol method (per-intent stress
+   level, query fit check; settings as in the semantic section).
+7. *Oracle*: escalate exactly the queries the student gets wrong against the teacher.
+
+**Protocol.** Per score, 9 values of alpha (0.005 to 0.3) on seeds 0-5 (990 runs in all). Seeds 0-2 chose alpha
+for each call budget (40%, 50%, 60%) by interpolation; those alphas were then run on seeds 3-5 (second table
+group). Because the held-out calls land off the nominal budget (mean 6.4 points, worst 14.9), the headline tables
+compare accuracy *at* each budget by interpolating each seed's own calls-versus-accuracy curve on seeds 3-5. The only
+thing tuned per score is alpha; the router's features, regulariser and refit schedule were fixed before the runs.
+"Launch accuracy in the first 600" is accuracy on new-product questions among the first 600 queries of the launch
+phase (about 123 per seed).
+
+![LLM calls against accuracy for each routing score, three streams](routing.svg)
+
+**Overall accuracy vs human labels (%): Banking77 launch (5 new intents)** (LLM on every query: 80.83%)
+
+| Router | 40% calls | 50% calls | 60% calls |
+|---|---|---|---|
+| Margin (current) | 81.43 [81.15-81.90] | 81.41 [81.09-81.81] | 81.25 [80.90-81.68] |
+| Entropy | 81.23 [80.75-81.74] | 81.30 [81.05-81.77] | 81.18 [80.89-81.59] |
+| Max probability | 81.59 [80.96-82.38] | 81.56 [81.20-81.81] | 81.24 [80.92-81.59] |
+| Version disagreement + margin | 81.25 [80.69-81.90] | 81.37 [81.12-81.71] | 81.18 [80.87-81.60] |
+| Learned router | 81.84 [81.20-82.48] | 81.72 [81.25-82.17] | 81.44 [81.14-81.86] |
+| Learned router + semantic cortisol | not reached | 81.88 [81.46-82.25] | 81.44 [81.02-81.84] |
+| Oracle (35% calls) | 80.83 | 80.83 | 80.83 |
+| Online Cascade Learning (LR + LLM, their code) | not reached | not reached | not reached |
+
+**Overall accuracy vs human labels (%): CLINC150 domain launch: credit_cards** (LLM on every query: 80.70%)
+
+| Router | 40% calls | 50% calls | 60% calls |
+|---|---|---|---|
+| Margin (current) | 80.75 [79.81-81.43] | 81.00 [80.49-81.53] | 80.99 [80.60-81.53] |
+| Entropy | 80.56 [79.85-81.23] | 81.24 [80.94-81.69] | 81.00 [80.67-81.47] |
+| Max probability | 81.38 [81.04-81.91] | 81.18 [80.95-81.57] | 80.98 [80.59-81.44] |
+| Version disagreement + margin | 80.99 [80.57-81.46] | 81.08 [80.61-81.63] | 80.97 [80.61-81.43] |
+| Learned router | 81.70 [81.41-82.16] | 81.48 [81.14-82.07] | 81.20 [80.81-81.80] |
+| Learned router + semantic cortisol | 81.74 [81.53-81.89] | 81.69 [81.35-82.18] | 81.32 [81.01-81.91] |
+| Oracle (35% calls) | 80.70 | 80.70 | 80.70 |
+| Online Cascade Learning (LR + LLM, their code) | not reached | not reached | not reached |
+
+**Overall accuracy vs human labels (%): CLINC150 domain launch: travel** (LLM on every query: 81.53%)
+
+| Router | 40% calls | 50% calls | 60% calls |
+|---|---|---|---|
+| Margin (current) | 82.24 [81.90-82.68] | 82.08 [81.70-82.42] | 81.87 [81.47-82.36] |
+| Entropy | 82.04 [81.85-82.14] | 82.13 [81.85-82.43] | 81.81 [81.42-82.21] |
+| Max probability | 82.54 [82.28-82.97] | 82.09 [81.64-82.50] | 81.86 [81.52-82.34] |
+| Version disagreement + margin | 82.33 [82.00-82.81] | 82.10 [81.67-82.50] | 81.88 [81.46-82.40] |
+| Learned router | 82.62 [82.29-82.89] | 82.39 [81.83-83.04] | 82.00 [81.61-82.42] |
+| Learned router + semantic cortisol | 82.73 [82.43-83.11] | 82.47 [82.20-82.79] | 82.12 [81.70-82.56] |
+| Oracle (36% calls) | 81.29 | 81.29 | 81.29 |
+| Online Cascade Learning (LR + LLM, their code) | not reached | not reached | not reached |
+
+**Launch-question accuracy in the first 600 launch-phase queries (%): Banking77 launch (5 new intents)** (LLM on every query: 85.88%)
+
+| Router | 40% calls | 50% calls | 60% calls |
+|---|---|---|---|
+| Margin (current) | 72.50 [69.16-77.74] | 80.27 [76.36-82.66] | 82.91 [79.03-85.61] |
+| Entropy | 77.95 [74.25-82.09] | 83.08 [82.05-84.53] | 84.62 [81.71-86.31] |
+| Max probability | 80.61 [78.67-81.73] | 82.59 [81.14-83.36] | 84.44 [83.34-86.30] |
+| Version disagreement + margin | 73.34 [68.84-76.84] | 77.36 [76.65-78.27] | 81.83 [78.71-84.89] |
+| Learned router | 82.06 [78.61-86.78] | 85.27 [81.36-87.82] | 86.38 [84.65-87.71] |
+| Learned router + semantic cortisol | not reached | 85.49 [84.01-86.63] | 86.04 [83.68-88.60] |
+| Oracle (35% calls) | 85.88 | 85.88 | 85.88 |
+| Online Cascade Learning (LR + LLM, their code) | not reached | not reached | not reached |
+
+**Launch-question accuracy in the first 600 launch-phase queries (%): CLINC150 domain launch: credit_cards** (LLM on every query: 78.54%)
+
+| Router | 40% calls | 50% calls | 60% calls |
+|---|---|---|---|
+| Margin (current) | 55.22 [48.00-59.27] | 64.27 [57.71-68.71] | 71.25 [70.71-71.74] |
+| Entropy | 59.09 [53.09-68.18] | 71.63 [69.75-73.31] | 74.97 [72.83-76.54] |
+| Max probability | 64.63 [61.49-66.25] | 71.50 [69.52-72.66] | 74.31 [72.10-76.27] |
+| Version disagreement + margin | 55.06 [50.98-58.10] | 64.49 [58.13-68.93] | 70.66 [69.70-71.64] |
+| Learned router | 72.63 [69.13-77.02] | 75.22 [72.05-78.31] | 76.54 [73.17-79.28] |
+| Learned router + semantic cortisol | 73.66 [71.96-76.02] | 77.19 [74.69-79.29] | 77.67 [74.88-80.00] |
+| Oracle (35% calls) | 78.54 | 78.54 | 78.54 |
+| Online Cascade Learning (LR + LLM, their code) | not reached | not reached | not reached |
+
+**Launch-question accuracy in the first 600 launch-phase queries (%): CLINC150 domain launch: travel** (LLM on every query: 91.87%)
+
+| Router | 40% calls | 50% calls | 60% calls |
+|---|---|---|---|
+| Margin (current) | 84.65 [79.64-89.99] | 84.37 [81.98-85.97] | 84.58 [82.09-86.10] |
+| Entropy | 86.18 [84.99-87.43] | 86.74 [86.30-87.13] | 85.70 [84.10-86.99] |
+| Max probability | 87.99 [86.40-89.21] | 83.55 [79.39-86.13] | 85.32 [84.44-86.00] |
+| Version disagreement + margin | 86.27 [81.49-90.11] | 84.55 [81.81-86.65] | 85.41 [82.11-87.21] |
+| Learned router | 86.13 [83.63-87.50] | 85.61 [80.11-90.52] | 84.94 [82.81-86.18] |
+| Learned router + semantic cortisol | 88.00 [86.62-88.88] | 84.71 [81.94-86.21] | 85.66 [83.47-86.89] |
+| Oracle (36% calls) | 82.95 | 82.95 | 82.95 |
+| Online Cascade Learning (LR + LLM, their code) | not reached | not reached | not reached |
+
+**Online Cascade Learning, measured points (their code, LR + LLM cascade; mean over seeds 3-5)**
+
+| Stream | mu | LLM calls | Accuracy (LLM alone) | Launch accuracy, first 600 (LLM alone) |
+|---|---|---|---|---|
+| Banking77 launch (5 new intents) | 4 | 89.3% | 80.73% (80.83%) | 85.9% (85.9%) |
+| Banking77 launch (5 new intents) | 4.15 | 79.3% | 80.61% (80.83%) | 85.9% (85.9%) |
+| Banking77 launch (5 new intents) | 4.2 | 72.6% | 80.28% (80.83%) | 85.9% (85.9%) |
+| Banking77 launch (5 new intents) | 4.25 | 50.5% | 77.40% (80.83%) | 86.1% (85.9%) |
+| Banking77 launch (5 new intents) | 4.3 | 19.0% | 69.92% (80.83%) | 28.4% (85.9%) |
+| Banking77 launch (5 new intents) | 4.4 | 7.7% | 65.91% (80.83%) | 10.5% (85.9%) |
+| CLINC150 domain launch: credit_cards | 4 | 97.3% | 80.71% (80.70%) | 78.5% (78.5%) |
+| CLINC150 domain launch: credit_cards | 4.15 | 92.7% | 80.62% (80.70%) | 78.5% (78.5%) |
+| CLINC150 domain launch: credit_cards | 4.2 | 90.8% | 80.60% (80.70%) | 78.5% (78.5%) |
+| CLINC150 domain launch: credit_cards | 4.25 | 88.2% | 80.55% (80.70%) | 78.3% (78.5%) |
+| CLINC150 domain launch: credit_cards | 4.3 | 84.7% | 80.45% (80.70%) | 78.3% (78.5%) |
+| CLINC150 domain launch: credit_cards | 4.4 | 74.4% | 79.78% (80.70%) | 78.3% (78.5%) |
+| CLINC150 domain launch: credit_cards | 4.5 | 6.3% | 65.71% (80.70%) | 2.4% (78.5%) |
+| CLINC150 domain launch: credit_cards | 4.6 | 7.1% | 64.54% (80.70%) | 8.1% (78.5%) |
+| CLINC150 domain launch: credit_cards | 4.8 | 8.8% | 63.88% (80.70%) | 6.2% (78.5%) |
+| CLINC150 domain launch: credit_cards | 5 | 9.5% | 64.05% (80.70%) | 9.3% (78.5%) |
+| CLINC150 domain launch: travel | 4 | 96.9% | 81.59% (81.53%) | 91.9% (91.9%) |
+| CLINC150 domain launch: travel | 4.15 | 92.1% | 81.48% (81.53%) | 91.9% (91.9%) |
+| CLINC150 domain launch: travel | 4.2 | 90.3% | 81.49% (81.53%) | 91.9% (91.9%) |
+| CLINC150 domain launch: travel | 4.25 | 87.3% | 81.42% (81.53%) | 91.9% (91.9%) |
+| CLINC150 domain launch: travel | 4.3 | 83.3% | 81.35% (81.53%) | 91.9% (91.9%) |
+| CLINC150 domain launch: travel | 4.4 | 71.8% | 80.66% (81.53%) | 91.3% (91.9%) |
+| CLINC150 domain launch: travel | 4.5 | 21.2% | 69.20% (81.53%) | 4.1% (91.9%) |
+| CLINC150 domain launch: travel | 4.6 | 7.8% | 65.35% (81.53%) | 8.1% (91.9%) |
+| CLINC150 domain launch: travel | 4.8 | 8.8% | 63.67% (81.53%) | 8.5% (91.9%) |
+| CLINC150 domain launch: travel | 5 | 9.5% | 64.25% (81.53%) | 13.1% (91.9%) |
+
+**Result.**
+- **The learned router beats the current margin score at matched calls, on every stream and budget.** Overall
+  accuracy: +0.41, +0.31, +0.19 pts at 40/50/60% calls on Banking77; +0.95, +0.48, +0.21 on credit_cards; +0.38, +0.31,
+  +0.13 on travel. In the first 600 launch-phase queries: +9.6, +5.0, +3.5 pts (Banking77) and +17.4, +11.0, +5.3
+  (credit_cards); on travel +1.5, +1.2, +0.4, inside the seed ranges. The gain is largest where the drift is
+  hardest and the budget tightest, which is the case the router exists for.
+- **Adding semantic cortisol helps a little more**: 0.0 to +0.2 pts overall, and between -0.9 and +2.0 pts (mostly
+  positive) in the first 600 launch-phase queries, over the learned router alone; all inside the seed ranges. At 40%
+  calls on Banking77 its curve does not reach the budget.
+- **Margin, the current score, is the weakest static score on launch questions.** Max probability beats it on overall
+  accuracy at 40% calls (+0.16 on Banking77, +0.63 on credit_cards, +0.30 on travel) and by much more in the first 600
+  launch-phase queries (+8.1, +9.4 and +3.3 pts). Entropy is slightly worse overall (about -0.2 pts at 40%) but also
+  better on launch questions (+5.5, +3.9, +1.5 pts). A one-line switch to max probability is worth taking if the
+  learned router is not adopted.
+- **Version disagreement adds nothing**: within about 0.1 pts of margin overall and within noise on launch questions.
+- **The oracle is not an upper bound on accuracy.** It escalates exactly where the student disagrees with the teacher,
+  so it reproduces the teacher's accuracy (80.83% on Banking77) at 35% calls; several routers score higher against human
+  labels because the cheap path sometimes answers correctly where Haiku is wrong. It bounds agreement with the
+  teacher (leaks), not accuracy.
+- **The leak budget held** (leak against the teacher, per query, against alpha + the scope budget 0.01) in all 54
+  held-out (stream, score, budget) cells in the mean, and on all three seeds in 52 of 54. The two exceptions are the
+  learned router at the 50% budget on credit_cards and travel, where one of three seeds ended slightly over (mean
+  3.8% and 3.5% against 4.6% and 4.5%).
+
+**Comparison with published policies.**
+*Cache & Distil* (Ramírez et al., ACL Findings 2024) trains a student on the LLM's answers and uses a policy to decide
+which requests go to the LLM; they report that margin sampling and query by committee work consistently well. I found no
+public code for it, so it is not run here. Our *margin* score is the margin-sampling analogue and *version
+disagreement* is a cheap committee analogue (current against previous student), so the comparison in this repo is of
+those policies' ideas, not of their implementation. In our streams neither beats max probability, and both are
+beaten by the learned router, which also sits inside a risk-controlled gate that bounds leaks.
+*Online Cascade Learning* (Nie et al., ICML 2024) learns the deferral decision itself by imitation learning; its code
+is public (github.com/flitternie/online_cascade_learning) and runs on our streams through `scripts/ocl_adapter.py`,
+unmodified, as a cascade of its logistic-regression model and the LLM with Haiku labels read from our cache. Its
+design differs from ours in ways that matter and that I could not remove: it has no shadow-mode history (it learns
+from the LLM from the first query), no calibration split, no audits, no retraining schedule and no leak budget, and
+its only control is the cost coefficient mu. On our streams its behaviour is a cliff: for mu up to 4.2 it defers
+72-97% of queries and loses at most 0.6 pts; at mu 4.25 on Banking77 it reaches 50.5% calls but accuracy falls to 77.4%
+(-3.4 pts, against +0.6 for our margin gate and +0.9 for the learned router at 50% calls); one notch above, calls drop to
+19% and accuracy to 70%. On the two CLINC streams nothing lies between 74% and 6% calls (credit_cards) or between 72% and 21% (travel),
+so the 40-60% budgets are not reached at all. Its hyperparameters other than mu (learning rate, decay, calibration, cache size) are the defaults
+from its configs for 2-7 class tasks, and I did not tune them for 78 classes, so this is a stress test of its
+deferral learner on our streams, not a reproduction of its published setting; a tuned or BERT-level cascade could do
+better.
+
+**Caveats.** Three held-out seeds that share most of the pool; per-seed ranges are in the tables and several
+differences between neighbouring scores (the semantic add-on, travel launch accuracy) are inside them. The learned
+router's gain over the best static score (max probability) is smaller than its gain over margin; on travel launch
+accuracy it is not clearly ahead. Features such as the fit-check distance use the MiniLM space the student already
+uses, so the router is not a different representation. One LLM, one prompt, one domain family. `docs/routing.json`
+has every number; `scripts/routing.py` regenerates them (`grid`, `select`, `stage2`, `report`).
+
 ## Seed 0 by phase, simulated teacher (accuracy / LLM calls)
 
 | Method | steady | launch | off-topic surge | settle |

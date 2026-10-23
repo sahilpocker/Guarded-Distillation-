@@ -21,6 +21,16 @@ engine that simulates a support inbox; students (TF-IDF and frozen MiniLM embedd
 risk-control gate; a spend-capped Claude labelling pipeline; and the experiment scripts behind every
 number. 43 tests.
 
+## Routing: which score decides when to ask the LLM?
+
+At matched LLM-call budgets, a **learned router** (logistic regression predicting "the student disagrees with the
+teacher", trained online with audit weights, inside the same risk-controlled gate) beats the original margin score on
+all three streams: e.g. at 40% calls on the Banking77 launch it is +0.4 pts overall and +9.6 pts on new-product
+questions in the first 600 launch-phase queries. The old margin score is the weakest static score; plain
+max-probability is a better one-line default. Online Cascade Learning (their public code, run on our streams)
+has a cliff and does not reach the 40-60% budgets on two of three streams. Tables and caveats: `docs/RESULTS.md`
+(Routing benchmark); numbers in `docs/routing.json`; plot `docs/routing.svg`.
+
 ## What didn't work
 
 - The original idea, a "cortisol field" of local stress, did not beat a plain gate with retraining.
