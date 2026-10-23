@@ -12,8 +12,8 @@ On 8,000 real customer questions with Claude Haiku 5.5 as the teacher (three hel
 for the LLM alone, and 84.5% against 84.8% on questions about a newly launched product. The misses
 are documented as carefully as the wins (see "What didn't work" below and docs/RESULTS.md).
 
-- **Story for non-specialists:** `site/` (static page, scroll-driven; deploys to Vercel as is)
-- **Live replay of one run:** `site/replay.html`
+- **Story for non-specialists:** https://guarded-distillation.vercel.app (source in `site/`, deploy from that folder: `vercel deploy --prod`)
+- **Live replay of one run:** https://guarded-distillation.vercel.app/replay
 - **Full results, with every caveat:** `docs/RESULTS.md`; theory and guarantee in `docs/THEORY.md`
 
 What is in the repo: a Python package (`guarded_distillation`) with a `gdistill` CLI; a replay
