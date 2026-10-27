@@ -8,6 +8,10 @@ labels; the system only sees teacher labels.
    mechanism, not a real LLM.
 2. **Claude Haiku 5.5** (E1, real LLM, 1-shot-per-intent prompt). Section below.
 
+The original **cortisol field** (the global and local stress levels the project started with) did not earn a place in the recommended
+setting; its rows and analysis are in **Appendix A** at the end of this file. The tables below show the methods that matter for the
+recommendation.
+
 Reproduce the simulated runs: `gdistill demo --seed K --run runs/simulated-sK` for K = 0, 1, 2.
 
 ## Headline, simulated teacher (3 seeds)
@@ -17,8 +21,6 @@ Reproduce the simulated runs: `gdistill demo --seed K --run runs/simulated-sK` f
 | LLM only | 92.85 / 92.81 / 92.50 | baseline | 100% | 94.5% | 0 |
 | Static gate | 91.37 / 90.60 / 90.46 | −1.91 pts | 46.3% | 76.1% | 34.0 |
 | Static gate + retraining | 92.50 / 92.61 / 92.31 | −0.25 pts | 46.7% | 93.3% | 13.0 |
-| Global cortisol | 92.66 / 92.49 / 92.24 | −0.26 pts | 48.2% | 92.9% | 13.0 |
-| Cortisol field | 92.55 / 92.41 / 92.15 | −0.35 pts | 46.7% | 92.0% | 16.1 |
 
 Cost at Claude Haiku 5.5 list prices (seed 0; token counts calibrated on the real Haiku pilot):
 LLM only $0.041 per 1,000 queries, cortisol field $0.019. At these prices the dollars are small; the case for compiling is volume, latency, owning
@@ -38,8 +40,6 @@ vs `declined_transfer`). The simulated teacher was too kind.
 | LLM only | 80.7 / 79.9 / 80.8 | baseline | 100% | 84.6% | 98.6% | $0.0410 | 0.0 |
 | Static gate | 81.0 / 80.0 / 80.9 | +0.17 pts | 71% | 81.3% | 98.4% | $0.0293 | 28.3 |
 | Static gate + retraining | 81.2 / 80.5 / 81.4 | +0.57 pts | 69% | 85.2% | 98.6% | $0.0282 | 23.9 |
-| Global cortisol | 81.1 / 80.2 / 81.2 | +0.37 pts | 73% | 84.7% | 98.6% | $0.0298 | 18.1 |
-| Cortisol field | 81.3 / 80.2 / 81.3 | +0.47 pts | 69% | 85.1% | 98.6% | $0.0282 | 23.8 |
 
 Cost is the real token usage Haiku returned (about 3,330 cached prompt tokens read per call, 24
 uncached input, 10 output) at the `haiku-5.5` price profile: $0.10 / $0.50 per million input /
@@ -53,8 +53,6 @@ Seed 0 by phase (accuracy / LLM calls):
 | LLM only | 79.4% / 100% | 81.1% / 100% | 83.7% / 100% | 80.1% / 100% |
 | Static gate | 79.9% / 72% | 81.2% / 77% | 83.7% / 76% | 80.7% / 74% |
 | Static gate + retraining | 79.8% / 71% | 81.5% / 74% | 83.7% / 75% | 81.0% / 63% |
-| Global cortisol | 79.6% / 80% | 81.6% / 66% | 84.2% / 64% | 80.6% / 64% |
-| Cortisol field | 79.8% / 78% | 81.7% / 62% | 84.7% / 55% | 80.8% / 56% |
 
 ### Reading the Haiku results
 
@@ -69,9 +67,9 @@ Seed 0 by phase (accuracy / LLM calls):
 3. **Retraining still matters at the launch.** The gate that never retrains drops to 81.3% on
    launch questions (−3.3 pts vs Haiku); every retraining variant is at 84.7–85.2%, level with
    Haiku. Same direction as the simulated runs, smaller gap.
-4. **The local field shows no clear advantage here either.** Field vs global: 69% vs 73% LLM
-   calls, but 23.8 vs 18.1 cheap-path errors per 1,000; accuracy within noise. Mixed, so no
-   claim. E3 and E4 are still the way to find out.
+4. **The original cortisol field** (global and local) shows no clear advantage here either; see Appendix A.
+
+
 
 ## Tuning `alpha_intent` on Haiku (seed 0, then seeds 1-2)
 
@@ -663,6 +661,108 @@ accuracy it is not clearly ahead. Features such as the fit-check distance use th
 uses, so the router is not a different representation. One LLM, one prompt, one domain family. `docs/routing.json`
 has every number; `scripts/routing.py` regenerates them (`grid`, `select`, `stage2`, `report`).
 
+## Synthetic seeding for new intents (Haiku labels, MiniLM student, seeds 3-8 held out)
+
+**Question.** When a business declares a new intent, can a few synthetic examples, written before any real traffic exists,
+close the cold-start gap? Seeds are made from the intent's *name*, a one-line description (written by me) and the single fixed
+few-shot example only; real stream queries are never used.
+
+**Protocol.**
+- *Streams.* (a) A held-out-intent stream: 10 Banking77 intents leave the base traffic and arrive at the launch, five *near*
+  (highest nearest-neighbour similarity, with a distinct partner kept in history: top_up_reverted, cash_withdrawal_not_recognised,
+  why_verify_identity, card_arrival, reverted_card_payment?) and five *far* (lowest nearest-neighbour similarity: age_limit,
+  edit_personal_details, contactless_not_working, passcode_forgotten, apple_pay_or_google_pay); similarity is cosine between
+  MiniLM name-plus-example vectors. (b) The two CLINC150 domain launches: credit_cards (near, 15 intents) and travel (far, 15).
+- *Seeds.* 40 intents, 18-20 examples each (772 in all), written once by `nvidia/nemotron-3.5-lightning-30b-a3b` from the prompt
+  above (`scripts/seeding.py generate`, `data/synth/seeds.json`). Any seed text equal to a text in the stream is dropped.
+- *Declaration.* At the first query of the launch phase the examples join the training set, the student is retrained at once with
+  the class-balancing weights (so 20 synthetic examples count towards the 50-label target), and the new intents start on
+  probation (stress at its maximum until 30 consecutive teacher-seen answers agree).
+- *Arms.* none (no seeding) | declared (probation only, no examples) | seeded. All three use the static gate, the learned router
+  and semantic stress (the probation machinery). A second trio, without probation (static gate and learned router only), shows
+  what seeding does when there is no safety net.
+- *Matching calls.* The gate's leak budget was chosen per arm on seeds 0-2 to hit 50% and 60% of queries sent to the LLM; results
+  are seeds 3-8 at those settings (overall calls differ by about one point). Accuracy is against the human labels, over the first
+  600 queries of the launch phase, on the launch intents only (397 near and 327 far queries on the held-out streams, 724 on each
+  CLINC stream, pooled over six seeds). Intervals are paired bootstrap 95% CIs over per-query differences (2,000 draws).
+
+**Results at a 50% call budget** (difference = seeded minus control, points; seeds won = seeds where the difference is positive)
+
+**Seeded vs no seeding (probation on)**
+
+| Stream | Launch questions | First-600 launch accuracy: seeded / control | Difference, pts [95% CI] | LLM calls on those queries: arm / control | Overall accuracy diff, pts [95% CI] | Overall calls: arm / control |
+|---|---|---|---|---|---|---|
+| heldout | near (n=397) | 77.6% / 77.3% | +0.25 [-0.50, +1.26] (2/6 seeds) | 97% / 97% (-0.3 [-2.3, +1.8] (2/6 seeds)) | -0.01 [-0.08, +0.05] (2/6 seeds) | 54.9% / 55.2% |
+| heldout | far (n=327) | 89.9% / 89.6% | +0.31 [+0.00, +0.92] (1/6 seeds) | 93% / 98% (-4.6 [-7.3, -1.8] (1/6 seeds)) | -0.01 [-0.08, +0.05] (2/6 seeds) | 54.9% / 55.2% |
+| credit_cards | near domain (n=724) | 76.9% / 74.0% | +2.90 [+1.80, +4.14] (6/6 seeds) | 90% / 94% (-4.3 [-6.8, -1.8] (1/6 seeds)) | +0.20 [+0.10, +0.29] (6/6 seeds) | 50.1% / 51.0% |
+| travel | far domain (n=724) | 92.3% / 88.0% | +4.28 [+2.90, +5.80] (4/6 seeds) | 97% / 96% (+1.5 [-0.4, +3.3] (4/6 seeds)) | +0.18 [+0.08, +0.28] (5/6 seeds) | 50.5% / 50.7% |
+
+**Declared with probation only vs no seeding**
+
+| Stream | Launch questions | First-600 launch accuracy: seeded / control | Difference, pts [95% CI] | LLM calls on those queries: arm / control | Overall accuracy diff, pts [95% CI] | Overall calls: arm / control |
+|---|---|---|---|---|---|---|
+| heldout | near (n=397) | 77.6% / 77.3% | +0.25 [-0.50, +1.26] (2/6 seeds) | 99% / 97% (+2.0 [+0.5, +3.8] (4/6 seeds)) | +0.01 [-0.05, +0.07] (3/6 seeds) | 54.8% / 55.2% |
+| heldout | far (n=327) | 89.9% / 89.6% | +0.31 [+0.00, +0.92] (1/6 seeds) | 99% / 98% (+1.2 [-0.3, +3.1] (3/6 seeds)) | +0.01 [-0.05, +0.07] (3/6 seeds) | 54.8% / 55.2% |
+| credit_cards | near domain (n=724) | 75.6% / 74.0% | +1.52 [+0.41, +2.62] (4/6 seeds) | 96% / 94% (+1.5 [-0.1, +3.2] (3/6 seeds)) | +0.09 [+0.01, +0.18] (4/6 seeds) | 50.3% / 51.0% |
+| travel | far domain (n=724) | 87.8% / 88.0% | -0.14 [-0.41, +0.00] (0/6 seeds) | 96% / 96% (-0.3 [-1.0, +0.4] (0/6 seeds)) | -0.01 [-0.05, +0.03] (1/6 seeds) | 50.7% / 50.7% |
+
+**Seeded vs no seeding, no probation**
+
+| Stream | Launch questions | First-600 launch accuracy: seeded / control | Difference, pts [95% CI] | LLM calls on those queries: arm / control | Overall accuracy diff, pts [95% CI] | Overall calls: arm / control |
+|---|---|---|---|---|---|---|
+| heldout | near (n=397) | 77.6% / 76.3% | +1.26 [+0.25, +2.52] (2/6 seeds) | 92% / 95% (-3.0 [-5.8, -0.3] (1/6 seeds)) | -0.01 [-0.05, +0.03] (3/6 seeds) | 55.5% / 55.4% |
+| heldout | far (n=327) | 89.9% / 89.6% | +0.31 [-0.92, +1.83] (2/6 seeds) | 85% / 91% (-5.8 [-10.1, -1.2] (1/6 seeds)) | -0.01 [-0.05, +0.03] (3/6 seeds) | 55.5% / 55.4% |
+| credit_cards | near domain (n=724) | 77.3% / 70.6% | +6.77 [+5.11, +8.70] (6/6 seeds) | 71% / 80% (-8.8 [-13.1, -4.7] (0/6 seeds)) | +0.27 [+0.17, +0.36] (6/6 seeds) | 49.3% / 49.3% |
+| travel | far domain (n=724) | 93.4% / 87.7% | +5.66 [+4.01, +7.32] (4/6 seeds) | 86% / 94% (-7.6 [-10.6, -4.6] (1/6 seeds)) | +0.07 [-0.04, +0.17] (4/6 seeds) | 49.9% / 49.1% |
+
+**Reading it.**
+- **With probation on, seeding helps on the two whole-domain launches and not on the Banking77 intents.** First-600 launch accuracy
+  rises +2.9 pts [+1.8, +4.1] on credit_cards (all six seeds) and +4.3 [+2.9, +5.8] on travel (four of six); at a 60% budget
+  +1.1 [+0.4, +1.9] and +5.7 [+3.9, +7.3]. The seeded student reaches the LLM-alone level on those queries (credit_cards 76.9% against 76.9%,
+  travel 92.3% against 92.1%); without seeds it sits below (74.0%, 88.0%). On the held-out Banking77 intents the effect is
+  +0.25 [-0.5, +1.3] (near) and +0.31 [0.0, +0.9] (far): nothing, because probation already sends 97-99% of those queries to the
+  LLM in every arm, so accuracy is already at the LLM's level and there is nothing left to gain.
+- **Probation alone adds little.** Declaring the intents with probation but no examples gives +1.5 [+0.4, +2.6] on credit_cards and
+  about zero elsewhere. The synthetic examples are doing the work.
+- **Without probation, seeding matters more and saves LLM calls.** First-600 accuracy +6.8 [+5.1, +8.7] (credit_cards, all six
+  seeds) and +5.7 [+4.0, +7.3] (travel), +1.3 [+0.3, +2.5] on the near Banking77 intents, +0.3 [-0.9, +1.8] on the far ones, while
+  the share of launch queries sent to the LLM falls by 3 to 9 points. Seeded *without* probation (credit_cards 77.3%, 71% of launch
+  queries to the LLM) beats unseeded *with* probation (74.0%, 94%): on these streams seeding is a better safeguard than probation
+  and cheaper.
+- **Near against far is not a clean story.** The far domain gains at least as much as the near one on CLINC, and neither Banking77
+  group moves; with one near and one far domain, distance is confounded with everything else about the domains (the teacher is 78%
+  accurate on credit_cards and 92% on travel).
+- Overall accuracy moves by 0.0 to +0.3 pts and overall calls by about one point either way.
+
+**Caveats.** One draw of about 20 examples per intent from one generator, with descriptions I wrote; the real-world version needs
+a person to write the description. Calls are matched on seeds 0-2, not exactly on 3-8. The bootstrap treats queries as
+independent although seeds share most of the question pool, so the intervals are narrower than the seed-to-seed spread; the seeds-won counts
+are there for that reason (for example travel, four of six). Full tables, including the 60% budget and the other comparisons:
+`docs/seeding_report.md`.
+
+### Router against margin on seeds 3-8, paired bootstrap
+
+The routing benchmark above used seeds 3-5. Re-run on seeds 3-8 at the gate settings chosen on seeds 0-2 (learned router against the
+margin score), with paired bootstrap 95% CIs over per-query differences pooled over seeds:
+
+| Stream | Budget | Overall accuracy: learned / margin | Difference, pts [95% CI] | New-product accuracy, first 600: learned / margin | Difference, pts [95% CI] | LLM calls: learned / margin |
+|---|---|---|---|---|---|---|
+| Banking77 launch (5 new intents) | 40% | 82.00% / 81.26% | +0.74 [+0.60, +0.89] (5/6 seeds) | 83.8% / 75.6% | +8.29 [+6.08, +10.64] (5/6 seeds) | 40.6% / 41.1% |
+| Banking77 launch (5 new intents) | 50% | 81.67% / 81.35% | +0.32 [+0.21, +0.43] (6/6 seeds) | 85.2% / 80.0% | +5.25 [+3.45, +7.05] (6/6 seeds) | 48.3% / 49.6% |
+| Banking77 launch (5 new intents) | 60% | 81.35% / 81.14% | +0.22 [+0.14, +0.30] (6/6 seeds) | 86.9% / 83.4% | +3.45 [+1.93, +4.97] (5/6 seeds) | 57.6% / 60.1% |
+| CLINC150 domain launch: credit_cards | 40% | 81.30% / 80.21% | +1.10 [+0.94, +1.26] (6/6 seeds) | 67.3% / 48.8% | +18.51 [+15.47, +21.82] (6/6 seeds) | 41.0% / 39.8% |
+| CLINC150 domain launch: credit_cards | 50% | 81.23% / 80.81% | +0.42 [+0.29, +0.54] (5/6 seeds) | 70.6% / 58.3% | +12.29 [+9.81, +15.06] (6/6 seeds) | 49.3% / 49.1% |
+| CLINC150 domain launch: credit_cards | 60% | 81.03% / 80.80% | +0.23 [+0.15, +0.32] (6/6 seeds) | 74.0% / 69.2% | +4.83 [+3.31, +6.63] (6/6 seeds) | 59.5% / 58.9% |
+| CLINC150 domain launch: travel | 40% | 82.54% / 82.00% | +0.53 [+0.40, +0.68] (6/6 seeds) | 89.9% / 86.5% | +3.45 [+2.07, +4.97] (4/6 seeds) | 41.3% / 40.5% |
+| CLINC150 domain launch: travel | 50% | 82.43% / 82.11% | +0.32 [+0.20, +0.44] (5/6 seeds) | 87.7% / 86.9% | +0.83 [-0.55, +2.21] (3/6 seeds) | 49.1% / 48.6% |
+| CLINC150 domain launch: travel | 60% | 82.03% / 81.84% | +0.19 [+0.10, +0.27] (5/6 seeds) | 87.4% / 86.6% | +0.83 [-0.14, +1.80] (2/6 seeds) | 59.0% / 58.8% |
+
+Every overall-accuracy interval excludes zero (+0.19 to +1.10 pts). New-product accuracy in the first 600 launch-phase queries improves
+by +3.5 to +8.3 pts on Banking77 and by +4.8 to +18.5 on credit_cards, with intervals well away from zero; on travel it is
++3.5 [+2.1, +5.0] at 40% calls and indistinguishable from zero at 50% and 60% (+0.83 [-0.55, +2.2] and +0.83 [-0.14, +1.8]), as
+in the first benchmark. At the same nominal budget the learned router used one to two points fewer calls than margin, which
+favours it. Raw tables: `docs/routing_bootstrap.md`.
+
 ## Seed 0 by phase, simulated teacher (accuracy / LLM calls)
 
 | Method | steady | launch | off-topic surge | settle |
@@ -697,3 +797,55 @@ has every number; `scripts/routing.py` regenerates them (`grid`, `select`, `stag
   table as cached on 2026-10-06; re-check before quoting dollars.
 - Leaks are controlled relative to the teacher, so the student inherits the teacher's mistakes on
   accepted queries; accuracy is reported against human labels to keep that visible.
+
+
+## Appendix A: the original cortisol field (experimental)
+
+**What it is.** The first version of the gate raised the bar for answering with a *level* made of four parts: a slow global term
+set from a rolling, Wilson-bounded estimate of the leak rate (tonic), a fast global term that carries the long-run guarantee
+(guard, clipped at zero), a local term per k-means cell of the embedding space that moves on every teacher label and spreads to
+neighbouring cells (the "local cortisol"), and a label-free novelty term. "Global cortisol" is the first two terms plus
+retraining; "cortisol field" adds the local and novelty terms and directed audits. Theory and the guarantee: `docs/THEORY.md`.
+
+**What the evidence says.** Against a static gate with retraining, the local field has not shown an advantage on any stream:
+global cortisol and the field use more LLM calls (they are more cautious) for similar accuracy, with fewer cheap-path errors,
+which is a trade-off on a different point of the curve, not a better curve (see "Operating points" above; the field is on the
+trade-off curve at a single point only). What did work came later and is not the original idea: class-balanced retraining, a
+per-intent stress variant ("semantic cortisol") and a learned router.
+
+**Simulated teacher, seeds 0-2** (original headline table)
+
+| Method | Accuracy (s0 / s1 / s2) | Δ vs LLM only, mean | LLM calls, mean | Launch questions, mean | Cheap-path errors / 1k, mean |
+|---|---|---|---|---|---|
+| LLM only | 92.85 / 92.81 / 92.50 | baseline | 100% | 94.5% | 0 |
+| Static gate | 91.37 / 90.60 / 90.46 | −1.91 pts | 46.3% | 76.1% | 34.0 |
+| Static gate + retraining | 92.50 / 92.61 / 92.31 | −0.25 pts | 46.7% | 93.3% | 13.0 |
+| Global cortisol | 92.66 / 92.49 / 92.24 | −0.26 pts | 48.2% | 92.9% | 13.0 |
+| Cortisol field | 92.55 / 92.41 / 92.15 | −0.35 pts | 46.7% | 92.0% | 16.1 |
+
+**Claude Haiku 5.5, seeds 0-2** (original headline table)
+
+| Method | Accuracy (s0 / s1 / s2) | Δ vs LLM only, mean | LLM calls, mean | Launch questions, mean | Off-topic questions, mean | Cost per 1,000 queries, mean | Cheap-path errors / 1k, mean |
+|---|---|---|---|---|---|---|---|
+| LLM only | 80.7 / 79.9 / 80.8 | baseline | 100% | 84.6% | 98.6% | $0.0410 | 0.0 |
+| Static gate | 81.0 / 80.0 / 80.9 | +0.17 pts | 71% | 81.3% | 98.4% | $0.0293 | 28.3 |
+| Static gate + retraining | 81.2 / 80.5 / 81.4 | +0.57 pts | 69% | 85.2% | 98.6% | $0.0282 | 23.9 |
+| Global cortisol | 81.1 / 80.2 / 81.2 | +0.37 pts | 73% | 84.7% | 98.6% | $0.0298 | 18.1 |
+| Cortisol field | 81.3 / 80.2 / 81.3 | +0.47 pts | 69% | 85.1% | 98.6% | $0.0282 | 23.8 |
+
+Seed 0 by phase, Haiku (accuracy / LLM calls):
+
+| Method | steady | launch | off-topic surge | settle |
+|---|---|---|---|---|
+| LLM only | 79.4% / 100% | 81.1% / 100% | 83.7% / 100% | 80.1% / 100% |
+| Static gate | 79.9% / 72% | 81.2% / 77% | 83.7% / 76% | 80.7% / 74% |
+| Static gate + retraining | 79.8% / 71% | 81.5% / 74% | 83.7% / 75% | 81.0% / 63% |
+| Global cortisol | 79.6% / 80% | 81.6% / 66% | 84.2% / 64% | 80.6% / 64% |
+| Cortisol field | 79.8% / 78% | 81.7% / 62% | 84.7% / 55% | 80.8% / 56% |
+
+4. **The local field shows no clear advantage here either.** Field vs global: 69% vs 73% LLM
+   calls, but 23.8 vs 18.1 cheap-path errors per 1,000; accuracy within noise. Mixed, so no
+   claim. E3 and E4 are still the way to find out.
+
+The field's code is in `guarded_distillation/gate.py` (`CortisolField`) and `guarded_distillation/engine.py` (methods `global` and
+`cortisol`); the dashboards' heat map still draws the local field when a run includes it.

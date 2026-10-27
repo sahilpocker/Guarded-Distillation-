@@ -238,10 +238,58 @@ def cmd_final():
     pool_run([(k.split("|")[0], k.split("|")[1], round(v, 5), sd) for k, v in sel.items() if v for sd in range(3, 9)])
 
 
+def load_final(fam, arm, budget):
+    sel = json.loads((OUT / "select.json").read_text())
+    al = sel.get(f"{fam}|{arm}|{budget}")
+    if not al:
+        return None
+    al = round(al, 5)
+    runs = [(json.loads(rpath(fam, arm, al, sd).read_text()), np.load(OUT / f"{fam}-{arm}-a{al:g}-s{sd}.npz")) for sd in range(3, 9)
+            if rpath(fam, arm, al, sd).exists()]
+    return runs if len(runs) == 6 else None
+
+
+def cmd_report():
+    import boot
+    lines = []
+    kinds = {"heldout": [("near", 1), ("far", 2)], "credit_cards": [("near domain", 1)], "travel": [("far domain", 2)]}
+    for b in BUDGETS:
+        lines += [f"\n### Call budget {b}% (gate setting chosen on seeds 0-2 for each arm; results on seeds 3-8, paired bootstrap over queries)\n"]
+        for pair, label in (("seeded|none", "Seeded vs no seeding (probation on)"), ("declare|none", "Declared with probation only vs no seeding"),
+                            ("seeded_np|none_np", "Seeded vs no seeding, no probation")):
+            A, B = pair.split("|")
+            lines += [f"\n**{label}**\n", "| Stream | Launch questions | First-600 launch accuracy: seeded / control | Difference, pts [95% CI] | LLM calls on those queries: arm / control | Overall accuracy diff, pts [95% CI] | Overall calls: arm / control |",
+                      "|---|---|---|---|---|---|---|"]
+            for fam in FAMILIES:
+                ra, rb = load_final(fam, A, b), load_final(fam, B, b)
+                if ra is None or rb is None:
+                    lines.append(f"| {fam} | n/a (budget not reached) | | | | | |")
+                    continue
+                na = [r[1] for r in ra]
+                nb = [r[1] for r in rb]
+                allq = boot.paired(na, nb, "correct")
+                ca, cb = np.mean([r[0]["calls"] for r in ra]), np.mean([r[0]["calls"] for r in rb])
+                for kname, kid in kinds[fam]:
+                    def sub(arrs):
+                        return [{**{k: a[k] for k in ("correct", "llm_call", "first", "is_launch")}, "m": (a["first"] & a["is_launch"] & (a["kind"] == kid))} for a in arrs]
+                    sa, sb = sub(na), sub(nb)
+                    acc = boot.paired(sa, sb, "correct", ["m"])
+                    cal = boot.paired(sa, sb, "llm_call", ["m"])
+                    ma = np.mean(np.concatenate([x["correct"][x["m"]] for x in sa])) * 100
+                    mb = np.mean(np.concatenate([x["correct"][x["m"]] for x in sb])) * 100
+                    cma = np.mean(np.concatenate([x["llm_call"][x["m"]] for x in sa])) * 100
+                    cmb = np.mean(np.concatenate([x["llm_call"][x["m"]] for x in sb])) * 100
+                    lines.append(f"| {fam} | {kname} (n={acc['n']}) | {ma:.1f}% / {mb:.1f}% | {boot.fmt(acc)} | {cma:.0f}% / {cmb:.0f}% ({boot.fmt(cal, 1)}) | {boot.fmt(allq)} | {ca:.1f}% / {cb:.1f}% |")
+    Path("runs/seeding/report.md").write_text("\n".join(lines), encoding="utf-8")
+    print("\n".join(lines))
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "generate":
         cmd_generate()
+    elif cmd == "report":
+        cmd_report()
     elif cmd in ("grid", "select", "final"):
         {"grid": cmd_grid, "select": cmd_select, "final": cmd_final}[cmd]()
     elif cmd == "streams":

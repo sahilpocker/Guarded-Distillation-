@@ -43,8 +43,8 @@ spend limit on the Anthropic key itself.
 
 ## What didn't work
 
-- The original idea, a "cortisol field" of local stress, did not beat a plain gate with retraining.
-  It stays in the code, labelled experimental.
+- The original idea, a "cortisol field" of local stress, did not beat a plain gate with retraining. It is kept in the code
+  and described in the appendix below.
 - The first recommended setting lost 3.4 points on new-product questions on held-out runs; class-balanced
   retraining fixed most of it (found after seeing the held-out result, so those numbers are not a fully
   clean test).
@@ -68,8 +68,6 @@ open runs/simulated-s0/replay.html
 | LLM only | baseline | 100% | 94.5% |
 | Static gate | −1.9 pts | 46% | 76% |
 | Static gate + retraining | −0.25 pts | 47% | 93% |
-| Global cortisol | −0.26 pts | 48% | 93% |
-| Cortisol field | −0.35 pts | 47% | 92% |
 
 About half the LLM calls at a third of a point of accuracy, with no human step through a launch
 and a surge. Retraining does most of the work; the local field has not yet shown an advantage on
@@ -102,9 +100,6 @@ pip install -e ".[llm,sbert]"
 gdistill replay --run runs/<run> --preset recommended
 gdistill report --run runs/<run> --focus retrain
 ```
-
-**The cortisol field (the local, per-region part) is experimental.** It is on the trade-off
-curve at one point only and no experiment has shown it beating the static gate with retraining.
 
 **Semantic cortisol (experimental, `semantic` method):** per-intent stress on a graph of intents,
 instead of k-means cells. On seeds 3-5, at 57% LLM calls it reaches launch accuracy +0.4 pts vs
@@ -152,3 +147,17 @@ replays from the cache. Each method is charged only for the calls it makes.
 
 Banking77 (PolyAI, CC-BY-4.0) and CLINC150 out-of-scope queries (CC-BY-3.0), downloaded from their
 GitHub repositories with pinned SHA-256 hashes.
+
+## Appendix: the original cortisol field (experimental)
+
+The project began with a "cortisol field": the bar for letting the small model answer is a level built from a slow global term
+(a Wilson-bounded rolling estimate of the leak rate), a fast global term that carries the long-run guarantee, a local term per
+region of the embedding space that rises where mistakes cluster, and a label-free novelty term. It decides, query by query,
+whether a cheap model may answer, where to spend audits, and when to retrain.
+
+**The cortisol field (the local, per-region part) is experimental.** It is on the trade-off
+curve at one point only and no experiment has shown it beating the static gate with retraining.
+
+Full tables and the analysis are in Appendix A of `docs/RESULTS.md`; the theory is in `docs/THEORY.md`. What turned out to matter
+more: retraining, class balancing, and a learned router.
+
