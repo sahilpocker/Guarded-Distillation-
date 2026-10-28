@@ -133,30 +133,6 @@
       onEnter: () => gsap.to(f, { width: f.dataset.w + "%", duration: 1.1, ease: "power3.out" }) }));
   }
 
-  /* ---------- butterfly: wings sized by who answers ---------- */
-  function wingsSVG(uid) {
-    const g = (id, c1, c2) => `<linearGradient id="${id}${uid}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/></linearGradient>`;
-    const wing = (grad, spots) => `
-      <path d="M300 205C318 110 410 38 520 52C585 62 600 130 560 190C520 245 400 250 300 222Z" fill="url(#${grad})"/>
-      <path d="M300 222C372 244 470 262 492 330C506 384 440 408 392 386C338 360 308 300 300 262Z" fill="url(#${grad})"/>
-      <path class="vein" d="M300 210C350 150 430 100 520 70M300 214C360 170 460 140 560 150M300 218C380 200 470 205 545 215M306 205C330 130 380 80 430 58M302 228C360 262 430 300 462 352M304 236C340 290 380 330 400 378M302 224C380 240 440 262 478 300"/>
-      <path class="edge" d="M300 205C318 110 410 38 520 52C585 62 600 130 560 190C520 245 400 250 300 222Z"/>
-      <path class="edge" d="M300 222C372 244 470 262 492 330C506 384 440 408 392 386C338 360 308 300 300 262Z"/>
-      ${spots}`;
-    const spots = '<circle class="spot" cx="540" cy="86" r="5"/><circle class="spot" cx="563" cy="122" r="6"/><circle class="spot" cx="566" cy="160" r="5"/><circle class="spot" cx="548" cy="196" r="4"/><circle class="spot" cx="470" cy="356" r="5"/><circle class="spot" cx="438" cy="384" r="4"/>';
-    return `<svg class="wings flap" viewBox="0 0 600 430" role="img" aria-label="A butterfly: the orange wing is the big AI, the blue wing is the small model; each wing's size is its share of the questions">
-      <defs>${g("gr", "var(--cheap)", "var(--cheap-2)")}${g("gl", "var(--ai)", "var(--swallow)")}</defs>
-      <g class="wl"><g transform="translate(600 0) scale(-1 1)">${wing("gl" + uid, spots)}</g></g>
-      <g class="wr">${wing("gr" + uid, spots)}</g>
-      <ellipse class="body" cx="300" cy="232" rx="6" ry="46"/><circle class="body" cx="300" cy="180" r="8"/>
-      <path class="vein" d="M297 174C284 144 270 130 256 124M303 174C316 144 330 130 344 124"/></svg>`;
-  }
-  function setWings(el, aiShare) {
-    const svg = el.querySelector("svg");
-    svg.style.setProperty("--sl", (0.42 + 1.25 * aiShare).toFixed(3));
-    svg.style.setProperty("--sr", (0.42 + 1.25 * (1 - aiShare)).toFixed(3));
-  }
-
   /* ---------- dial ---------- */
   // Static gate + retraining + class balancing, MiniLM student; mean of six replays (seeds 0-5); a = the gate's leak budget.
   const DIAL = [
@@ -166,15 +142,13 @@
     { a: 0.01,   calls: 67.4, acc: 0.32, errors: 15.7 },
   ];
   function dial() {
-    const wrap = $("#squares"), range = $("#dial-range"), art = $("#dial-wings");
-    art.innerHTML = wingsSVG("d");
+    const wrap = $("#squares"), range = $("#dial-range");
     for (let i = 0; i < 100; i++) wrap.appendChild(document.createElement("i"));
     const cells = [...wrap.children];
     function draw() {
       const d = DIAL[+range.value];
       const ai = Math.round(d.calls), err = Math.max(1, Math.round(d.errors / 10));
       cells.forEach((c, i) => { c.className = i < ai ? "" : i >= 100 - err ? "err" : "cheap"; });
-      setWings(art, d.calls / 100);
       $("#d-calls").textContent = Math.round(d.calls) + "%";
       $("#d-cost").textContent = "$" + (d.calls / 100 * 0.041).toFixed(3);
       $("#d-err").textContent = Math.round(d.errors);
@@ -182,13 +156,6 @@
     }
     range.addEventListener("input", draw);
     draw();
-  }
-
-  /* ---------- hero butterfly ---------- */
-  function hero() {
-    const el = $("#hero-wings");
-    el.innerHTML = wingsSVG("h");
-    setWings(el, 0.504);
   }
 
   /* ---------- routing chart (from routing-data.json) ---------- */
@@ -304,7 +271,6 @@
     });
   }
 
-  hero();
   receipt();
   story();
   bars();
