@@ -763,6 +763,85 @@ by +3.5 to +8.3 pts on Banking77 and by +4.8 to +18.5 on credit_cards, with inte
 in the first benchmark. At the same nominal budget the learned router used one to two points fewer calls than margin, which
 favours it. Raw tables: `docs/routing_bootstrap.md`.
 
+## Closing the cortisol question: a policy change (E3) and ablations (E5), no API spend
+
+**Outcome, plainly.** The original cortisol field (the k-means "local" term, the novelty term, directed audits, hot-cell retraining) is
+not better than a plain gate with retraining run at the same share of LLM calls, on the unchanged stream or on a policy change. None of
+its four parts has a measurable effect of its own: removing any one moves the operating point along the same calls-versus-errors
+curve. The part of the project that does help under drift is the **per-intent stress** of semantic cortisol. Under a policy change it
+sends the affected intent back to the teacher, which the field and a plain gate do not. The k-means cell machinery should be treated as a
+negative result.
+
+**Setup.** Runs/grid-minilm-a03-s3..s8 (Banking77 launch stream, cached Haiku 5.5 labels, MiniLM student, class-balanced retraining,
+`alpha_intent` 0.03 unless stated, the original margin router), six seeds, paired bootstrap over queries (2,000 draws, pooled over
+seeds; queries are treated as exchangeable and seeds share most of the question pool, so the intervals are narrower than seed-to-seed
+spread). `scripts/cortisol_close.py`; per-query results in `runs/cortisol_close/` (not committed).
+
+**E3, a policy change with no new label.** From 40% through the live stream (query 3200) every teacher label `card_arrival` becomes
+`card_delivery_estimate` (its nearest neighbour by name embedding) and the gold label is changed the same way. No new intent appears, so
+the novel-label trigger never fires. About 65 queries per seed are affected (390 over six seeds). I also tried an optional
+label-free forgetting step in retraining (`EngineConfig.forget`: drop an older label when at least three look-alike recent teacher
+labels, cosine >= 0.85, mostly disagree).
+
+Calls are not equal across methods, so the first table adds plain retraining at stricter gate settings (smaller `alpha_intent`
+escalates more) to match each method's call share. "Affected" is accuracy on the queries whose label changed, as points relative to
+asking the LLM every time (LLM only is 0 by construction).
+
+| Setting (no forgetting) | LLM calls | wrong cheap answers / 1k | accuracy vs LLM only | affected-intent accuracy vs LLM | first 600 launch vs LLM |
+|---|---|---|---|---|---|
+| plain retrain, alpha 0.03 | 53.9% | 40.9 | +0.1 [-0.0, +0.2] | -55.5 [-60.3, -50.6] | -4.4 [-6.4, -2.5] |
+| plain retrain, alpha 0.0125 | 64.2% | 22.0 | +0.1 [-0.0, +0.2] | -31.0 [-35.6, -26.5] | -2.1 [-3.3, -0.8] |
+| plain retrain, alpha 0.01 | 68.9% | 16.1 | +0.1 [+0.0, +0.2] | -23.4 [-27.7, -19.3] | -1.5 [-2.6, -0.6] |
+| plain retrain, alpha 0.0075 | 73.6% | 11.5 | +0.1 [+0.0, +0.1] | -15.0 [-18.8, -11.7] | -0.6 [-1.2, +0.1] |
+| global cortisol | 67.1% | 25.2 | +0.0 [-0.1, +0.1] | -29.0 [-33.6, -24.7] | -2.5 [-4.0, -1.1] |
+| **cortisol field (full)** | 67.4% | 24.9 | +0.0 [-0.0, +0.1] | -34.1 [-38.9, -29.5] | -1.4 [-2.6, -0.3] |
+| **semantic cortisol** | 62.8% | 21.0 | +0.5 [+0.4, +0.6] | **+0.0 [+0.0, +0.0]** | -0.4 [-1.0, +0.1] |
+
+- The field at 67.4% calls leaves 24.9 wrong cheap answers per 1,000 and is 34 points behind on the affected intent. The plain gate at
+  68.9% calls leaves 16.1 and is 23 points behind. Interpolating the plain gate to 67.4% gives about 18 wrong cheap answers and -26
+  affected points. Same first-600 launch accuracy (-1.4 vs about -1.5). The field is worse on the policy change, not better.
+  This was the experiment built to favour local stress, and it did not.
+- Semantic cortisol at 62.8% calls answers **every** affected-intent query with the teacher's label (difference 0.0 in all six
+  seeds). Plain retraining at 64.2% calls is 31 points behind on the same queries, with the same wrong-cheap rate (21.0 vs 22.0).
+  The mechanism is the per-intent probation: the wrong answers on `card_arrival` raise its stress, the intent is sent to the teacher
+  until it has 30 agreeing answers, and the new labels then retrain the student. It costs about 9 more points of calls than plain
+  retraining at alpha 0.03, and less than plain retraining needs to get anywhere near the same affected-intent accuracy.
+- Forgetting (table below) changes little: plain retraining stays 56 points behind, because a confident gate rarely escalates the
+  drifting intent, so few recent labels contradict the old ones. Detecting drift has to come before forgetting.
+
+| Setting (with forgetting) | LLM calls | wrong cheap / 1k | accuracy vs LLM only | affected-intent accuracy vs LLM |
+|---|---|---|---|---|
+| plain retrain, alpha 0.03 | 53.6% | 40.9 | +0.1 [-0.0, +0.2] | -56.5 [-61.3, -51.7] |
+| plain retrain, alpha 0.01 | 68.6% | 16.0 | +0.1 [+0.0, +0.2] | -24.9 [-29.3, -20.9] |
+| global cortisol | 74.0% | 19.2 | +0.1 [-0.0, +0.1] | -24.4 [-28.8, -20.4] |
+| cortisol field (full) | 68.4% | 21.9 | +0.2 [+0.1, +0.2] | -27.5 [-32.1, -22.9] |
+| semantic cortisol | 62.6% | 20.9 | +0.6 [+0.5, +0.7] | +0.0 [+0.0, +0.0] |
+
+**E5, ablations of the full field** (unchanged stream, six seeds; differences are variant minus the full field, in points; paired
+bootstrap intervals):
+
+| Removed | LLM calls | accuracy | wrong cheap answers / 1k | reading |
+|---|---|---|---|---|
+| nothing (full field) | 65.1% | +0.41 vs LLM | 25.2 | |
+| novelty term | -0.3 [-0.7, +0.1] | -0.02 [-0.08, +0.05] | -0.03 | no effect |
+| directed audits | +1.4 [+1.0, +1.7] | -0.02 [-0.09, +0.03] | -0.08 | no effect on accuracy; buys nothing |
+| local (k-means cell) term | +3.3 [+2.9, +3.6] | -0.05 [-0.11, +0.01] | -0.41 | more calls, fewer errors |
+| hot-cell retraining | +1.6 [+1.4, +1.7] | -0.01 [-0.04, +0.01] | -0.11 | more calls, fewer errors |
+
+None of the four parts changes accuracy by more than a twentieth of a point. Removing the local term or the hot-cell retrain trades
+calls for errors in the direction the trade-off curve already runs; none of it lifts the field above that curve. Against plain
+retraining at the same call share the field is behind on cheap-path errors: 25.2 per 1,000 at 65.1% calls vs about 18.4 for plain
+retraining interpolated to the same calls (plain retrain: 19.5 at 64.1%, 14.0 at 69.2%), with a first-600 launch gain of about 0.5
+points (-1.4 vs about -2.0) that the intervals do not separate. Semantic cortisol at 63.1% calls: 20.7 wrong cheap answers per 1,000,
++0.47 accuracy, first-600 launch -0.41, against about 21 / +0.34 / -2.3 for plain retraining interpolated to 63%: a small gain on accuracy and
+launch questions, as in the earlier semantic section.
+
+**Caveats.** One policy change (one intent, one change point, about 390 affected queries over six seeds). The remap is also
+unusually clean: the new label is exactly the neighbour the old one was confused with, which is the easiest case for per-intent
+stress to catch. Call shares are matched by interpolating plain retraining over `alpha_intent`, not by tuning every method to a
+common budget. The forgetting rule is mine and untuned. E4 (audit budget), E6 with a real second teacher (see the Sonnet note in the
+teacher section below), E7 and E8 were not run.
+
 ## Seed 0 by phase, simulated teacher (accuracy / LLM calls)
 
 | Method | steady | launch | off-topic surge | settle |

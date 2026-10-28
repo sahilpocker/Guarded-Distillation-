@@ -58,7 +58,7 @@ def download(raw_dir: str | Path) -> Path:
         dest = raw / name
         if dest.exists() and _sha256(dest) == sha:
             continue
-        with urllib.request.urlopen(url, timeout=60) as r:  # noqa: S310 (fixed https URLs)
+        with urllib.request.urlopen(url, timeout=60) as r:  # noqa: S310  # nosec B310 (fixed https URLs, SHA-256 checked below)
             dest.write_bytes(r.read())
         got = _sha256(dest)
         if got != sha:

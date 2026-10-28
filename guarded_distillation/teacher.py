@@ -91,6 +91,7 @@ class Price:
 # pricing page (cache write 1.25x input, cache read 0.1x input). Re-check before quoting them.
 PRICES = {
     "haiku-5.5": Price("claude-haiku-5-5", 0.10, 0.50, 0.01, 0.125),
+    "sonnet-5.5": Price("claude-sonnet-5-5", 2.00, 10.00, 0.10, 2.50),
     "opus-5.5": Price("claude-opus-5-5", 4.00, 20.00, 0.40, 5.00),
     "llama-3.1-8b-or": Price("meta-llama/llama-3.1-8b-instruct via OpenRouter", 0.02, 0.04, 0.0, 0.0),
     "free": Price("local model", 0.0, 0.0, 0.0, 0.0),
@@ -160,7 +161,7 @@ class SimulatedTeacher:
         self.wrong = dict(zip(df.text, wrong))
 
     def _u(self, text: str) -> float:
-        h = int(hashlib.sha1(f"{self.seed}|{text}".encode()).hexdigest()[:12], 16)
+        h = int(hashlib.sha1(f"{self.seed}|{text}".encode(), usedforsecurity=False).hexdigest()[:12], 16)
         return np.random.default_rng(h).random()
 
     def label(self, text: str, gold: str) -> str:
@@ -236,8 +237,8 @@ class LLMTeacher:
         self.name = f"{provider}:{model}"
 
     def _key(self, text: str) -> str:
-        sp = hashlib.sha1(self.system_prompt.encode()).hexdigest()[:10]
-        return hashlib.sha1(f"{self.name}|{sp}|{text}".encode()).hexdigest()
+        sp = hashlib.sha1(self.system_prompt.encode(), usedforsecurity=False).hexdigest()[:10]
+        return hashlib.sha1(f"{self.name}|{sp}|{text}".encode(), usedforsecurity=False).hexdigest()
 
     def _load_cache(self) -> dict[str, dict]:
         out: dict[str, dict] = {}
@@ -267,8 +268,10 @@ class LLMTeacher:
         if self.provider == "anthropic":
             # No temperature (sampling parameters are rejected by current models) and thinking
             # off: the reply is one intent name and must fit in max_tokens.
+            # Sonnet 5.5 rejects "disabled": "between_tools" is its way of not thinking before the reply.
+            thinking = {"type": "between_tools"} if "sonnet" in self.model else {"type": "disabled"}
             r = c.messages.create(
-                model=self.model, max_tokens=24, thinking={"type": "disabled"},
+                model=self.model, max_tokens=24, thinking=thinking,
                 system=[{"type": "text", "text": self.system_prompt, "cache_control": {"type": "ephemeral"}}],
                 messages=[{"role": "user", "content": text}],
             )

@@ -119,7 +119,7 @@ class Store:
         return self._x("select count(*) from decisions", (), "one")[0]
 
     def events(self, kind: str | None = None, limit: int = 50) -> list[dict]:
-        rows = self._x("select ts, kind, data from events " + ("where kind=? " if kind else "") + "order by id desc limit ?",
+        rows = self._x("select ts, kind, data from events " + ("where kind=? " if kind else "") + "order by id desc limit ?",   # nosec B608 (values are bound)
                        (kind, limit) if kind else (limit,), "all")
         return [{"ts": r[0], "kind": r[1], **self._j(r[2])} for r in rows]
 
@@ -129,7 +129,7 @@ class Store:
             cond = "data->>'teacher_label' is not null and data->>'source' in ('cache','api')"
         else:
             cond = "json_extract(data,'$.teacher_label') is not null and json_extract(data,'$.source') in ('cache','api')"
-        rows = self._x(f"select data from decisions where {cond} order by id desc limit ?", (limit,), "all")
+        rows = self._x(f"select data from decisions where {cond} order by id desc limit ?", (limit,), "all")   # nosec B608 (cond is a constant)
         return [{"text": d["text"], "label": d["teacher_label"]} for d in (self._j(r[0]) for r in rows)]
 
     # ------------------------------------------------------------------ spend and state

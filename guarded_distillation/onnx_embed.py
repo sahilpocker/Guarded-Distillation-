@@ -6,6 +6,7 @@ from __future__ import annotations
 import numpy as np
 
 REPO = "sentence-transformers/all-MiniLM-L6-v2"
+REVISION = "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"      # pinned: the tokenizer and weights the replays were run with
 MAX_LEN = 256
 
 
@@ -14,14 +15,14 @@ class OnnxEncoder:
         import onnxruntime as ort
         from huggingface_hub import hf_hub_download
         from tokenizers import Tokenizer
-        self.tok = Tokenizer.from_file(hf_hub_download(repo, "tokenizer.json"))
+        self.tok = Tokenizer.from_file(hf_hub_download(repo, "tokenizer.json", revision=REVISION))
         self.tok.enable_truncation(MAX_LEN)
         self.tok.enable_padding()
         opts = ort.SessionOptions()
         opts.intra_op_num_threads = 1
         opts.enable_cpu_mem_arena = False      # keeps resident memory low in a 512 MB container
         opts.enable_mem_pattern = False
-        self.sess = ort.InferenceSession(hf_hub_download(repo, "onnx/model.onnx"), opts, providers=["CPUExecutionProvider"])
+        self.sess = ort.InferenceSession(hf_hub_download(repo, "onnx/model.onnx", revision=REVISION), opts, providers=["CPUExecutionProvider"])
         self.names = {i.name for i in self.sess.get_inputs()}
 
     def encode(self, texts: list[str], batch_size: int = 32) -> np.ndarray:

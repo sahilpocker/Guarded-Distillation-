@@ -79,7 +79,7 @@ class Registry:
 
     def _get(self, url: str) -> bytes:
         req = urllib.request.Request(url, headers={"User-Agent": "guarded-distillation", "Accept": "application/vnd.github+json"})
-        with urllib.request.urlopen(req, timeout=60) as r:      # noqa: S310 (fixed github.com URLs)
+        with urllib.request.urlopen(req, timeout=60) as r:      # noqa: S310  # nosec B310 (fixed github.com URLs; bundles are SHA-256 checked)
             return r.read()
 
     def releases(self) -> list[dict]:

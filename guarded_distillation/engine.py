@@ -127,6 +127,12 @@ class EngineConfig:
     sem_cluster: int = 20         # (d) queries in a cluster before the LLM sensor is asked
     sem_qfit: float = 0.0         # level added to a query that fails the fit check (label-free, immediate)
     sem_sim: float = 0.6          # (d) cosine similarity to join a cluster
+    # forgetting (E3, docs/RESULTS.md): at retraining, drop older pool labels that the newest `forget_recent` teacher labels contradict
+    forget: bool = False
+    forget_recent: int = 600
+    forget_sim: float = 0.85      # cosine similarity (MiniLM) for "the same kind of question"
+    forget_min: int = 3           # at least this many recent look-alikes ...
+    forget_frac: float = 0.6      # ... and at least this share of them labelled differently
 
 
 @dataclass
@@ -417,6 +423,8 @@ class Replay:
         if hasattr(self, "graph"):
             self._sem_refresh()
         pool = self.pool[-cfg.pool_cap:]
+        if cfg.forget:
+            pool = self._forget(pool, i)
         recent = pool[-1500:]
         rng = np.random.default_rng(cfg.seed + len(pool))
         n_hold = min(max(30, int(len(recent) * cfg.holdout_frac)), len(recent) // 2)
@@ -448,6 +456,25 @@ class Replay:
             msg += f"; now knows {', '.join(learns)}"
         self._event(i, "promoted", msg, version=version, reason=reason, learned=learns,
                     intent_acc_before=cur_i, intent_acc_after=new_ia)
+
+    def _forget(self, pool: list[int], i: int) -> list[int]:
+        """Label-free forgetting: an older label is dropped when at least `forget_min` of the newest teacher labels are look-alike
+        questions (cosine >= forget_sim) and `forget_frac` of those carry a different label. Uses no gold labels."""
+        cfg = self.cfg
+        if len(pool) <= cfg.forget_recent:
+            return pool
+        old, rec = pool[:-cfg.forget_recent], pool[-cfg.forget_recent:]
+        e_old = embed.encode([self.texts[k] for k in old])
+        e_rec = embed.encode([self.texts[k] for k in rec])
+        y_old = np.array([self.y_teacher[k] for k in old])
+        y_rec = np.array([self.y_teacher[k] for k in rec])
+        near = (e_old @ e_rec.T) >= cfg.forget_sim
+        n_nb = near.sum(1)
+        n_dis = (near & (y_rec[None, :] != y_old[:, None])).sum(1)
+        drop = (n_nb >= cfg.forget_min) & (n_dis >= cfg.forget_frac * n_nb)
+        if drop.any():
+            self._event(i, "forgot", f"Dropped {int(drop.sum())} older labels that recent teacher labels contradict")
+        return [k for k, d in zip(old, drop) if not d] + rec
 
     def _maybe_retrain(self, i: int) -> None:
         cfg, m = self.cfg, self.m

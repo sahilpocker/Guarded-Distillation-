@@ -32,3 +32,28 @@ jobs:
         run: gdistill data
       - name: Eval replay from cached Haiku labels (no API calls)
         run: gdistill eval
+
+  security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install scanners
+        run: pip install pip-audit bandit detect-secrets
+      - name: Dependencies with known vulnerabilities (serving image)
+        run: pip-audit -r requirements-serve.txt --progress-spinner off
+      - name: Static analysis (medium and high)
+        run: bandit -q -r guarded_distillation -ll
+      - name: Secrets in tracked files
+        run: |
+          detect-secrets scan --all-files $(git ls-files | grep -v -E '\.(jsonl|csv|json|svg|html|png)$') > /tmp/ds.json
+          python - <<'PY'
+          import json
+          r = json.load(open("/tmp/ds.json"))["results"]
+          bad = {k: v for k, v in r.items() if k not in ("guarded_distillation/data.py", "tests/test_service.py")}   # pinned SHA-256 digests; a fake test key
+          print(bad)
+          raise SystemExit(1 if bad else 0)
+          PY

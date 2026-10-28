@@ -108,6 +108,11 @@ def cmd_label_pool(args) -> None:
     pool = D.pool_texts(pools, fewshot)
     if args.limit:
         pool = pool.head(args.limit)
+    if getattr(args, "stream_seeds", None):      # label only the wordings of these seeds' streams (runs/grid-minilm-a03-s{k})
+        keep = set()
+        for k in args.stream_seeds:
+            keep |= set(pd.read_csv(Path(f"runs/grid-minilm-a03-s{k}") / "stream.csv", keep_default_na=False).text)
+        pool = pool[pool.text.isin(keep)]
     labels_path = Path(args.labels or f"labels/{args.model.replace('/', '_')}.jsonl")
     ledger = Ledger(args.ledger, args.cap_usd)
     teacher = LLMTeacher(args.teacher, args.model, system_prompt, list(pools.intents) + [D.OOS],
@@ -269,6 +274,7 @@ def main(argv=None) -> None:
     q.add_argument("--ledger", default="labels/spend.json", help="spend ledger shared across runs")
     q.add_argument("--cap-usd", type=float, default=None, help="hard cap on total spend for this teacher")
     q.add_argument("--limit", type=int, default=0, help="label only the first N pool texts (pilot)")
+    q.add_argument("--stream-seeds", type=int, nargs="+", default=None, help="label only the wordings in these seeds' streams (runs/grid-minilm-a03-s{k})")
     q.add_argument("--shots", type=int, default=1)
     q.add_argument("--workers", type=int, default=8)
     q.add_argument("--yes", action="store_true", help="really make the (paid) calls")
@@ -305,7 +311,7 @@ def main(argv=None) -> None:
 
     q = sub.add_parser("serve", help="run the triage service (FastAPI)")
     q.add_argument("--bundle", default=None)
-    q.add_argument("--host", default="0.0.0.0")
+    q.add_argument("--host", default="0.0.0.0")      # nosec B104 (in the container the platform proxy connects from outside)
     q.add_argument("--port", type=int, default=int(os.environ.get("PORT", 8000)))
 
     q = sub.add_parser("retrain", help="build a candidate model from history + the service's labels, gate it, publish a release")
