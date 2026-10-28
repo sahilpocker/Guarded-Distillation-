@@ -53,7 +53,7 @@ jobs:
           python - <<'PY'
           import json
           r = json.load(open("/tmp/ds.json"))["results"]
-          bad = {k: v for k, v in r.items() if k not in ("guarded_distillation/data.py", "tests/test_service.py")}   # pinned SHA-256 digests; a fake test key
+          bad = {k: v for k, v in r.items() if k not in ("guarded_distillation/data.py", "guarded_distillation/onnx_embed.py", "tests/test_service.py")}   # pinned SHA-256 digests and a pinned git revision; a fake test key
           print(bad)
           raise SystemExit(1 if bad else 0)
           PY

@@ -897,7 +897,7 @@ the Render instance under load.
 `bandit -ll`: three high findings (SHA-1 used as a cache key, now `usedforsecurity=False`) and seven medium (the MiniLM download is
 now pinned to a revision; the `0.0.0.0` bind, two `urlopen` calls on fixed https URLs with SHA-256 checks, and two SQL strings built
 from constants with bound values are annotated with the reason). `detect-secrets` on tracked files and a search of the git history
-for key prefixes: no real secrets (the matches are the pinned dataset digests and a fake key in a test). Not covered: container image
+for key prefixes: no real secrets (the matches are the pinned dataset digests, the pinned MiniLM revision and a fake key in a test). Not covered: container image
 scan, dynamic testing, the Render and Vercel configurations.
 
 ## Seed 0 by phase, simulated teacher (accuracy / LLM calls)
