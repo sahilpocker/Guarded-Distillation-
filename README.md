@@ -14,12 +14,13 @@ are documented as carefully as the wins (see "What didn't work" below and docs/R
 
 - **Story for non-specialists:** https://guarded-distillation.vercel.app (source in `site/`, deploy from that folder: `vercel deploy --prod`)
 - **Live replay of one run:** https://guarded-distillation.vercel.app/replay
+- **Status and decisions:** `docs/STATUS.md`
 - **Full results, with every caveat:** `docs/RESULTS.md`; theory and guarantee in `docs/THEORY.md`
 
 What is in the repo: a Python package (`guarded_distillation`) with a `gdistill` CLI; a replay
 engine that simulates a support inbox; students (TF-IDF and frozen MiniLM embeddings); a conformal
 risk-control gate; a spend-capped Claude labelling pipeline; and the experiment scripts behind every
-number. 43 tests.
+number. 65 tests, and a CI job that scans dependencies, code and secrets.
 
 ## Routing: which score decides when to ask the LLM?
 
@@ -31,20 +32,36 @@ max-probability is a better one-line default. Online Cascade Learning (their pub
 has a cliff and does not reach the 40-60% budgets on two of three streams. Tables and caveats: `docs/RESULTS.md`
 (Routing benchmark); numbers in `docs/routing.json`; plot `docs/routing.svg`.
 
+## A more expensive teacher
+
+On 3,282 shared wordings Claude Sonnet 5.5 is 85.4% accurate against human labels and Haiku 5.5 is 81.2% (+4.2 points, interval
++3.1 to +5.3), at about 12 times the cost per call ($0.485 vs $0.041 per 1,000 questions). Keeping the measured 51% cost ratio, this
+system would save about $237 per million questions at Sonnet prices against $20 at Haiku prices. **That is arithmetic, not a replay:**
+the budget ran out before the Sonnet pool was labelled, so the gate has not been run on Sonnet's labels (docs/RESULTS.md, "Second teacher").
+
 ## Triage service
 
 `gdistill serve` runs the recommended gate behind `POST /triage` (MiniLM student on CPU through ONNX Runtime, escalation
 to Claude Haiku through the label cache first and the live API only on a cache miss, under a daily spend cap),
 with `GET /metrics` and `GET /healthz`. `gdistill traffic --stream runs/<run> --rate 5 --url <service>` replays a
-stream against it. The container (`Dockerfile`, no torch, about 300 MiB resident) fits Render's free tier
+stream against it. The container (`Dockerfile`, no torch, 435 MiB resident under load) fits Render's free tier
 (512 MB, 0.1 CPU): `render.yaml` is a Blueprint. Free-tier caveats: it sleeps after 15 minutes idle and wakes in
 30-50 seconds, and its disk is ephemeral, so the decision log and the spend ledger reset on restart; also set a
 spend limit on the Anthropic key itself.
 
+## Limits of the evidence
+
+One task type (intent classification), two public datasets, a launch simulated by holding intents out, and Claude Haiku 5.5 as the only
+teacher in the replays. No real customer logs and no multi-step agent. Confidence intervals come from a paired bootstrap over queries,
+which is narrower than the spread across seeds, so seeds-won counts are reported next to them.
+
 ## What didn't work
 
-- The original idea, a "cortisol field" of local stress, did not beat a plain gate with retraining. It is kept in the code
-  and described in the appendix below.
+- The original idea, a "cortisol field" of local stress, did not beat a plain gate with retraining. I tested it again on a
+  policy change (one intent's label changes mid-stream) and with each part removed, six held-out seeds: at the same share of LLM calls the plain gate
+  makes fewer wrong cheap answers, and no part of the field has a measurable effect of its own. What does help under drift is the
+  per-intent stress of semantic cortisol, which sends the changed intent back to the LLM (docs/RESULTS.md, "Closing the cortisol question").
+  The field is kept in the code and described in the appendix below.
 - The first recommended setting lost 3.4 points on new-product questions on held-out runs; class-balanced
   retraining fixed most of it (found after seeing the held-out result, so those numbers are not a fully
   clean test).

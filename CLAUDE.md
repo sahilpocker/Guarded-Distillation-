@@ -8,7 +8,15 @@ where to audit, and when to retrain. Demo domain: banking-support triage on Bank
 Sister project: `../vaers` (same idea on VAERS pharmacovigilance; its week-1 lesson was
 "retraining is what restores accuracy under drift; gating alone does not". This repo confirms it.)
 
-## Status (22 Oct 2026)
+## Status (v1.0, 28 Oct 2026)
+
+Frozen at v1.0. The cortisol field is **closed as a negative result** (E3 policy change and E5 ablations on seeds 3-8,
+docs/RESULTS.md): at matched LLM calls the plain gate is better and no part of the field has an effect of its own; per-intent
+stress (semantic cortisol) helps under drift. Learned router is the default. Service: persistence verified (Koofr WebDAV),
+load test and security scan done, CI has a `security` job. Sonnet 5.5 labelled only 3,282 wordings ($1.59; user's budget is
+exhausted): **no Sonnet replay; do not make paid calls without asking**. Open items are in docs/STATUS.md.
+
+## Earlier status (22 Oct 2026)
 
 - Engine, CLI, tests and the replay dashboard work end to end with a **simulated** teacher.
 - `guarded_distillation.gate.aci_update` is implemented (one line, spec in tests/test_aci.py, lesson 2 in

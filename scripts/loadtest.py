@@ -4,7 +4,7 @@
 
 The server it starts is the production app (ONNX Runtime embeddings, models/v1, SQLite log in a temp dir) with live Claude calls
 off and per-visitor limits lifted, so escalations are answered from the cached Haiku labels and nothing is spent. Requests are
-questions from the seed-3 live stream (6.8k unique wordings; the first pass over a wording is not cached by the service).
+questions from the seed-3 live stream (each wording once; the on-disk embedding cache the replays use is switched off, so every request runs the ONNX encoder).
 Writes docs/loadtest.json. A free Render instance has 0.1 CPU, so its absolute numbers are far lower than a laptop's; the
 results here are what one process on this machine does, and the Dockerfile's size (about 300 MiB resident) is what carries over.
 """
@@ -26,7 +26,8 @@ ROOT = Path(__file__).parent.parent
 
 
 def start_server(port: int):
-    code = ("import os,uvicorn;from guarded_distillation.serve.app import make_app;"
+    code = ("import os,uvicorn;import guarded_distillation.embed as e;e._disk_loaded=True;"      # no precomputed vectors: every wording is embedded by the ONNX model
+            "from guarded_distillation.serve.app import make_app;"
             f"uvicorn.run(make_app(None, live=False, db=os.path.join('{tempfile.mkdtemp()}','svc.db')), host='127.0.0.1', port={port}, log_level='warning')")
     env = dict(os.environ, GD_EMBED="onnx", REQ_PER_IP_PER_MIN="100000000", ANTHROPIC_API_KEY="", OMP_NUM_THREADS="1",
                MODEL_REGISTRY="", DATABASE_URL="", WEBDAV_URL="")

@@ -1,5 +1,6 @@
 {
   "by_model": {
-    "anthropic:claude-haiku-5-5": 0.8029119750000041
+    "anthropic:claude-haiku-5-5": 0.8029119750000041,
+    "anthropic:claude-sonnet-5-5": 1.5933461999999983
   }
 }

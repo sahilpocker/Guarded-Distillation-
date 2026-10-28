@@ -842,6 +842,64 @@ stress to catch. Call shares are matched by interpolating plain retraining over 
 common budget. The forgetting rule is mine and untuned. E4 (audit budget), E6 with a real second teacher (see the Sonnet note in the
 teacher section below), E7 and E8 were not run.
 
+## Second teacher: Claude Sonnet 5.5 (partial, $1.59 of a $10 cap)
+
+**What was and was not done.** I planned to label the whole Banking77 + CLINC pool with Sonnet 5.5 and replay the gate on it. At list
+price (US$2 / US$10 per million input / output tokens; cache reads $0.10) that costs about $7 for the pool, and the budget for it ran out
+after 3,282 labels ($1.59 spent, in `labels/spend.json`; the call is cached in `labels/claude-sonnet-5-5.jsonl`). **There is no Sonnet
+replay.** What follows is the teacher comparison on those 3,282 wordings and arithmetic on price. It does not show that the gate, or the
+share of calls it saves, behaves the same with a more accurate teacher.
+
+**Teacher quality (the same 3,282 wordings, pool order, scored against human labels):**
+
+| Teacher | accuracy vs human labels | in scope | out of scope | cost per call (prompt cached) |
+|---|---|---|---|---|
+| Haiku 5.5 | 81.2% | 80.3% | 98.7% | $0.000041 |
+| Sonnet 5.5 | 85.4% | 84.7% | 98.7% | $0.000485 |
+
+Sonnet is +4.2 points more accurate [+3.1, +5.3] (paired bootstrap over wordings) and agrees with Haiku on 87.2% of wordings; 0.0%
+unparseable replies. Sonnet 5.5 rejects `thinking: {"type": "disabled"}`; the teacher now sends `between_tools` for it.
+
+**What savings do when the teacher costs more (arithmetic, not a replay).** The system sent 50.4% of questions to the LLM at 51.2% of
+the cost (Haiku runs, seeds 3-5). Holding that ratio fixed, cost per 1,000 questions and savings for a million questions are:
+
+| Teacher | LLM only, per 1,000 questions | This system, per 1,000 | Saved per 1,000,000 questions | Basis |
+|---|---|---|---|---|
+| Haiku 5.5 | $0.041 | $0.021 | $20 | measured |
+| Sonnet 5.5 | $0.485 | $0.248 | $237 | measured per-call cost (3,282 calls), call share assumed |
+| Opus 5.5 | $1.64 | $0.84 | $800 | Haiku's token counts at Opus list price ($4 / $20, cache reads $0.40), call share assumed |
+
+The saving is proportional to the price of the teacher. At Haiku prices it is small in absolute terms; it becomes material with a larger
+model or a multi-step agent where each call is expensive. The assumption that matters is that the call share stays near 50% when the
+teacher is more accurate. A more accurate teacher gives cleaner labels, which could raise or lower the share, and I have not tested it.
+
+## Service: load test and security scan (28 Oct 2026)
+
+**Load test** (`scripts/loadtest.py`, `docs/loadtest.json`). The production app on this laptop (Apple silicon, one process, ONNX Runtime
+MiniLM embeddings, models/v1, SQLite log), live Claude calls off, per-visitor limits lifted; 600 distinct questions per level, closed
+loop, every request embedded by the model (the replays' on-disk embedding cache is switched off; a first version of the test left it
+on and reported 600 requests/s, which was the cache and not the service). Escalations are answered from the cached Haiku labels, so
+nothing is spent. The laptop was also running other work, so treat the numbers as indicative.
+
+| Concurrent requests | Requests / s | p50 | p95 | p99 | Errors |
+|---|---|---|---|---|---|
+| 1 | 126 | 7 ms | 15 ms | 19 ms | 0 / 600 |
+| 4 | 256 | 14 ms | 29 ms | 42 ms | 0 / 600 |
+| 16 | 273 | 50 ms | 104 ms | 226 ms | 0 / 600 |
+
+One process saturates at roughly 270 requests/s (the encoder is the cost). Resident memory after the run was 435 MiB, so the 512 MB
+free tier has little headroom; the earlier README figure of about 300 MiB was the idle process. The free Render instance has 0.1 CPU,
+so expect an order of magnitude less than the table; a live Claude call (a cache miss) takes 2-13 s and is rate limited per visitor
+(10 / hour) and globally (60 / hour). What the table supports: p95 under 30 ms up to about 250 requests/s on this laptop, excluding live Claude calls. I have not measured
+the Render instance under load.
+
+**Security scan** (CI job `security`, `.github/workflows/ci.yml`). `pip-audit` on `requirements-serve.txt`: no known vulnerabilities.
+`bandit -ll`: three high findings (SHA-1 used as a cache key, now `usedforsecurity=False`) and seven medium (the MiniLM download is
+now pinned to a revision; the `0.0.0.0` bind, two `urlopen` calls on fixed https URLs with SHA-256 checks, and two SQL strings built
+from constants with bound values are annotated with the reason). `detect-secrets` on tracked files and a search of the git history
+for key prefixes: no real secrets (the matches are the pinned dataset digests and a fake key in a test). Not covered: container image
+scan, dynamic testing, the Render and Vercel configurations.
+
 ## Seed 0 by phase, simulated teacher (accuracy / LLM calls)
 
 | Method | steady | launch | off-topic surge | settle |

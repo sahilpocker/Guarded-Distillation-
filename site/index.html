@@ -44,7 +44,7 @@
       <input id="c-vol" type="number" min="0" step="10000" value="1000000" inputmode="numeric">
       <label for="c-price">Big AI cost per 1,000 questions (US$)</label>
       <input id="c-price" type="number" min="0" step="0.001" value="0.041" inputmode="decimal">
-      <p class="hint">$0.041 is what Claude Haiku 5.5 cost on the questions measured here. A larger model costs more, and the saving grows with it.</p>
+      <p class="hint">$0.041 is what Claude Haiku 5.5 cost on the questions measured here. Claude Sonnet 5.5 measured $0.485, so try that to see a bigger model's bill.</p>
       <div class="row"><span>Big AI on every question</span><b id="c-all">$41</b></div>
       <div class="row win"><span>With this system</span><b id="c-sys">$21</b></div>
       <div class="row save"><span>You keep, per month</span><b id="c-save">$20</b></div>
@@ -248,7 +248,7 @@
       <p class="lede">The project started with a different idea. These are the parts that did not hold up, because the results are only worth trusting if the misses are on the page too.</p>
     </div>
     <div class="tried">
-      <article><h3>The original idea didn't beat a simpler one.</h3><p>I first built a "stress field": a worry level that rises in the topics where mistakes happen. Against a plain gate with retraining it showed no advantage. It is still in the code, labelled experimental, and it sits in an appendix of the results.</p></article>
+      <article><h3>The original idea didn't beat a simpler one.</h3><p>I first built a "stress field": a worry level that rises in the topics where mistakes happen. I tested it again on a mid-stream policy change and with each of its parts removed, on six held-out runs. At the same share of big-AI calls, a plain gate makes fewer wrong answers, and no part of the field does anything on its own. What does help is a simpler per-topic version: when a topic's answers go wrong, that topic goes back to the big AI.</p></article>
       <article><h3>My first pick failed on fresh data.</h3><p>The first recommended setting looked fine on the runs I tuned on, then lost 3.4 points on new-product questions on the held-out runs. The cause was imbalance after retraining; weighting the new topic fixed most of it.</p></article>
       <article><h3>A whole new domain is still hard.</h3><p>When fifteen new topics arrive at once, every setting I tried ends 2 to 3 points behind the big AI on those questions. Spreading worry between related topics helps when the new topics resemble old ones, and not when they are far away.</p></article>
       <article><h3>An AI "sensor" never fired.</h3><p>I added a check that asks the big AI which known topics an unfamiliar cluster might be confused with. As designed, the trigger never fired. Loosened, it fired a handful of times and changed nothing measurable.</p></article>
@@ -292,11 +292,12 @@
       <span class="node">Decision log</span><span class="arrow">→</span><span class="node">Retrain, gated</span><span class="arrow">→</span><span class="node">Model release</span><span class="arrow">→</span><span class="node">Hot swap, or roll back</span>
     </div>
     <div class="ops">
-      <div class="card"><b>Tests and a quality gate</b><span>Every change runs 64 tests and replays a real run from cached answers. It fails if accuracy, new-topic accuracy or call savings regress.</span></div>
+      <div class="card"><b>Tests and a quality gate</b><span>Every change runs 65 tests and replays a real run from cached answers. It fails if accuracy, new-topic accuracy or call savings regress.</span></div>
       <div class="card"><b>A live service</b><span>A small API on a free host: small model first, cached answers next, a live Claude call only on a miss, under a daily spend cap and per-visitor limits.</span></div>
       <div class="card"><b>Monitoring that raises its hand</b><span>Rolling escalation rate, an estimate of leaked wrong answers against a budget, per-topic stress and spend. A schedule opens a GitHub issue if something is off.</span></div>
       <div class="card"><b>Safe model updates</b><span>A weekly retrain must pass the same thresholds before it is published. The service swaps to it, and rolls back on its own if audited disagreement rises 50% in its first 500 questions.</span></div>
       <div class="card"><b>State that survives restarts</b><span>The log, the spend and the model version are stored off the host, so a restart on a free tier loses nothing.</span></div>
+      <div class="card"><b>Load and security checks</b><span>One process handles about 270 requests a second with a 15 ms p95 when one request is in flight (104 ms at 16). A scan of dependencies, code and secrets runs on every push.</span></div>
       <div class="card"><b>Traffic without a person</b><span>A scheduled job replays the question stream into the service every ten minutes, so it always has something to watch and learn from.</span></div>
     </div>
   </div>
@@ -311,7 +312,7 @@
       <div><b>14,194</b><p>real customer questions, labelled by a human and by Claude, from the public Banking77 and CLINC150 datasets.</p></div>
       <div><b>990</b><p>runs compared six ways of choosing which questions to escalate, with settings chosen on some seeds and judged on others.</p></div>
       <div><b>$0.80</b><p>total spent on the big AI for all real labels, under a hard spending cap.</p></div>
-      <div><b>64</b><p>automated tests, including one for the guarantee that caps how often the small model may be wrong unchecked.</p></div>
+      <div><b>65</b><p>automated tests, including one for the guarantee that caps how often the small model may be wrong unchecked.</p></div>
     </div>
     <div class="actions" style="margin-top:34px">
       <a class="btn" href="https://github.com/sahilpocker/Guarded-Distillation-">Read the code</a>

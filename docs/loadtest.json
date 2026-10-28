@@ -1,0 +1,37 @@
+{
+ "url": "local",
+ "machine": "arm64",
+ "rss_mib": 434.5,
+ "levels": [
+  {
+   "concurrency": 1,
+   "requests": 600,
+   "errors": 0,
+   "rps": 125.6,
+   "p50_ms": 7.1,
+   "p95_ms": 14.7,
+   "p99_ms": 19.3,
+   "escalated": 0.592
+  },
+  {
+   "concurrency": 4,
+   "requests": 600,
+   "errors": 0,
+   "rps": 256.1,
+   "p50_ms": 14.1,
+   "p95_ms": 29.2,
+   "p99_ms": 41.5,
+   "escalated": 0.525
+  },
+  {
+   "concurrency": 16,
+   "requests": 600,
+   "errors": 0,
+   "rps": 272.8,
+   "p50_ms": 50.4,
+   "p95_ms": 104.2,
+   "p99_ms": 225.5,
+   "escalated": 0.557
+  }
+ ]
+}

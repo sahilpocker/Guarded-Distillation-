@@ -1,4 +1,17 @@
-# Status report (28 Oct 2026)
+# Status report (28 Oct 2026, updated at v1.0)
+
+**Update at v1.0.** The steps in section 5 are done except the Sonnet replay, which stopped for budget. Outcomes:
+
+1. **Site rework:** done (executive overview with savings calculator, risks and catches, comparison table, routing chart as points versus the big AI, evidence section).
+2. **Cortisol question:** closed as a negative result. E3 (policy change) and E5 (ablations), six held-out seeds, paired bootstrap: the field is not better than a plain gate at the same call share, and none of its parts has an effect of its own. Per-intent stress (semantic cortisol) is the part that helps under drift. See `docs/RESULTS.md`, "Closing the cortisol question".
+3. **Second teacher:** Sonnet 5.5 labelled 3,282 wordings ($1.59 spent; budget exhausted). It is 85.4% accurate against human labels vs Haiku's 81.2%. **No Sonnet replay was run**; the savings-versus-price table is arithmetic on the measured 51% cost ratio.
+4. **Service:** load test (one process saturates near 270 requests/s; p95 15 ms at one request in flight, 104 ms at 16) and a security scan (no vulnerable dependencies, no secrets, findings fixed or annotated; CI job added). Tagged v1.0.
+
+Still open: a Sonnet replay (about $7 for the pool), E4, E6 with a replayed second teacher, E7, E8, the localized guarantee, a second domain and multi-step agents (moved to a separate project), real customer logs.
+
+---
+
+*The original report follows, as written on 28 Oct.*
 
 ## 1. Where we started (22 Oct)
 
