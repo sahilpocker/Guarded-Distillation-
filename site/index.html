@@ -20,9 +20,8 @@
     <nav aria-label="Sections">
       <a href="#story">How it works</a>
       <a href="#results">Results</a>
-      <a href="#routing">Routing</a>
-      <a href="#explore">See it run</a>
-      <a href="#ops">Built to run</a>
+      <a href="#explore">Console</a>
+      <a href="#evidence">Evidence</a>
       <a href="https://github.com/sahilpocker/Guarded-Distillation-">Code</a>
     </nav>
   </div>
@@ -32,21 +31,36 @@
 <section class="hero">
   <div class="wrap">
     <div>
-      <h1>Most of what customers ask has been asked before.</h1>
-      <p class="lede">A support bot that asks a large AI model every time pays for the same answer over and over. This project teaches a small, cheap model to handle the repeats, and checks that it can be trusted before it answers.</p>
+      <h1>Pay for the big AI only when the question is new.</h1>
+      <p class="lede">A support bot that asks a large AI model about every message pays for the same answer again and again. This system teaches a small, cheap model to handle the repeats, hands anything unfamiliar back to the big AI, and keeps checking itself while it runs.</p>
       <div class="actions">
         <a class="btn" href="#story">See how it works</a>
-        <a class="btn ghost" href="#explore">Watch it run, live</a>
+        <a class="btn ghost" href="#explore">Open the live console</a>
       </div>
     </div>
-    <div class="hero-art">
-      <aside class="receipt" aria-label="Cost of 1,000 support questions, with and without this system">
-        <h3>1,000 questions</h3>
-        <p class="sub">Claude Haiku 5.5, real questions</p>
-        <div class="row"><span>Big AI every time<small>1,000 calls</small></span><b data-count="0.041" data-prefix="$" data-dec="3">$0.041</b></div>
-        <div class="row win"><span>With this system<small id="r-calls">504 calls</small></span><b data-count="0.021" data-prefix="$" data-dec="3">$0.021</b></div>
-        <div class="foot">Accuracy 81.4% against 80.8%.</div>
-      </aside>
+    <form class="calc" id="calc" aria-label="Savings estimate" onsubmit="return false">
+      <h3>What it saves</h3>
+      <label for="c-vol">Questions per month</label>
+      <input id="c-vol" type="number" min="0" step="10000" value="1000000" inputmode="numeric">
+      <label for="c-price">Big AI cost per 1,000 questions (US$)</label>
+      <input id="c-price" type="number" min="0" step="0.001" value="0.041" inputmode="decimal">
+      <p class="hint">$0.041 is what Claude Haiku 5.5 cost on the questions measured here. A larger model costs more, and the saving grows with it.</p>
+      <div class="row"><span>Big AI on every question</span><b id="c-all">$41</b></div>
+      <div class="row win"><span>With this system</span><b id="c-sys">$21</b></div>
+      <div class="row save"><span>You keep, per month</span><b id="c-save">$20</b></div>
+      <div class="foot">Uses the measured cost ratio (51%), audits included. Accuracy stayed within 0.6 points of the big AI on held-out runs; see Results.</div>
+    </form>
+  </div>
+</section>
+
+<section class="risks" id="safety" aria-label="What can go wrong and what catches it">
+  <div class="wrap">
+    <h2>Four things that can go wrong, and what catches each.</h2>
+    <div class="risk-grid">
+      <div><h3>The small model is confidently wrong</h3><p>It answers only when its own doubt is low enough, and a random sample of its answers is checked against the big AI. The measured rate of unchecked wrong answers is about 4 in 100 questions, against a set budget.</p></div>
+      <div><h3>A new product launches</h3><p>Questions about it look like old ones. The gate tightens on that topic, the big AI answers instead, and the small model retrains on those answers. Accuracy on new-product questions ended within 0.3 points of the big AI.</p></div>
+      <div><h3>Customers drift quietly</h3><p>Per-topic stress and the audit disagreement rate are watched continuously. When either rises, the service flags it and opens a GitHub issue.</p></div>
+      <div><h3>A bad model gets released</h3><p>A retrained model must pass the same tests before it is published. The service swaps to it, and rolls back by itself if audited disagreement rises. Spend is capped at $1 a day.</p></div>
     </div>
   </div>
 </section>
@@ -107,24 +121,17 @@
       <h2>What it does on questions it was never tuned on.</h2>
       <p class="lede">I chose the main settings on three runs and measured on others. Same real questions, same big AI, and accuracy is always scored against the human-written answer, not the AI's.</p>
     </div>
-    <div class="pairs">
-      <div class="pair"><h3>Calls to the big AI</h3>
-        <div class="line"><span>Ask every time</span><div class="track"><div class="fill llm" data-w="100">100%</div></div></div>
-        <div class="line"><span>This system</span><div class="track"><div class="fill mine" data-w="50.4">50%</div></div></div>
-        <p>The other half are answered by the small model.</p></div>
-      <div class="pair"><h3>Cost per 1,000 questions</h3>
-        <div class="line"><span>Ask every time</span><div class="track"><div class="fill llm" data-w="100">$0.041</div></div></div>
-        <div class="line"><span>This system</span><div class="track"><div class="fill mine" data-w="51.2">$0.021</div></div></div>
-        <p>Claude Haiku 5.5 prices. A bigger AI saves more dollars.</p></div>
-      <div class="pair"><h3>Accuracy on all questions</h3>
-        <div class="line"><span>Ask every time</span><div class="track"><div class="fill llm" data-w="80.8">80.8%</div></div></div>
-        <div class="line"><span>This system</span><div class="track"><div class="fill mine" data-w="81.4">81.4%</div></div></div>
-        <p>About the same. The big AI is itself only about 81% right on this task.</p></div>
-      <div class="pair"><h3>Accuracy on new-product questions</h3>
-        <div class="line"><span>Ask every time</span><div class="track"><div class="fill llm" data-w="84.8">84.8%</div></div></div>
-        <div class="line"><span>This system</span><div class="track"><div class="fill mine" data-w="84.5">84.5%</div></div></div>
-        <p>The hardest part. A new product is where a small model usually fails.</p></div>
-    </div>
+    <table class="tbl cmp">
+      <thead><tr><th scope="col">Measured on held-out runs</th><th scope="col">Big AI on every question (today)</th><th scope="col">This system</th><th scope="col">Difference</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Questions sent to the big AI</th><td>100%</td><td>50%</td><td class="good">half as many</td></tr>
+        <tr><th scope="row">Cost per 1,000 questions</th><td>$0.041</td><td>$0.021</td><td class="good">49% less</td></tr>
+        <tr><th scope="row">Correct answers, all questions</th><td>80.8%</td><td>81.4%</td><td>+0.6 points, about equal</td></tr>
+        <tr><th scope="row">Correct answers, new-product questions</th><td>84.8%</td><td>84.5%</td><td>-0.3 points, about equal</td></tr>
+        <tr><th scope="row">Small-model answers that slip through wrong</th><td>none</td><td>about 4 in 100</td><td>kept under a set budget</td></tr>
+      </tbody>
+    </table>
+    <p class="small">"Correct" is judged against the human-written label. The big AI is itself only about 81% right on this task, so "about equal" means as good as the big AI, not perfect.</p>
     <p class="small" style="margin-top:26px">Eight-thousand-question support inbox replays, including a product launch and an off-topic surge. These are the three held-out runs; balancing the new topic was added after I saw them, so they are not a fully clean test.</p>
 
     <div class="section-head" id="dial" style="margin-top:clamp(48px,8vh,90px)">
@@ -153,38 +160,18 @@
 
 <hr class="rule">
 
-<section id="routing">
-  <div class="wrap">
-    <div class="section-head">
-      <h2>Which question goes to the big AI? A learned rule beats the old one.</h2>
-      <p class="lede">The gate used one number to decide: how close the small model's second guess was to its first. I tested six other rules, including one that learns, on three launches and 990 runs. At the same share of calls, the learned rule is more accurate, most of all on new-product questions.</p>
-    </div>
-    <div>
-      <div class="seg" id="route-fam" role="group" aria-label="Stream"></div>
-      <div class="seg" id="route-metric" role="group" aria-label="Measure"></div>
-    </div>
-    <div id="route-box" class="panel" style="padding:14px 16px 10px"></div>
-    <div class="route-facts">
-      <div class="fact"><b>+9.6 pts</b><span>on new-product questions at 40% calls, Banking77 launch (learned rule vs the old score)</span></div>
-      <div class="fact"><b>+17 pts</b><span>on the harder credit-card domain launch at 40% calls</span></div>
-      <div class="fact"><b>Not clear</b><span>on the distant travel domain: the gain is inside the seed-to-seed spread</span></div>
-    </div>
-    <p class="small" style="margin-top:14px">Held-out seeds 3 to 5. Another published method I could run, Online Cascade Learning, jumps from deferring nearly everything to deferring almost nothing and never reaches the 40-60% range on two of the three streams. Tables and caveats are in the repo's results file.</p>
-  </div>
-</section>
 
-<hr class="rule">
 
 <section id="explore" class="explore">
   <div class="wrap">
     <div class="section-head">
-      <h2>See it run.</h2>
+      <h2>Watch it work.</h2>
       <p class="lede">Replay one run question by question, look at the hard case where a whole product line arrives at once, or watch the real service, running now on a free server.</p>
     </div>
     <div class="tablist" role="tablist" aria-label="Views">
-      <button role="tab" id="t-replay" aria-controls="p-replay" aria-selected="true">Banking launch replay</button>
-      <button role="tab" id="t-clinc" aria-controls="p-clinc" aria-selected="false" tabindex="-1">The hard case: a new domain</button>
-      <button role="tab" id="t-live" aria-controls="p-live" aria-selected="false" tabindex="-1">Live service</button>
+      <button role="tab" id="t-replay" aria-controls="p-replay" aria-selected="true">Replay of a product launch</button>
+      <button role="tab" id="t-clinc" aria-controls="p-clinc" aria-selected="false" tabindex="-1">Hard case: a whole new domain</button>
+      <button role="tab" id="t-live" aria-controls="p-live" aria-selected="false" tabindex="-1">Operations console (live)</button>
     </div>
     <div id="p-replay" role="tabpanel" aria-labelledby="t-replay">
       <iframe id="f-replay" data-src="replay-banking.html" title="Banking launch replay" loading="lazy"></iframe>
@@ -208,6 +195,47 @@
       </div>
       <p class="small" id="live-foot" style="margin-top:12px"></p>
     </div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section id="evidence" class="evidence">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Evidence</h2>
+      <p class="lede">For engineers and reviewers: what was tried, what failed, how the numbers were checked, and what runs in production.</p>
+    </div>
+    <div class="actions">
+      <a class="btn ghost" href="#routing">Routing study</a>
+      <a class="btn ghost" href="#honest">What didn't work</a>
+      <a class="btn ghost" href="#fresh">Synthetic data</a>
+      <a class="btn ghost" href="#ops">Operations</a>
+      <a class="btn ghost" href="#checks">Method</a>
+    </div>
+  </div>
+</section>
+
+<hr class="rule">
+
+<section id="routing">
+  <div class="wrap">
+    <div class="section-head">
+      <h2>Deciding which questions go to the big AI: a learned rule beats the old one.</h2>
+      <p class="lede">The gate used one number to decide: how close the small model's second guess was to its first. I tested six other rules, including one that learns, on three launches and 990 runs. At the same share of calls, the learned rule is more accurate, most of all on new-product questions.</p>
+    </div>
+    <div>
+      <div class="seg" id="route-fam" role="group" aria-label="Stream"></div>
+      <div class="seg" id="route-metric" role="group" aria-label="Measure"></div>
+      <div class="seg" id="route-show" role="group" aria-label="Rules shown"></div>
+    </div>
+    <div id="route-box" class="panel" style="padding:14px 16px 10px"></div>
+    <div class="route-facts">
+      <div class="fact"><b>+9.6 pts</b><span>on new-product questions at 40% calls, Banking77 launch (learned rule vs the old score)</span></div>
+      <div class="fact"><b>+17 pts</b><span>on the harder credit-card domain launch at 40% calls</span></div>
+      <div class="fact"><b>Not clear</b><span>on the distant travel domain: the gain is inside the seed-to-seed spread</span></div>
+    </div>
+    <p class="small" style="margin-top:14px">Held-out seeds 3 to 5. Another published method I could run, Online Cascade Learning, jumps from deferring nearly everything to deferring almost nothing and never reaches the 40-60% range on two of the three streams. Tables and caveats are in the repo's results file.</p>
   </div>
 </section>
 

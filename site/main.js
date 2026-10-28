@@ -3,18 +3,20 @@
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-  /* ---------- hero receipt: prints once ---------- */
-  function receipt() {
-    const rows = $$(".receipt h3, .receipt .sub, .receipt .row, .receipt .foot");
-    if (reduce || !window.gsap) return;
-    gsap.set(rows, { autoAlpha: 0, y: 8 });
-    const tl = gsap.timeline({ delay: 0.25 });
-    tl.to(rows, { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.32, ease: "power2.out" });
-    $$(".receipt [data-count]").forEach((el, i) => {
-      const end = parseFloat(el.dataset.count), dec = +el.dataset.dec, o = { v: 0 };
-      el.textContent = el.dataset.prefix + (0).toFixed(dec);
-      tl.to(o, { v: end, duration: 1.1, ease: "power2.out", onUpdate: () => { el.textContent = el.dataset.prefix + o.v.toFixed(dec); } }, 0.9 + i * 0.3);
-    });
+  /* ---------- savings calculator ---------- */
+  const COST_RATIO = 0.512;             // measured: $0.021 / $0.041 per 1,000 questions, audits included
+  function calc() {
+    const vol = $("#c-vol"), price = $("#c-price");
+    const usd = (x) => "$" + (x >= 100 ? Math.round(x).toLocaleString("en-US") : x.toFixed(2));
+    function draw() {
+      const all = Math.max(0, +vol.value || 0) / 1000 * Math.max(0, +price.value || 0);
+      $("#c-all").textContent = usd(all);
+      $("#c-sys").textContent = usd(all * COST_RATIO);
+      $("#c-save").textContent = usd(all * (1 - COST_RATIO));
+    }
+    vol.addEventListener("input", draw);
+    price.addEventListener("input", draw);
+    draw();
   }
 
   /* ---------- story stage ---------- */
@@ -159,36 +161,37 @@
   }
 
   /* ---------- routing chart (from routing-data.json) ---------- */
-  const ROUTE_COLORS = { margin: "var(--ink-3)", maxprob: "var(--swallow)", learned: "var(--cheap)", learned_sem: "var(--cheap-2)" };
-  const ROUTE_LABEL = { margin: "Margin (the old score)", maxprob: "Max probability", learned: "Learned router", learned_sem: "Learned router + stress" };
-  const FAM_NAME = { banking: "Banking77 launch", credit_cards: "New domain: credit cards", travel: "New domain: travel" };
+  const ROUTE_COLORS = { margin: "var(--ai)", maxprob: "var(--ink-3)", learned: "var(--cheap)", learned_sem: "var(--cheap-2)" };
+  const ROUTE_LABEL = { margin: "Old rule (margin)", maxprob: "Max probability", learned: "Learned rule", learned_sem: "Learned rule + topic stress" };
+  const FAM_NAME = { banking: "Banking launch", credit_cards: "New domain: credit cards", travel: "New domain: travel" };
   async function routing() {
     const box = $("#route-box");
     let data;
     try { data = await fetch("routing-data.json").then((r) => r.json()); } catch (e) { box.textContent = "Chart data did not load."; return; }
-    let fam = "banking", metric = "acc";
-    const W = 760, H = 380, L = 50, T = 14, B = 44, R = 14;
+    let fam = "banking", metric = "acc", show = "two";
+    const W = 760, H = 400, L = 62, T = 16, B = 50, R = 16;
     function draw() {
       const key = metric === "acc" ? "acc" : "l600";
-      const lines = Object.keys(ROUTE_COLORS).map((r) => [r, data.curves[fam + "|" + r]]);
-      const all = lines.flatMap(([, p]) => p.map((q) => q[key]));
-      const ref = metric === "acc" ? data.llm[fam].acc : data.llm[fam].l600;
-      all.push(ref);
-      const x0 = 20, x1 = 100, y0 = Math.floor(Math.min(...all) - 0.4), y1 = Math.ceil(Math.max(...all) + 0.4);
+      const ref = data.llm[fam][key];
+      const rules = show === "two" ? ["margin", "learned"] : Object.keys(ROUTE_COLORS);
+      const lines = rules.map((r) => [r, data.curves[fam + "|" + r].map((p) => ({ calls: p.calls, d: p[key] - ref })).sort((a, b) => a.calls - b.calls)]);
+      const all = lines.flatMap(([, p]) => p.map((q) => q.d)).concat(0);
+      const x0 = 20, x1 = 100, y0 = Math.floor(Math.min(...all) - 0.5), y1 = Math.ceil(Math.max(...all) + 0.5);
       const X = (v) => L + (v - x0) / (x1 - x0) * (W - L - R), Y = (v) => T + (1 - (v - y0) / (y1 - y0)) * (H - T - B);
-      let o = `<svg id="route-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="LLM calls against ${metric === "acc" ? "overall accuracy" : "accuracy on new-product questions"} for four routing scores">`;
-      for (let v = 20; v <= 100; v += 10) o += `<line class="grid" x1="${X(v)}" x2="${X(v)}" y1="${T}" y2="${H - B}"/><text x="${X(v)}" y="${H - B + 16}" text-anchor="middle">${v}%</text>`;
-      const step = (y1 - y0) > 12 ? 2 : (y1 - y0) > 5 ? 1 : 0.5;
-      for (let v = Math.ceil(y0 / step) * step; v <= y1; v += step) o += `<line class="grid" x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${v}</text>`;
-      o += `<text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle">share of questions sent to the big AI</text>`;
-      o += `<line x1="${L}" x2="${W - R}" y1="${Y(ref)}" y2="${Y(ref)}" stroke="var(--vein)" stroke-dasharray="5 4"/><text x="${W - R - 4}" y="${Y(ref) - 6}" text-anchor="end">big AI on every question</text>`;
+      const unit = metric === "acc" ? "correct answers" : "correct answers on new-product questions";
+      let o = `<svg id="route-chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Points of ${unit} compared with asking the big AI on every question, against share of questions sent to the big AI">`;
+      for (let v = 20; v <= 100; v += 10) o += `<line class="grid" x1="${X(v)}" x2="${X(v)}" y1="${T}" y2="${H - B}"/><text x="${X(v)}" y="${H - B + 17}" text-anchor="middle">${v}%</text>`;
+      const step = (y1 - y0) > 40 ? 10 : (y1 - y0) > 16 ? 5 : (y1 - y0) > 8 ? 2 : 1;
+      for (let v = Math.ceil(y0 / step) * step; v <= y1; v += step) o += `<line class="grid" x1="${L}" x2="${W - R}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${L - 8}" y="${Y(v) + 4}" text-anchor="end">${v > 0 ? "+" : ""}${v}</text>`;
+      o += `<line class="zero" x1="${L}" x2="${W - R}" y1="${Y(0)}" y2="${Y(0)}"/><text class="zl" x="${W - R - 4}" y="${Y(0) - 6}" text-anchor="end">same as asking the big AI every time</text>`;
+      o += `<text x="${(L + W - R) / 2}" y="${H - 8}" text-anchor="middle">Share of questions sent to the big AI (further left = cheaper)</text>`;
+      o += `<text transform="translate(14 ${(T + H - B) / 2}) rotate(-90)" text-anchor="middle">Points of ${unit}, compared with the big AI</text>`;
       lines.forEach(([r, pts]) => {
-        const sorted = pts.slice().sort((a, b) => a.calls - b.calls);
-        o += `<path d="M${sorted.map((p) => `${X(p.calls).toFixed(1)} ${Y(p[key]).toFixed(1)}`).join("L")}" fill="none" stroke="${ROUTE_COLORS[r]}" stroke-width="${r === "learned" ? 3.2 : 2.2}" stroke-linejoin="round"/>`;
-        sorted.forEach((p) => { o += `<circle cx="${X(p.calls)}" cy="${Y(p[key])}" r="3.4" fill="${ROUTE_COLORS[r]}"><title>${ROUTE_LABEL[r]}: ${p.calls.toFixed(0)}% calls, ${p[key].toFixed(2)}%</title></circle>`; });
+        o += `<path d="M${pts.map((p) => `${X(p.calls).toFixed(1)} ${Y(p.d).toFixed(1)}`).join("L")}" fill="none" stroke="${ROUTE_COLORS[r]}" stroke-width="${r === "learned" ? 3.2 : 2.2}" stroke-linejoin="round"/>`;
+        pts.forEach((p) => { o += `<circle cx="${X(p.calls)}" cy="${Y(p.d)}" r="3.4" fill="${ROUTE_COLORS[r]}"><title>${ROUTE_LABEL[r]}: ${p.calls.toFixed(0)}% of questions to the big AI, ${p.d >= 0 ? "+" : ""}${p.d.toFixed(2)} points</title></circle>`; });
       });
       o += "</svg>";
-      box.innerHTML = o + `<div class="route-legend">${Object.keys(ROUTE_COLORS).map((r) => `<span><i style="background:${ROUTE_COLORS[r]}"></i>${ROUTE_LABEL[r]}</span>`).join("")}</div>`;
+      box.innerHTML = o + `<div class="route-legend">${rules.map((r) => `<span><i style="background:${ROUTE_COLORS[r]}"></i>${ROUTE_LABEL[r]}</span>`).join("")}</div>`;
     }
     const seg = (name, opts, get, set) => {
       const el = $(name);
@@ -197,6 +200,7 @@
     };
     seg("#route-fam", Object.entries(FAM_NAME), () => fam, (k) => (fam = k));
     seg("#route-metric", [["acc", "All questions"], ["l600", "New-product questions, first 600 of the launch"]], () => metric, (k) => (metric = k));
+    seg("#route-show", [["two", "Old rule vs learned rule"], ["all", "All four rules"]], () => show, (k) => (show = k));
     draw();
   }
 
@@ -271,7 +275,7 @@
     });
   }
 
-  receipt();
+  calc();
   story();
   bars();
   dial();
